@@ -1,0 +1,128 @@
+---
+title: "simulations"
+output: pdf_document
+date: "2025-03-10"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+set.seed(123)
+n=200
+```
+
+# Générer les données 
+
+## Générer les fonctions
+
+```{r}
+gener_tte=function(mu, lambda=1){
+  X=rexp(n, rate=lambda)
+  C=rexp(n, rate = mu)
+  TT=pmin(X,C)
+  delta=as.numeric(X==TT)
+  return(list(TT, delta))
+}
+
+gener_continue=function(mean){
+  X=abs(rnorm(n, mean=mean, sd=1))
+  return(X)
+}
+
+gener_binom=function(prob){
+  X=rbinom(n, size = 1, prob = prob)
+  return(X)
+}
+```
+
+
+## Différents scénario
+Je prend comme généralité que :
+ - pour les binomiales, 1 corresponds à l'évènement d'intérêt et qu'il est meilleur d'avoir 0 que 1
+ - pour les tte, plus un évènement est censuré moins il est bon (à voir encore)
+ - pour les continues, il n'y a que des valeurs positives et une valeur plus grande est préférable
+
+### Scénario 1 : T uniformément meilleur que C
+
+```{r}
+# tte/tte
+T_1_1=cbind(gener_tte(1.5),gener_tte(1.5))
+C_1_1=cbind(gener_tte(0.5),gener_tte(0.5))
+
+# tte/continue
+T_1_2=cbind(gener_tte(1.5),gener_continue(2))
+C_1_2=cbind(gener_tte(0.5),gener_continue(0))
+
+# tte/binaire
+T_1_3=cbind(gener_tte(1.5),gener_binom(0.45))
+C_1_3=cbind(gener_tte(0.5),gener_binom(0.75))
+
+# continue/continue
+T_1_4=cbind(gener_continue(2),gener_continue(2))
+C_1_4=cbind(gener_continue(0),gener_continue(0))
+
+# continue/binaire
+T_1_5=cbind(gener_continue(2),gener_binom(0.45))
+C_1_5=cbind(gener_continue(0),gener_binom(0.75))
+
+# binaire/binaire
+T_1_6=cbind(gener_binom(0.45), gener_binom(0.45))
+C_1_6=cbind(gener_binom(0.75), gener_binom(0.75))
+```
+
+### Scénario 2 : C uniformément meilleur que T
+
+```{r}
+# tte/tte
+T_2_1=cbind(gener_tte(0.5),gener_tte(0.5))
+C_2_1=cbind(gener_tte(1.5),gener_tte(1.5))
+
+# tte/continue
+T_2_2=cbind(gener_tte(0.5),gener_continue(0))
+C_2_2=cbind(gener_tte(1.5),gener_continue(2))
+
+# tte/binaire
+T_2_3=cbind(gener_tte(0.5),gener_binom(0.75))
+C_2_3=cbind(gener_tte(1.5),gener_binom(0.45))
+
+# continue/continue
+T_2_4=cbind(gener_continue(0),gener_continue(0))
+C_2_4=cbind(gener_continue(2),gener_continue(2))
+
+# continue/binaire
+T_2_5=cbind(gener_continue(0),gener_binom(0.75))
+C_2_5=cbind(gener_continue(2),gener_binom(0.45))
+
+# binaire/binaire
+T_2_6=cbind(gener_binom(0.75), gener_binom(0.75))
+C_2_6=cbind(gener_binom(0.45), gener_binom(0.45))
+```
+
+
+### Scénario 3 : T similaire à C
+
+```{r}
+# tte/tte
+T_3_1=cbind(gener_tte(0.5),gener_tte(0.5))
+C_3_1=cbind(gener_tte(0.5),gener_tte(0.5))
+
+# tte/continue
+T_3_2=cbind(gener_tte(0.5),gener_continue(2))
+C_3_2=cbind(gener_tte(0.5),gener_continue(2))
+
+# tte/binaire
+T_3_3=cbind(gener_tte(0.5),gener_binom(0.45))
+C_3_3=cbind(gener_tte(0.5),gener_binom(0.45))
+
+# continue/continue
+T_3_4=cbind(gener_continue(2),gener_continue(2))
+C_3_4=cbind(gener_continue(2),gener_continue(2))
+
+# continue/binaire
+T_3_5=cbind(gener_continue(2),gener_binom(0.45))
+C_3_5=cbind(gener_continue(2),gener_binom(0.45))
+
+# binaire/binaire
+T_3_6=cbind(gener_binom(0.45), gener_binom(0.45))
+C_3_6=cbind(gener_binom(0.45), gener_binom(0.45))
+```
+
