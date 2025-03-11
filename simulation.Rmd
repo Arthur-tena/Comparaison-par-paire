@@ -6,7 +6,7 @@ date: "2025-03-10"
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-set.seed(2025)
+set.seed(123)
 n=200
 #library("WinRatio")
 library(dplyr)
@@ -26,8 +26,8 @@ gener_tte=function(mu, lambda=1){
   return(list(TT, delta))
 }
 
-gener_continue=function(mean){
-  X=abs(rnorm(n, mean=mean, sd=1))
+gener_continue=function(mean=1, sd=0){
+  X=abs(rnorm(n, mean=mean, sd=sd))
   return(X)
 }
 
@@ -48,39 +48,39 @@ Je prend comme généralité que :
 
 ```{r}
 # tte/tte
-T_1_1=cbind(gener_tte(1.5),gener_tte(1.5))
-C_1_1=cbind(gener_tte(0.5),gener_tte(0.5))
+T_1_1=cbind(gener_tte(1.5),gener_tte(1))
+C_1_1=cbind(gener_tte(0.5),gener_tte(0.33))
 
 # tte/continue
-T_1_2=cbind(gener_tte(1.5),gener_continue(2))
-C_1_2=cbind(gener_tte(0.5),gener_continue(0))
+T_1_2=cbind(gener_tte(1.5),gener_continue(2,0))
+C_1_2=cbind(gener_tte(0.33),gener_continue(0,1))
 
 # tte/binaire
-T_1_3=cbind(gener_tte(1.5),gener_binom(0.45))
-C_1_3=cbind(gener_tte(0.5),gener_binom(0.75))
+T_1_3=cbind(gener_tte(1),gener_binom(0.45))
+C_1_3=cbind(gener_tte(0.33),gener_binom(0.75))
 
 # continue/continue
-T_1_4=cbind(gener_continue(2),gener_continue(2))
-C_1_4=cbind(gener_continue(0),gener_continue(0))
+T_1_4=cbind(gener_continue(3,0),gener_continue(2,1))
+C_1_4=cbind(gener_continue(1,1),gener_continue(0,3))
 
 # continue/binaire
-T_1_5=cbind(gener_continue(2),gener_binom(0.45))
-C_1_5=cbind(gener_continue(0),gener_binom(0.75))
+T_1_5=cbind(gener_continue(2.5,1),gener_binom(0.45))
+C_1_5=cbind(gener_continue(0,2),gener_binom(0.65))
 
 # binaire/binaire
-T_1_6=cbind(gener_binom(0.45), gener_binom(0.45))
-C_1_6=cbind(gener_binom(0.75), gener_binom(0.75))
+T_1_6=cbind(gener_binom(0.45), gener_binom(0.5))
+C_1_6=cbind(gener_binom(0.75), gener_binom(0.65))
 ```
 
 ### Scénario 2 : C uniformément meilleur que T
 
 ```{r}
 # tte/tte
-T_2_1=cbind(gener_tte(0.5),gener_tte(0.5))
-C_2_1=cbind(gener_tte(1.5),gener_tte(1.5))
+T_2_1=cbind(gener_tte(0.5),gener_tte(0.33))
+C_2_1=cbind(gener_tte(1.5),gener_tte(1))
 
 # tte/continue
-T_2_2=cbind(gener_tte(0.5),gener_continue(0))
+T_2_2=cbind(gener_tte(0.33),gener_continue(0))
 C_2_2=cbind(gener_tte(1.5),gener_continue(2))
 
 # tte/binaire
@@ -327,11 +327,12 @@ affect_value_GPC=function(vecteur1,vecteur2,w=1, threshold=0){
   
   return((cpt[1]+w*cpt[2])/(n*n))
 }
-affect_value_GPC(T_2_4,C_2_4)
+affect_value_GPC(T_1_4,C_1_4)
 ```
 ## Win ratio 
 
 ```{r}
+T_1_4
 
 ```
 
