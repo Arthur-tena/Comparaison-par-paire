@@ -5,19 +5,22 @@ date: "2025-03-10"
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE)
 set.seed(123)
 n=200
 #library("WinRatio")
 library(dplyr)
 library(purrr)
+library(ggplot2)
+library(tidyr)
+
 ```
 
 # Générer les données 
 
 ## Générer les fonctions
 
-```{r}
+```{r, echo=TRUE}
 gener_tte=function(mu, lambda=1){
   X=rexp(n, rate=lambda)
   C=rexp(n, rate = mu)
@@ -39,28 +42,37 @@ gener_binom=function(prob){
 
 
 ## Différents scénario
-Je prend comme généralité que :
+Je prend comme généralités que :
  - pour les binomiales, 1 corresponds à l'évènement d'intérêt et qu'il est meilleur d'avoir 0 que 1
  - pour les tte, plus un évènement est censuré moins il est bon (à voir encore)
  - pour les continues, il n'y a que des valeurs positives et une valeur plus grande est préférable
+ 
+ Les notations des vecteurs T et C sont les suivantes : T_scénario_cas de figure (resp C_scénario_cas de figure)
+ où le scénario varie entre 1 et 3 et les cas de figure entre 1 et 6 comme suit :
+  - 1 : tte/tte \n
+  - 2 : tte/continue \n
+  - 3 : tte/binaire \n
+  - 4 : continue/continue \n
+  - 5 : continue/binaire \n
+  - 6 : binaire/binaire \n
 
 ### Scénario 1 : T uniformément meilleur que C
 
 ```{r}
 # tte/tte
-T_1_1=cbind(gener_tte(1.5),gener_tte(1))
-C_1_1=cbind(gener_tte(0.5),gener_tte(0.33))
+T_1_1=cbind(gener_tte(1.5, 0.5),gener_tte(1))
+C_1_1=cbind(gener_tte(0.5, 1.5),gener_tte(0.33))
 
 # tte/continue
-T_1_2=cbind(gener_tte(1.5),gener_continue(2,0))
-C_1_2=cbind(gener_tte(0.33),gener_continue(0,1))
+T_1_2=cbind(gener_tte(1.5, 0.75),gener_continue(2,0))
+C_1_2=cbind(gener_tte(0.33,1.33),gener_continue(0,1))
 
 # tte/binaire
 T_1_3=cbind(gener_tte(1),gener_binom(0.45))
-C_1_3=cbind(gener_tte(0.33),gener_binom(0.75))
+C_1_3=cbind(gener_tte(0.33,1.5),gener_binom(0.75))
 
 # continue/continue
-T_1_4=cbind(gener_continue(3,0),gener_continue(2,1))
+T_1_4=cbind(gener_continue(3,1),gener_continue(2,1))
 C_1_4=cbind(gener_continue(1,1),gener_continue(0,3))
 
 # continue/binaire
@@ -70,6 +82,21 @@ C_1_5=cbind(gener_continue(0,2),gener_binom(0.65))
 # binaire/binaire
 T_1_6=cbind(gener_binom(0.45), gener_binom(0.5))
 C_1_6=cbind(gener_binom(0.75), gener_binom(0.65))
+
+plot(T_1_4[,1], C_1_4[,1])
+data=as.data.frame(cbind(T_1_4[,1], C_1_4[,1]))
+
+data_long <- data %>%
+  mutate(Groupe_T = "T", Groupe_C = "C") %>%
+  tidyr::pivot_longer(cols = c(V1, V2), names_to = "Variable", values_to = "Valeur") %>%
+  mutate(Groupe = ifelse(Variable == "V1", "T", "C")) 
+
+
+ggplot(data_long, aes(x = Valeur, fill = Groupe)) +
+  geom_histogram(bins = 20, alpha = 0.5, color = "black", position = "identity") +
+  scale_fill_manual(values = c("T" = "darkblue", "C" = "darkred"), name = "Groupe") +
+  theme_classic()
+
 ```
 
 ### Scénario 2 : C uniformément meilleur que T
@@ -130,7 +157,7 @@ C_3_6=cbind(gener_binom(0.45), gener_binom(0.45))
 ```
 
 
-Pour les variables tte, une liste de 2 éléments sors, TT le temps et delta la censure
+
 ```{r}
 extract_value_tte <- function(vecteur) {
 nom_vecteur <- deparse(substitute(vecteur))
@@ -143,10 +170,7 @@ nom_vecteur <- deparse(substitute(vecteur))
 }
 ```
 
-
 ## GPC
-
-
 
 ```{r}
 affect_value_GPC=function(vecteur1,vecteur2,w=1, threshold=0){
@@ -158,69 +182,86 @@ affect_value_GPC=function(vecteur1,vecteur2,w=1, threshold=0){
     for(l in 1:2){
     for(i in 1:length(vecteur1[[l+1]])){
       for (j in 1:length(vecteur2[[l+1]])){
+        
         if(vecteur1[[l+1]][[i]]==1 && vecteur2[[l+1]][[j]]==1){
-          if(vecteur1[[l]][[i]]-vecteur2[[l]][j] > threshold){cpt[l]=cpt[l]+1}
-          else if(abs(vecteur1[[l]][[i]]-vecteur2[[l]][j]) <= threshold){cpt[l]=cpt[l]}
-          else if(vecteur1[[l]][[i]]-vecteur2[[l]][j] < - threshold){cpt[l]=cpt[l]-1}
+          
+          if(vecteur1[[l]][[i]] - vecteur2[[l]][[j]] > threshold){cpt[l]=cpt[l]+1}
+          else if(abs(vecteur1[[l]][[i]] - vecteur2[[l]][[j]]) <= threshold){cpt[l]=cpt[l]}
+          else if(vecteur1[[l]][[i]] - vecteur2[[l]][[j]] < - threshold){cpt[l]=cpt[l]-1}
         }
-        if(vecteur1[[l+1]][[i]]==0 && vecteur2[[l+1]][[j]]==1){
-          if(vecteur1[[l]][[i]]-vecteur2[[l]][j] > threshold){cpt[l]=cpt[l]+1}
-          else if(abs(vecteur1[[1]][[i]]-vecteur2[[1]][j]) <= threshold){cpt[l]=cpt[l]}
-          else if(vecteur1[[l]][[i]]-vecteur2[[l]][j] < - threshold){cpt[l]=cpt[l]}
+        
+        if(vecteur1[[l+1]][[i]] ==0 && vecteur2[[l+1]][[j]] ==1){
+          
+          if(vecteur1[[l]][[i]] - vecteur2[[l]][[j]] > threshold){cpt[l]=cpt[l]+1}
+          else if(abs(vecteur1[[l]][[i]] - vecteur2[[l]][[j]]) <= threshold){cpt[l]=cpt[l]}
+          else if(vecteur1[[l]][[i]] - vecteur2[[l]][[j]] < - threshold){cpt[l]=cpt[l]}
         }
-        if(vecteur1[[l+1]][[i]]==1 && vecteur2[[l+1]][[j]]==0){
-          if(vecteur1[[l]][[i]]-vecteur2[[l]][j] > threshold){cpt[l]=cpt[l]}
-          else if(abs(vecteur1[[l]][[i]]-vecteur2[[l]][j]) <= threshold){cpt[l]=cpt[l]}
-          else if(vecteur1[[l]][[i]]-vecteur2[[l]][j] < - threshold){cpt[l]=cpt[l]-1}
+        
+        if(vecteur1[[l+1]][[i]] ==1 && vecteur2[[l+1]][[j]] ==0){
+          
+          if(vecteur1[[l]][[i]] - vecteur2[[l]][[j]] > threshold){cpt[l]=cpt[l]}
+          else if(abs(vecteur1[[l]][[i]] - vecteur2[[l]][[j]]) <= threshold){cpt[l]=cpt[l]}
+          else if(vecteur1[[l]][[i]] - vecteur2[[l]][[j]] < - threshold){cpt[l]=cpt[l]-1}
         }
-        if(vecteur1[[l+1]][[i]]==0 && vecteur2[[l+1]][[j]]==0){
-          if(vecteur1[[l]][[i]]-vecteur2[[l]][j] > threshold){cpt[l]=cpt[l]}
-          else if(abs(vecteur1[[l]][[i]]-vecteur2[[l]][j]) <= threshold){cpt[l]=cpt[l]}
-          else if(vecteur1[[l]][[i]]-vecteur2[[l]][j] < - threshold){cpt[l]=cpt[l]}
+        
+        if(vecteur1[[l+1]][[i]] ==0 && vecteur2[[l+1]][[j]] ==0){
+          
+          if(vecteur1[[l]][[i]] - vecteur2[[l]][[j]] > threshold){cpt[l]=cpt[l]}
+          else if(abs(vecteur1[[l]][[i]] - vecteur2[[l]][[j]]) <= threshold){cpt[l]=cpt[l]}
+          else if(vecteur1[[l]][[i]] - vecteur2[[l]][[j]] < - threshold){cpt[l]=cpt[l]}
         }
         
       }
     }
-      print(cpt)
+      print(cpt[l])
     }
 
   }
   
   if (grepl("[2]$", nom_vecteur1) && grepl("[2]$", nom_vecteur2)) { # tte/continue
-    for(i in 1:length(vecteur1[[2]])){
-      for (j in 1:length(vecteur2[[2]])){
-        if(vecteur1[[2]][[i]]==1 && vecteur2[[2]][[j]]==1){
-          if(vecteur1[[1]][[i]]-vecteur2[[1]][j] > threshold){cpt[1]=cpt[1]+1}
-          else if(abs(vecteur1[[1]][[i]]-vecteur2[[1]][j]) <= threshold){cpt[1]=cpt[1]}
-          else if(vecteur1[[1]][[i]]-vecteur2[[1]][j] < - threshold){cpt[1]=cpt[1]-1}
+    for(i in 1:length(vecteur1[,2])){
+      for (j in 1:length(vecteur2[,2])){
+        
+        if(vecteur1[[2]][[i]] ==1 && vecteur2[[2]][[j]] ==1){
+          
+          if(vecteur1[[1]][[i]] - vecteur2[[1]][[j]] > threshold){cpt[1]=cpt[1]+1}
+          else if(abs(vecteur1[[1]][[i]] - vecteur2[[1]][[j]]) <= threshold){cpt[1]=cpt[1]}
+          else if(vecteur1[[1]][[i]] - vecteur2[[1]][[j]] < - threshold){cpt[1]=cpt[1]-1}
         }
-        if(vecteur1[[2]][[i]]==0 && vecteur2[[2]][[j]]==1){
-          if(vecteur1[[1]][[i]]-vecteur2[[1]][j] > threshold){cpt[1]=cpt[1]+1}
-          else if(abs(vecteur1[[1]][[i]]-vecteur2[[1]][j]) <= threshold){cpt[1]=cpt[1]}
-          else if(vecteur1[[1]][[i]]-vecteur2[[1]][j] < - threshold){cpt[1]=cpt[1]}
+        
+        if(vecteur1[[2]][[i]] ==0 && vecteur2[[2]][[j]] ==1){
+          
+          if(vecteur1[[1]][[i]] - vecteur2[[1]][[j]] > threshold){cpt[1]=cpt[1]+1}
+          else if(abs(vecteur1[[1]][[i]] - vecteur2[[1]][[j]]) <= threshold){cpt[1]=cpt[1]}
+          else if(vecteur1[[1]][[i]] - vecteur2[[1]][[j]] < - threshold){cpt[1]=cpt[1]}
         }
-        if(vecteur1[[2]][[i]]==1 && vecteur2[[2]][[j]]==0){
-          if(vecteur1[[1]][[i]]-vecteur2[[1]][j] > threshold){cpt[1]=cpt[1]}
-          else if(abs(vecteur1[[1]][[i]]-vecteur2[[1]][j]) <= threshold){cpt[1]=cpt[1]}
-          else if(vecteur1[[1]][[i]]-vecteur2[[1]][j] < - threshold){cpt[1]=cpt[1]-1}
+        
+        if(vecteur1[[2]][[i]] ==1 && vecteur2[[2]][[j]] ==0){
+          
+          if(vecteur1[[1]][[i]] - vecteur2[[1]][[j]] > threshold){cpt[1]=cpt[1]}
+          else if(abs(vecteur1[[1]][[i]] - vecteur2[[1]][[j]]) <= threshold){cpt[1]=cpt[1]}
+          else if(vecteur1[[1]][[i]] - vecteur2[[1]][[j]] < - threshold){cpt[1]=cpt[1]-1}
         }
-        if(vecteur1[[2]][[i]]==0 && vecteur2[[2]][[j]]==0){
-          if(vecteur1[[1]][[i]]-vecteur2[[1]][j] > threshold){cpt[1]=cpt[1]}
-          else if(abs(vecteur1[[1]][[i]]-vecteur2[[1]][j]) <= threshold){cpt[1]=cpt[1]}
-          else if(vecteur1[[1]][[i]]-vecteur2[[1]][j] < - threshold){cpt[1]=cpt[1]}
+        
+        if(vecteur1[[2]][[i]] ==0 && vecteur2[[2]][[j]] ==1){
+          
+          if(vecteur1[[1]][[i]] - vecteur2[[1]][[j]] > threshold){cpt[1]=cpt[1]}
+          else if(abs(vecteur1[[1]][[i]] - vecteur2[[1]][[j]]) <= threshold){cpt[1]=cpt[1]}
+          else if(vecteur1[[1]][[i]] - vecteur2[[1]][[j]] < - threshold){cpt[1]=cpt[1]}
         }
         
       }
       }
     
-    for(i in 1:length(vecteur1[[2]])){
-      for (j in 1:length(vecteur2[[2]])){
-        if(vecteur1[[2]][[i]] - vecteur2[[2]][[j]]> threshold){
+    for(i in 1:length(vecteur1[,2])){
+      for (j in 1:length(vecteur2[,2])){
+        
+        if(vecteur1[,2][[i]] - vecteur2[,2][[j]] > threshold){
          cpt[2] = cpt[2] + 1
-        } else if (vecteur1[[2]][[i]] - vecteur2[[2]][[j]] < - threshold){
+        } else if (vecteur1[,2][[i]] - vecteur2[,2][[j]] < - threshold){
           cpt[2] = cpt[2] - 1
         }
-        else if (abs(vecteur1[[2]][[i]]-vecteur2[[2]][[j]])<= threshold){cpt[2]=cpt[2]}
+        else if (abs(vecteur1[,2][[i]] - vecteur2[,2][[j]])<= threshold){cpt[2]=cpt[2]}
      }
     }
     print(cpt)
@@ -228,36 +269,46 @@ affect_value_GPC=function(vecteur1,vecteur2,w=1, threshold=0){
 
   }
     if (grepl("[3]$" , nom_vecteur1) && grepl("[3]$" , nom_vecteur2)) {# tte/binaire
-      for(i in 1:length(vecteur1[[2]])){
-      for (j in 1:length(vecteur2[[2]])){
-        if(vecteur1[[2]][[i]]==1 && vecteur2[[2]][[j]]==1){
-          if(vecteur1[[1]][[i]]-vecteur2[[1]][j] > threshold){cpt[1]=cpt[1]+1}
-          else if(abs(vecteur1[[1]][[i]]-vecteur2[[1]][j]) <= threshold){cpt[1]=cpt[1]}
-          else if(vecteur1[[1]][[i]]-vecteur2[[1]][j] < - threshold){cpt[1]=cpt[1]-1}
+      for(i in 1:length(vecteur1[,2])){
+      for (j in 1:length(vecteur2[,2])){
+        
+        if(vecteur1[[2]][[i]] ==1 && vecteur2[[2]][[j]] ==1){
+          
+          if(vecteur1[[1]][[i]] - vecteur2[[1]][[j]] > threshold){cpt[1]=cpt[1]+1}
+          else if(abs(vecteur1[[1]][[i]] - vecteur2[[1]][[j]]) <= threshold){cpt[1]=cpt[1]}
+          else if(vecteur1[[1]][[i]] - vecteur2[[1]][[j]] < - threshold){cpt[1]=cpt[1]-1}
         }
-        if(vecteur1[[2]][[i]]==0 && vecteur2[[2]][[j]]==1){
-          if(vecteur1[[1]][[i]]-vecteur2[[1]][j] > threshold){cpt[1]=cpt[1]+1}
-          else if(abs(vecteur1[[1]][[i]]-vecteur2[[1]][j]) <= threshold){cpt[1]=cpt[1]}
-          else if(vecteur1[[1]][[i]]-vecteur2[[1]][j] < - threshold){cpt[1]=cpt[1]}
+        
+        if(vecteur1[[2]][[i]] ==0 && vecteur2[[2]][[j]] ==1){
+          
+          if(vecteur1[[1]][[i]] - vecteur2[[1]][[j]] > threshold){cpt[1]=cpt[1]+1}
+          else if(abs(vecteur1[[1]][[i]] - vecteur2[[1]][[j]]) <= threshold){cpt[1]=cpt[1]}
+          else if(vecteur1[[1]][[i]] - vecteur2[[1]][[j]] < - threshold){cpt[1]=cpt[1]}
         }
-        if(vecteur1[[2]][[i]]==1 && vecteur2[[2]][[j]]==0){
-          if(vecteur1[[1]][[i]]-vecteur2[[1]][j] > threshold){cpt[1]=cpt[1]}
-          else if(abs(vecteur1[[1]][[i]]-vecteur2[[1]][j]) <= threshold){cpt[1]=cpt[1]}
-          else if(vecteur1[[1]][[i]]-vecteur2[[1]][j] < - threshold){cpt[1]=cpt[1]-1}
+        
+        if(vecteur1[[2]][[i]] ==1 && vecteur2[[2]][[j]] ==0){
+          
+          if(vecteur1[[1]][[i]] - vecteur2[[1]][[j]] > threshold){cpt[1]=cpt[1]}
+          else if(abs(vecteur1[[1]][[i]] - vecteur2[[1]][[j]]) <= threshold){cpt[1]=cpt[1]}
+          else if(vecteur1[[1]][[i]] - vecteur2[[1]][[j]] < - threshold){cpt[1]=cpt[1]-1}
         }
-        if(vecteur1[[2]][[i]]==0 && vecteur2[[2]][[j]]==0){
-          if(vecteur1[[1]][[i]]-vecteur2[[1]][j] > threshold){cpt[1]=cpt[1]}
-          else if(abs(vecteur1[[1]][[i]]-vecteur2[[1]][j]) <= threshold){cpt[1]=cpt[1]}
-          else if(vecteur1[[1]][[i]]-vecteur2[[1]][j] < - threshold){cpt[1]=cpt[1]}
+        
+        if(vecteur1[[2]][[i]] ==0 && vecteur2[[2]][[j]] ==1){
+          
+          if(vecteur1[[1]][[i]] - vecteur2[[1]][[j]] > threshold){cpt[1]=cpt[1]}
+          else if(abs(vecteur1[[1]][[i]] - vecteur2[[1]][[j]]) <= threshold){cpt[1]=cpt[1]}
+          else if(vecteur1[[1]][[i]] - vecteur2[[1]][[j]] < - threshold){cpt[1]=cpt[1]}
         }
         
       }
       }
-      for(i in 1:length(vecteur1[[2]])){
-      for (j in 1:length(vecteur2[[2]])){
-        if(vecteur1[[2]][[i]]==1 && vecteur2[[2]][[i]]==0){
+      
+      for(i in 1:length(vecteur1[,2])){
+      for (j in 1:length(vecteur2[,2])){
+        
+        if(vecteur1[,2][[i]] ==1 && vecteur2[,2][[j]]==0){
          cpt[2] = cpt[2] + 1
-        } else if (vecteur1[[2]][[i]]==0 && vecteur2[[2]][[i]]==1){
+        } else if (vecteur1[,2][[i]] ==0 && vecteur2[,2][[j]]==1){
           cpt[2] = cpt[2] - 1
         }
         else {cpt[2]=cpt[2]}
@@ -269,14 +320,16 @@ affect_value_GPC=function(vecteur1,vecteur2,w=1, threshold=0){
   
   if (grepl("[4]$", nom_vecteur1) && grepl("[4]$", nom_vecteur2)) { # continue / continue
     for(l in 1:2){
-    for(i in 1:length(vecteur1[[l]])){
-      for (j in 1:length(vecteur2[[l]])){
-        if(vecteur1[[l]][[i]] - vecteur2[[l]][[j]]> threshold){
+    for(i in 1:length(vecteur1[,l])){
+      for (j in 1:length(vecteur2[,l])){
+        
+        if(vecteur1[i,l] - vecteur2[j,l]> threshold){
          cpt[l] = cpt[l] + 1
-        } else if (vecteur1[[l]][[i]] - vecteur2[[l]][[j]] < - threshold){
+        } else if (vecteur1[i,l] - vecteur2[j,l] < - threshold){
           cpt[l] = cpt[l] - 1
+
         }
-        else if (abs(vecteur1[[l]][[i]]-vecteur2[[l]][[j]])<= threshold){cpt[l]=cpt[l]}
+        else if (abs(vecteur1[i,l]-vecteur2[j,l])<= threshold){cpt[l]=cpt[l]}
      }
     }
     print(cpt[l])
@@ -284,21 +337,23 @@ affect_value_GPC=function(vecteur1,vecteur2,w=1, threshold=0){
 
   }
     if (grepl("[5]$" , nom_vecteur1) && grepl("[5]$" , nom_vecteur2)) { # continue / binaire
-    for(i in 1:length(vecteur1[[1]])){
-      for (j in 1:length(vecteur2[[1]])){
-        if(vecteur1[[1]][[i]] - vecteur2[[1]][[j]]> threshold){
+    for(i in 1:length(vecteur1[,1])){
+      for (j in 1:length(vecteur2[,1])){
+        
+        if(vecteur1[i,1] - vecteur2[j,1]> threshold){
          cpt[1] = cpt[1] + 1
-        } else if (vecteur1[[1]][[i]] - vecteur2[[1]][[j]] < - threshold){
+        } else if (vecteur1[i,1] - vecteur2[j,1] < - threshold){
           cpt[1] = cpt[1] - 1
         }
-        else if (abs(vecteur1[[1]][[i]]-vecteur2[[1]][[j]])<= threshold){cpt[1]=cpt[1]}
+        else if (abs(vecteur1[i,1]-vecteur2[j,1])<= threshold){cpt[1]=cpt[1]}
      }
     }
-      for(i in 1:length(vecteur1[[2]])){
-      for (j in 1:length(vecteur2[[2]])){
-        if(vecteur1[[2]][[i]]==1 && vecteur2[[2]][[i]]==0){
+      for(i in 1:length(vecteur1[,2])){
+      for (j in 1:length(vecteur2[,2])){
+        
+        if(vecteur1[i,2]==1 && vecteur2[,2][[i]]==0){
          cpt[2] = cpt[2] + 1
-        } else if (vecteur1[[2]][[i]]==0 && vecteur2[[2]][[i]]==1){
+        } else if (vecteur1[i,2]==0 && vecteur2[,2][[i]]==1){
           cpt[2] = cpt[2] - 1
         }
         else {cpt[2]=cpt[2]}
@@ -310,11 +365,12 @@ affect_value_GPC=function(vecteur1,vecteur2,w=1, threshold=0){
   
   if (grepl("[6]$", nom_vecteur1) && grepl("[6]$", nom_vecteur2)) { # binaire / binaire
     for(l in 1:2){
-    for(i in 1:length(vecteur1[[l]])){
-      for (j in 1:length(vecteur2[[l]])){
-        if(vecteur1[[l]][[i]]==1 && vecteur2[[l]][[i]]==0){
+    for(i in 1:length(vecteur1[,l])){
+      for (j in 1:length(vecteur2[,l])){
+        
+        if(vecteur1[i,l]==1 && vecteur2[,l][[i]]==0){
          cpt[l] = cpt[l] + 1
-        } else if (vecteur1[[l]][[i]]==0 && vecteur2[[l]][[i]]==1){
+        } else if (vecteur1[i,l]==0 && vecteur2[,l][[i]]==1){
           cpt[l] = cpt[l] - 1
         }
         else {cpt[l]=cpt[l]}
@@ -327,13 +383,25 @@ affect_value_GPC=function(vecteur1,vecteur2,w=1, threshold=0){
   
   return((cpt[1]+w*cpt[2])/(n*n))
 }
-affect_value_GPC(T_1_4,C_1_4)
 ```
+
+```{r}
+comp1=affect_value_GPC(T_1_1,C_1_1)
+comp2=affect_value_GPC(T_1_2,C_1_2)
+comp3=affect_value_GPC(T_1_3,C_1_3)
+comp4=affect_value_GPC(T_1_4,C_1_4)
+comp5=affect_value_GPC(T_1_5,C_1_5)
+comp6=affect_value_GPC(T_1_5,C_1_6)
+data <- data.frame(
+  "cas de figure" = c("tte/tte", "tte/continue", "tte/binaire", "continue/continue", "continue/binaire", "binaire/binaire"),
+  "valeur de la GPC" = c(comp1, comp2, comp3, comp4, comp5, comp6)
+)
+data
+```
+
 ## Win ratio 
 
 ```{r}
-T_1_4
-
 ```
 
 
