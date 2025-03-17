@@ -15,6 +15,14 @@ library(purrr)
 library(ggplot2)
 library(tidyr)
 library(npsm)
+library(bpcp)
+library(survival)
+```
+```{r}
+data("leuk2")
+ with(leuk2,Surv(time,status))
+df= as.data.frame(with(leuk2,Surv(time,status)))
+ class(df[,1])
 ```
 
 # Générer les données 
@@ -27,7 +35,10 @@ gener_tte=function(mu, lambda=1){
   C=rexp(n, rate = mu)
   TT=pmin(X,C)
   delta=as.numeric(X==TT)
-  return(data.frame(TT, delta))
+  delta=abs(1-delta)
+  S=Surv(time = TT, event = delta)
+  S=as.data.frame(S)
+  return(S)
 }
 
 gener_continue=function(mean=1, sd=0){
@@ -45,18 +56,18 @@ gener_binom=function(prob){
 
 ## Différents scénario
 Je prend comme généralités que :
- - pour les binomiales, 1 corresponds à l'évènement d'intérêt et qu'il est meilleur d'avoir 0 que 1\\
- - pour les tte, plus un évènement est censuré moins il est bon (à voir encore)\\
- - pour les continues, il n'y a que des valeurs positives et une valeur plus grande est préférable\\
+ - pour les binomiales, 1 corresponds à l'évènement d'intérêt et qu'il est meilleur d'avoir 0 que 1
+ - pour les tte, plus un évènement est censuré moins il est bon (à voir encore)
+ - pour les continues, il n'y a que des valeurs positives et une valeur plus grande est préférable
  
  Les notations des vecteurs T et C sont les suivantes : T_scénario_cas de figure (resp C_scénario_cas de figure)
  où le scénario varie entre 1 et 3 et les cas de figure entre 1 et 6 comme suit :
-  - 1 : tte/tte \\
-  - 2 : tte/continue \\
-  - 3 : tte/binaire \\
-  - 4 : continue/continue \\
-  - 5 : continue/binaire \\
-  - 6 : binaire/binaire \\
+  - 1 : tte/tte 
+  - 2 : tte/continue 
+  - 3 : tte/binaire 
+  - 4 : continue/continue 
+  - 5 : continue/binaire 
+  - 6 : binaire/binaire 
 
 ### Scénario 1 : T uniformément meilleur que C
 
@@ -267,32 +278,116 @@ nom_vecteur <- deparse(substitute(vecteur))
 
 
 ```{r}
-type_variable=function(vecteur1,vecteur2,L){
-  type=NULL
-  if(length(vecteur1)!=length(vecteur2)){return("Problème, les tailles des 2 vecteurs sont différents")}
+
+type_variable <- function(vecteur1, L) {
+  type <- rep(0, L)
   
-  if(length(vecteur1)==L){
-    ifelse(sapply(vecteur1, is.factor), type="binaire", type="continue")
-  }
-    return(type)
+  type <- sapply(vecteur1, function(x) {
+    classe <- class(x)
+    
+    if ("Surv" %in% classe) {
+      return("tte")
+    } else if ("numeric" %in% classe) {
+      return("continue")
+    } else {
+      return("binaire")
+    }
+  })
+  
+  return(unname(type))
 }
+```
 
 
+```{r}
+affect_value_GPC_WO_WR <- function(vecteur1, vecteur2, L, w = rep(1, L), threshold = 0) {
+  n1 <- nrow(vecteur1)
+  n2 <- nrow(vecteur2)
 
-affect_value_GPC_WO_WR=function(vecteur1,vecteur2,L,w=rep(1,L),threshold=0){
-  cpt=rep(0,L) # un compteur étant le p_ij(l)
-  delta=rep(0,L) # delta(l),n la proportion en faveur du traitement cumulé
-  Delta=0 # Delta, la statistique d'intérêt dans la GPC, la proportion en faveur du traitement
-  count=rep(0,3*L) # compteur servant à calculer le nombre d'évènement favorable, défavorable et neutre pour les WR  et WO
-  crit=c("favorable", "défavorable", "neutre", "non-informatif") # paire
-  paire=NULL
-  for(l in 1:L){
-    while(paire=="non-informatif"){
-      l=l+1
+
+  type1 <- type_variable(vecteur1, L)
+  type2 <- type_variable(vecteur2, L)
+
+  if (!all(type1 == type2)) {
+    stop("Les deux vecteurs ont des outcomes de types différents")
+  }
+
+  paire <- matrix("", nrow = n1 * n2, ncol = L)
+  Delta <- 0
+  N_w <- 0
+  N_l <- 0
+  N_t <- 0
+  p <- 1 
+
+
+  for (i in 1:n1) {
+    for (j in 1:n2) {
+      if (type1[1]=="tte"){
+        
+      }
+      if (type1[1] == "continue") {
+        diff <- vecteur1[i, 1] - vecteur2[j, 1]
+        if (diff > threshold) {
+          paire[p, 1] <- "favorable"
+        } else if (diff < -threshold) {
+          paire[p, 1] <- "défavorable"
+        } else {
+          paire[p, 1] <- "neutre"
+        }
+      } else {  # Cas binaire
+        if (vecteur1[i, 1] == 1 && vecteur2[j, 1] == 0) {
+          paire[p, 1] <- "favorable"
+        } else if (vecteur1[i, 1] == 0 && vecteur2[j, 1] == 1) {
+          paire[p, 1] <- "défavorable"
+        } else {
+          paire[p, 1] <- "neutre"
+        }
+      }
+      p <- p + 1
     }
   }
+
+  for (l in 1:L) {
+    for (p in 1:(n1 * n2)) {
+      if (paire[p, 1] != "non-informatif") {
+        # Comptage des catégories
+        if (paire[p, l] == "favorable") {
+          N_w <- N_w + 1
+        } else if (paire[p, l] == "défavorable") {
+          N_l <- N_l + 1
+        } else if (paire[p, l] == "neutre") {
+          N_t <- N_t + 1
+        }
+      } else if (l < L) {  # Si c'est "non-informatif", on regarde la colonne suivante
+        if (paire[p, l + 1] == "favorable") {
+          N_w <- N_w + 1
+        } else if (paire[p, l + 1] == "défavorable") {
+          N_l <- N_l + 1
+        } else if (paire[p, l + 1] == "neutre") {
+          N_t <- N_t + 1
+        }
+      }
+    }
+  }
+
+  # Calcul des statistiques finales
+  Delta <- (N_w - N_l) / (n1 * n2)
+  WR <- ifelse(N_l != 0, N_w / N_l, NA)
+  WO <- ifelse(N_t != 0, (N_w + 0.5 * N_t) / (N_l + 0.5 * N_t), WR)
+  P_w=(N_w)/(N_w+N_l)
+  P_L=P_w-1.96*sqrt((P_w*(1-P_w))/(N_w+N_l))
+  P_U=P_w+1.96*sqrt((P_w*(1-P_w))/(N_w+N_l))
+  CI=c(P_L,P_U)
+  CI_wr=c(P_L/(1-P_L),P_U/(1-P_U))
+
+  # Résultat
+  data <- data.frame(WinRatio = WR, Win_Prop = P_w, CI=CI, CI_WR=CI_wr, WinOdds = WO, GPC = Delta)
   
+  return(data)
 }
+
+
+affect_value_GPC_WO_WR(T_1_5, C_1_5, 2)
 ```
 
 
@@ -848,7 +943,27 @@ gehan.test(
 ## Win ratio 
 
 ```{r}
+temps <- c(5, 10, 15, 20, 25)
+statut <- c(1, 0, 1, 0, 1)
 
+T_1_1 <- Surv(time = temps, event = statut)
+T_1_1[,2]
+
+# Accéder aux données de statut dans un objet Surv
+statut_values <- T_1_1[, 2]  # Ou utiliser T_1_1$status directement
+
+# Séparer les événements non censurés (statut == 1)
+non_censure <- T_1_1[statut_values == 1, ]
+
+# Séparer les événements censurés (statut == 0)
+censure <- T_1_1[statut_values == 0, ]
+
+# Affichage des résultats
+print("Valeurs non censurées :")
+print(non_censure)
+
+print("Valeurs censurées :")
+print(censure)
 ```
 
 
