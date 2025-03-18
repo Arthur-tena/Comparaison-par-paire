@@ -18,11 +18,11 @@ library(npsm)
 library(bpcp)
 library(survival)
 ```
+
 ```{r}
 data("leuk2")
- with(leuk2,Surv(time,status))
+with(leuk2,Surv(time,status))
 df= as.data.frame(with(leuk2,Surv(time,status)))
- class(df[,1])
 ```
 
 # Générer les données 
@@ -73,6 +73,7 @@ Je prend comme généralités que :
 
 ```{r}
 # tte/tte
+#T_1_1=gener_tte(0.8, 2.5)
 T_1_1=cbind(gener_tte(1.1, 0.5),gener_tte(0.75,0.33))
 C_1_1=cbind(gener_tte(0.8, 2.5),gener_tte(0.33,2.5))
 
@@ -86,7 +87,7 @@ C_1_3=cbind(gener_tte(0.33,2.3),gener_binom(0.45))
 
 # continue/continue
 T_1_4=cbind(gener_continue(3,1),gener_continue(3,2))
-C_1_4=cbind(gener_continue(1,1),gener_continue(1,1))
+C_1_4=cbind(gener_continue(2,1),gener_continue(1,1))
 
 # continue/binaire
 T_1_5=cbind(gener_continue(2.5,1),gener_binom(0.65))
@@ -95,6 +96,7 @@ C_1_5=cbind(gener_continue(0,2),gener_binom(0.35))
 # binaire/binaire
 T_1_6=cbind(gener_binom(0.75), gener_binom(0.65))
 C_1_6=cbind(gener_binom(0.45), gener_binom(0.5))
+
 ```
 
 La visulaisation sert à vérifier si les valeurs correspondent bien au scénario choisis
@@ -277,6 +279,7 @@ nom_vecteur <- deparse(substitute(vecteur))
 ## GPC
 
 
+
 ```{r}
 
 type_variable <- function(vecteur1, L) {
@@ -296,8 +299,19 @@ type_variable <- function(vecteur1, L) {
   
   return(unname(type))
 }
+type_variable(T_1_1,2)
+type_variable(C_1_1,2)
 ```
 
+
+
+```{r}
+extract_tte=function(vecteur1,l){
+  t_obs=vecteur1[[l]][,1]
+  censure=vecteur1[[l]][,2]
+  return(cbind(t_obs,censure))
+}
+```
 
 ```{r}
 affect_value_GPC_WO_WR <- function(vecteur1, vecteur2, L, w = rep(1, L), threshold = 0) {
@@ -314,63 +328,100 @@ affect_value_GPC_WO_WR <- function(vecteur1, vecteur2, L, w = rep(1, L), thresho
 
   paire <- matrix("", nrow = n1 * n2, ncol = L)
   Delta <- 0
+  cpt <- 0
   N_w <- 0
   N_l <- 0
   N_t <- 0
   p <- 1 
 
 
-  for (i in 1:n1) {
-    for (j in 1:n2) {
-      if (type1[1]=="tte"){
+ for (i in 1:n1) {
+  for (j in 1:n2) {
+    for (l in 1:L) {
+      if (type1[l] == "tte") {
+        t_obs1 = extract_tte(vecteur1, l)[,1]
+        censure1 = extract_tte(vecteur1, l)[,2]
+        t_obs2 = extract_tte(vecteur2, l)[,1]
+        censure2 = extract_tte(vecteur2, l)[,2]
+        diff_tte <- t_obs1[i] - t_obs2[j]
         
+        if (censure1[i] == 0 && censure2[j] == 0) {
+          if (diff_tte > threshold) {
+            paire[p, l] = "favorable"
+          } else if (diff_tte < -threshold) {
+            paire[p, l] = "défavorable"
+          } else {
+            paire[p, l] = "neutre"
+          }
+        } else if (censure1[i] == 1 && censure2[j] == 0) {
+          if (diff_tte > threshold) {
+            paire[p, l] = "favorable"
+          } else {
+            paire[p, l] = "non-informative"
+          }
+        } else if (censure1[i] == 0 && censure2[j] == 1) {
+          if (diff_tte > threshold) {
+            paire[p, l] = "non-informative"
+          } else {
+            paire[p, l] = "défavorable"
+          }
+        } else {
+          paire[p, l] = "non-informative"
+        }
       }
-      if (type1[1] == "continue") {
-        diff <- vecteur1[i, 1] - vecteur2[j, 1]
+      
+      if (type1[l] == "continue") {
+        diff <- vecteur1[i, l] - vecteur2[j, l]
         if (diff > threshold) {
-          paire[p, 1] <- "favorable"
+          paire[p, l] = "favorable" 
         } else if (diff < -threshold) {
-          paire[p, 1] <- "défavorable"
+          paire[p, l] = "défavorable"
         } else {
-          paire[p, 1] <- "neutre"
-        }
-      } else {  # Cas binaire
-        if (vecteur1[i, 1] == 1 && vecteur2[j, 1] == 0) {
-          paire[p, 1] <- "favorable"
-        } else if (vecteur1[i, 1] == 0 && vecteur2[j, 1] == 1) {
-          paire[p, 1] <- "défavorable"
-        } else {
-          paire[p, 1] <- "neutre"
+          paire[p, l] = "neutre"
         }
       }
-      p <- p + 1
+      
+      if (type1[l] == "binaire") {
+        if (vecteur1[i, l] == 1 && vecteur2[j, l] == 0) {
+          paire[p, l] = "favorable"
+        } else if (vecteur1[i, l] == 0 && vecteur2[j, l] == 1) {
+          paire[p, l] = "défavorable"
+        } else {
+          paire[p, l] = "neutre"
+        }
+      }
     }
+    p <- p + 1 
   }
+  }
+
+
+ for (p in 1:(n1 * n2)) {
+  valeur_trouvee <- FALSE 
 
   for (l in 1:L) {
-    for (p in 1:(n1 * n2)) {
-      if (paire[p, 1] != "non-informatif") {
-        # Comptage des catégories
-        if (paire[p, l] == "favorable") {
-          N_w <- N_w + 1
-        } else if (paire[p, l] == "défavorable") {
-          N_l <- N_l + 1
-        } else if (paire[p, l] == "neutre") {
-          N_t <- N_t + 1
-        }
-      } else if (l < L) {  # Si c'est "non-informatif", on regarde la colonne suivante
-        if (paire[p, l + 1] == "favorable") {
-          N_w <- N_w + 1
-        } else if (paire[p, l + 1] == "défavorable") {
-          N_l <- N_l + 1
-        } else if (paire[p, l + 1] == "neutre") {
-          N_t <- N_t + 1
-        }
+    if (paire[p, l] != "non-informative") {
+      if (paire[p, l] == "favorable") {
+        N_w <- N_w + 1
+      } else if (paire[p, l] == "défavorable") {
+        N_l <- N_l + 1
+      } else if (paire[p, l] == "neutre") {
+        N_t <- N_t + 1
       }
+      valeur_trouvee <- TRUE
+      break  
     }
   }
-
+}
+  
   # Calcul des statistiques finales
+  print(paire)
+  count_non_informative_pairs <- sum(paire[, 1] == "non-informative" & paire[, 2] == "non-informative")
+  cat("Nb de paire non-informative : ",count_non_informative_pairs,"\n")
+  cat("Nb de win",N_w,"\n")
+  cat("Nb de lose : ",N_l,"\n")
+  cat("Nb de tie : ",N_t,"\n")
+  cat("Nb de paire regardé :", count_non_informative_pairs+N_w+N_l+N_t,"\n")
   Delta <- (N_w - N_l) / (n1 * n2)
   WR <- ifelse(N_l != 0, N_w / N_l, NA)
   WO <- ifelse(N_t != 0, (N_w + 0.5 * N_t) / (N_l + 0.5 * N_t), WR)
@@ -381,13 +432,17 @@ affect_value_GPC_WO_WR <- function(vecteur1, vecteur2, L, w = rep(1, L), thresho
   CI_wr=c(P_L/(1-P_L),P_U/(1-P_U))
 
   # Résultat
-  data <- data.frame(WinRatio = WR, Win_Prop = P_w, CI=CI, CI_WR=CI_wr, WinOdds = WO, GPC = Delta)
+  data1 <- data.frame(WinRatio = WR, Win_Prop = P_w, WinOdds = WO, GPC = Delta)
+  data2 = data.frame(row.names = c("Win proportion", "Win ratio"),lower=c(P_L,P_L/(1-P_L)), upper=c(P_U,P_U/(1-P_U)))
   
-  return(data)
+  return(list(
+  "Tableau des résultats" = data1,
+  "Intervalle de confiance à 95%" = data2
+))
 }
 
 
-affect_value_GPC_WO_WR(T_1_5, C_1_5, 2)
+affect_value_GPC_WO_WR(T_1_4, C_1_4, 2)
 ```
 
 
