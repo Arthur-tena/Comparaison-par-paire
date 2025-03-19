@@ -16,8 +16,13 @@ library(ggplot2)
 library(tidyr)
 library(npsm)
 library(survival)
+
 library(gridExtra)
 library(grid)
+
+library(doParallel)
+library(parallel)
+library(foreach)
 ```
 
 # Générer les données 
@@ -254,7 +259,6 @@ affect_value_GPC_WO_WR = function(vecteur1, vecteur2, L, w = rep(1, L), threshol
   n1 = nrow(vecteur1)
   n2 = nrow(vecteur2)
 
-
   type1 = type_variable(vecteur1, L)
   type2 = type_variable(vecteur2, L)
 
@@ -348,14 +352,7 @@ affect_value_GPC_WO_WR = function(vecteur1, vecteur2, L, w = rep(1, L), threshol
       break  
     }
   }
-  }
-  
-  #count_non_informative_pairs = sum(paire[, 1] == "non-informative" & paire[, 2] == "non-informative")
-  #cat("Nb de paire non-informative : ",count_non_informative_pairs,"\n")
-  #cat("Nb de win",N_w,"\n")
-  #cat("Nb de lose : ",N_l,"\n")
-  #cat("Nb de tie : ",N_t,"\n")
-  #cat("Nb de paire regardée :", count_non_informative_pairs+N_w+N_l+N_t,"\n")
+ }
   
   
   # Calcul des statistiques finales
@@ -390,6 +387,36 @@ resultats
 #affect_value_GPC_WO_WR(T_3_6, C_3_6, 2)
 ```
 
+```{r, parallelisation du code}
+nb_core=6
+cl=makeCluster(nb_core)
+registerDoParallel(cl)
+
+start_time <- Sys.time()
+mat=matrix(0, nrow = n_sim, ncol=2 )
+
+
+results <- foreach(i = 1:n_sim, .combine = rbind, .packages = "survival") %dopar% {
+  
+
+  vecteur1 <- cbind(gener_tte(0.75, 0.75), gener_continue(2, 1))
+  vecteur2 <- cbind(gener_tte(0.75, 1.5), gener_continue(0, 1))
+  
+
+  result <- affect_value_GPC_WO_WR(vecteur1, vecteur2, L = 2)
+  
+
+  c(result$results[,4], result$Nb[,1],result$Nb[,2 ])
+}
+stopCluster(cl)
+end_time <- Sys.time()
+execution_time <- end_time - start_time
+print(execution_time)
+1/40000*unname(results[,2]-results[,3])
+unname(results[,1])
+```
+
+
 ```{r}
 n_sim=300
 result_GPC=rep(0,n_sim)
@@ -402,13 +429,13 @@ for (i in 1:n_sim) {
 
   vecteur1 = cbind(gener_tte(0.75, 0.75),gener_continue(2,1))
   vecteur2=cbind(gener_tte(0.75,1.5),gener_continue(0,1))
-  
+
 
   result <- affect_value_GPC_WO_WR(vecteur1, vecteur2, L = 2)
   result_GPC[i]= result$results[,4]
   result_WR[i]=result$results[,1]
   result_WO[i]=result$results[,3]
-  
+
   Nb_win[i]=result$Nb[,1]
 }
 end_time <- Sys.time()
@@ -417,7 +444,7 @@ print(paste("Temps total pour 100 simulations:", total_time))
 mean_GPC <- mean(result_GPC)
 mean_WR <- mean(result_WR)
 mean_WO <- mean(result_WO)
-result_GPC
+#result_GPC
 
 alpha <- 0.05
 lower_quantile <- quantile(result_GPC, probs = alpha / 2)
