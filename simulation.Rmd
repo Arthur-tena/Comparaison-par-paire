@@ -184,38 +184,91 @@ C_2_6=cbind(gener_binom(0.75), gener_binom(0.65))
 
 ```{r}
 # tte/tte
-T_3_1=cbind(gener_tte(0.5),gener_tte(0.5))
-C_3_1=cbind(gener_tte(0.5),gener_tte(0.5))
+T_3_1=cbind(gener_tte(0.8,1.2),gener_tte(0.35,1.3))
+C_3_1=cbind(gener_tte(0.66,1.25),gener_tte(0.5,1))
 
 # tte/continue
-T_3_2=cbind(gener_tte(0.5),gener_continue(2))
-C_3_2=cbind(gener_tte(0.5),gener_continue(2))
+T_3_2=cbind(gener_tte(0.75,1.5),gener_continue(3,2))
+C_3_2=cbind(gener_tte(0.5,1.5),gener_continue(2.5,2))
 
 # tte/binaire
-T_3_3=cbind(gener_tte(0.5),gener_binom(0.45))
-C_3_3=cbind(gener_tte(0.5),gener_binom(0.45))
+T_3_3=cbind(gener_tte(0.5,1),gener_binom(0.45))
+C_3_3=cbind(gener_tte(0.7,1.3),gener_binom(0.5))
 
 # continue/continue
-T_3_4=cbind(gener_continue(2),gener_continue(2))
-C_3_4=cbind(gener_continue(2),gener_continue(2))
+T_3_4=cbind(gener_continue(4,2),gener_continue(3,2))
+C_3_4=cbind(gener_continue(3,2),gener_continue(2,4))
 
 # continue/binaire
-T_3_5=cbind(gener_continue(2),gener_binom(0.45))
-C_3_5=cbind(gener_continue(2),gener_binom(0.45))
+T_3_5=cbind(gener_continue(3,1),gener_binom(0.45))
+C_3_5=cbind(gener_continue(2.5,2),gener_binom(0.55))
 
 # binaire/binaire
-T_3_6=cbind(gener_binom(0.5), gener_binom(0.5))
-C_3_6=cbind(gener_binom(0.5), gener_binom(0.5))
+T_3_6=cbind(gener_binom(0.45), gener_binom(0.55))
+C_3_6=cbind(gener_binom(0.4), gener_binom(0.6))
+
 ```
+
+```{r, normale}
+# Définition des paramètres
+mu1 <- 4
+sigma1 <- 2
+mu2 <- 3
+sigma2 <- 2
+
+# Définition de l'intervalle de valeurs pour l'axe x
+x <- seq(mu1 - 4*sigma1, mu1 + 4*sigma1, length.out = 100)
+
+# Calcul des densités
+y1 <- dnorm(x, mean = mu1, sd = sigma1)
+y2 <- dnorm(x, mean = mu2, sd = sigma2)
+
+# Tracé de la première courbe (N(3,1))
+plot(x, y1, type = "l", lwd = 2, col = "blue", 
+     main = "Densités des lois normales N(3,1) et N(2,2)",
+     xlab = "x", ylab = "Densité")
+
+# Ajout de la deuxième courbe (N(2,2))
+lines(x, y2, lwd = 2, col = "red")  
+legend('topright', legend=c("T","C"), col=c("blue", "red"), lwd=c(2,2))
+
+```
+
+
+```{r, exponentielle}
+
+lambda1 <- 0.35
+lambda2 <- 1.3
+lambda3 <- 0.5
+lambda4= 1
+
+x <- seq(0, 10, length.out = 100)
+
+y1 <- dexp(x, rate = lambda1)
+y2 <- dexp(x, rate = lambda2)
+y3 <- dexp(x, rate= lambda3)
+y4 = dexp(x, rate= lambda4)
+
+plot(x, y1, type = "l", lwd = 2, col = "blue", 
+     main = "Densités des lois exponentielles Exp(1) et Exp(0.5)",
+     xlab = "x", ylab = "Densité")
+
+lines(x, y2, lwd = 2, col = "darkblue")
+lines(x, y3, lwd = 2, col = "green")
+lines(x, y4, lwd=2, col="darkgreen")
+legend('topright',legend=c("T","C") ,col=c('blue','green'), lwd=c(2,2))
+
+```
+
 
 ## GPC
 
 ```{r, echo = TRUE}
 
-type_variable = function(vecteur1, L) {
+type_variable = function(treatmentdata, L) {
   type = rep(0, L)
   
-  type = sapply(vecteur1, function(x) {
+  type = sapply(treatmentdata, function(x) {
     classe = class(x)
     
     if ("Surv" %in% classe) {
@@ -232,20 +285,18 @@ type_variable = function(vecteur1, L) {
 ```
 
 ```{r, echo=TRUE}
-extract_tte=function(vecteur1,l){
-  if (type_variable(vecteur1,l)[l]!="tte"){ stop("la variable n'est pas tte")}
-  t_obs=vecteur1[[l]][,1]
-  censure=vecteur1[[l]][,2]
+extract_tte=function(treatmentdata,l){
+  if (type_variable(treatmentdata,l)[l]!="tte"){ stop("la variable n'est pas tte")}
+  t_obs=treatmentdata[[l]][,1]
+  censure=treatmentdata[[l]][,2]
   return(cbind(t_obs,censure))
 }
 ```
 
 ```{r, echo=TRUE }
 # Entrée :
-# vecteur1 : les valeurs du nouveau traitement
-# vecteur2 : les valeurs du traitement de contrôle 
-# L : le nb d'outcomes
-# w : le poids de chaque outcome ; par défault égal à 1
+# treatmentdata : les valeurs du nouveau traitement
+# controldata : les valeurs du traitement de contrôle 
 # threshold : le seuil pour les valeurs continues ou tte ; par défalut égal à 0
 
 # renvoie :
@@ -255,12 +306,18 @@ extract_tte=function(vecteur1,l){
 # z_score : le z_score utile pour calculer la p-valeur des WR
 # p_value_unilatéral/bilatéral : la p valeur du test unilatéral ou bilatéral sous H_0
 
-affect_value_GPC_WO_WR = function(vecteur1, vecteur2, L, w = rep(1, L), threshold = 0) {
-  n1 = nrow(vecteur1)
-  n2 = nrow(vecteur2)
+affect_value_GPC_WO_WR = function(treatmentdata, controldata, threshold = 0) {
+  n1 = nrow(treatmentdata)
+  n2 = nrow(controldata)
+  
+  L=ncol(treatmentdata)
+  
+  if (ncol(treatmentdata)!=ncol(controldata)){
+    stop("il n'y a pas le même nombre d'outcomes")
+  }
 
-  type1 = type_variable(vecteur1, L)
-  type2 = type_variable(vecteur2, L)
+  type1 = type_variable(treatmentdata, L)
+  type2 = type_variable(controldata, L)
 
   if (!all(type1 == type2)) {
     stop("Les deux vecteurs ont des outcomes de types différents")
@@ -273,16 +330,16 @@ affect_value_GPC_WO_WR = function(vecteur1, vecteur2, L, w = rep(1, L), threshol
   N_t = 0
   p = 1 
 
-
+# détermine toutes les paires si elles sont non-informative, favorable, défavorable ou neutre
  for (i in 1:n1) {
   for (j in 1:n2) {
     for (l in 1:L) {
       if (type1[l] == "tte") {
         
-        t_obs1 = extract_tte(vecteur1, l)[,1]
-        censure1 = extract_tte(vecteur1, l)[,2]
-        t_obs2 = extract_tte(vecteur2, l)[,1]
-        censure2 = extract_tte(vecteur2, l)[,2]
+        t_obs1 = extract_tte(treatmentdata, l)[,1]
+        censure1 = extract_tte(treatmentdata, l)[,2]
+        t_obs2 = extract_tte(controldata, l)[,1]
+        censure2 = extract_tte(controldata, l)[,2]
         diff_tte = t_obs1[i] - t_obs2[j]
         
         if (censure1[i] == 0 && censure2[j] == 0) {
@@ -311,7 +368,7 @@ affect_value_GPC_WO_WR = function(vecteur1, vecteur2, L, w = rep(1, L), threshol
       }
       
       if (type1[l] == "continue") {
-        diff = vecteur1[i, l] - vecteur2[j, l]
+        diff = treatmentdata[i, l] - controldata[j, l]
         if (diff > threshold) {
           paire[p, l] = "favorable" 
         } else if (diff < -threshold) {
@@ -322,9 +379,9 @@ affect_value_GPC_WO_WR = function(vecteur1, vecteur2, L, w = rep(1, L), threshol
       }
       
       if (type1[l] == "binaire") {
-        if (vecteur1[i, l] == 1 && vecteur2[j, l] == 0) {
+        if (treatmentdata[i, l] == 1 && controldata[j, l] == 0) {
           paire[p, l] = "favorable"
-        } else if (vecteur1[i, l] == 0 && vecteur2[j, l] == 1) {
+        } else if (treatmentdata[i, l] == 0 && controldata[j, l] == 1) {
           paire[p, l] = "défavorable"
         } else {
           paire[p, l] = "neutre"
@@ -335,7 +392,7 @@ affect_value_GPC_WO_WR = function(vecteur1, vecteur2, L, w = rep(1, L), threshol
   }
   }
 
-
+# calcul des statistiques en regardant dans un premier temps si la valeur est  non-infomative 
  for (p in 1:(n1 * n2)) {
   valeur_trouvee = FALSE 
 
@@ -356,116 +413,106 @@ affect_value_GPC_WO_WR = function(vecteur1, vecteur2, L, w = rep(1, L), threshol
   
   
   # Calcul des statistiques finales
-  Delta = round((N_w - N_l) / (n1 * n2),3)
-  WR = round(ifelse(N_l != 0, N_w / N_l, NA),3)
-  WO = round(ifelse(N_t != 0, (N_w + 0.5 * N_t) / (N_l + 0.5 * N_t), WR),3)
-  P_w=round((N_w)/(N_w+N_l),3)
+  Delta = round((N_w - N_l) / (n1 * n2),3) # proportion en faveur du traitement 
+  WR = round(ifelse(N_l != 0, N_w / N_l, NA),3) # Win ratio
+  WR2= DescTools::BinomRatioCI(x1 = N_w, n1=N_w+N_l, x2 = N_l, n2= N_w+N_l )
+  print(WR)
+  print(WR2)
+  WO = round(ifelse(N_t != 0, (N_w + 0.5 * N_t) / (N_l + 0.5 * N_t), WR),3) # win odds
+  WO2 = DescTools::BinomRatioCI(x1 = N_w+N_t/2, n1=N_t+N_w+N_l, x2=N_l+N_t/2, n2=N_t+N_w+N_l)
+  print(WO)
+  print(WO2)
+  P_w=round((N_w)/(N_w+N_l),3) # proportion de win
   
-  P_L=round(P_w-1.96*sqrt((P_w*(1-P_w))/(N_w+N_l)),3)
-  P_U=round(P_w+1.96*sqrt((P_w*(1-P_w))/(N_w+N_l)),3)
+  P_L=round(P_w-1.96*sqrt((P_w*(1-P_w))/(N_w+N_l)),3) # borne inférieure
+  P_U=round(P_w+1.96*sqrt((P_w*(1-P_w))/(N_w+N_l)),3) # borne supérieure
   
-  sigma_emp <- sqrt((P_w * (1 - P_w)) / (N_w + N_l))
+  sigma_emp <- sqrt((P_w * (1 - P_w)) / (N_w + N_l)) # 
   z <- (P_w - 0.5) / sigma_emp
-  p_val=1-pnorm(z)
+  p_val=prop.test(N_w,N_w+N_l)$p.value
   
-  p_val_uni<- 1 - pnorm(z)
-  p_val_bilat <- 2 * (1 - pnorm(abs(z))) 
+  p_val_uni<- round(1 - pnorm(z),4)
+  p_val_bilat <- round(pnorm(abs(z), lower.tail = F) * 2,4)
   
   data1 = data.frame(WinRatio = WR, Win_Prop = P_w, WinOdds = WO, GPC = Delta, row.names = "")
   data2 = data.frame(row.names = c("Win proportion", "Win ratio"), lower = c(P_L, round(P_L/(1-P_L), 3)), upper = c(P_U, round(P_U/(1-P_U), 3)))
   data3=data.frame(Nb_win=N_w, Nb_lose=N_l, Nb_tie=N_t, row.names = "")
+  #data4=data.frame(paire=paire)
 
-return(list(results=data1,CI=data2, Nb=data3, z_score=z, p_value_unilatéral=p_val_uni, p_value_bilatéral=p_val_bilat))
+return(list(results=data1,CI=data2, Nb=data3, z_score=z, p_value_unilatéral=p_val_uni, p_value_bilatéral=p_val_bilat,p.value=p_val))
 }
 ```
 
 ```{r}
-resultats=affect_value_GPC_WO_WR(T_2_4, C_2_4, 2)
-resultats
-
-#affect_value_GPC_WO_WR(T_2_2, C_2_2, 2)
-#affect_value_GPC_WO_WR(T_3_6, C_3_6, 2)
+t1=Sys.time()
+resultats_up=affect_value_GPC_WO_WR(T_1_4,C_1_4)
+resultats_eq=affect_value_GPC_WO_WR(T_3_4, C_3_4)
+resultats_lw=affect_value_GPC_WO_WR(T_2_4, C_2_4)
+t2=Sys.time()
+t_end=t2-t1
+t_end
 ```
 
 ```{r, parallelisation du code}
-nb_core=6
+n_sim=500
+nb_core=10
 cl=makeCluster(nb_core)
 registerDoParallel(cl)
 
 start_time <- Sys.time()
-mat=matrix(0, nrow = n_sim, ncol=2 )
-
 
 results <- foreach(i = 1:n_sim, .combine = rbind, .packages = "survival") %dopar% {
   
-
-  vecteur1 <- cbind(gener_tte(0.75, 0.75), gener_continue(2, 1))
-  vecteur2 <- cbind(gener_tte(0.75, 1.5), gener_continue(0, 1))
+  treatmentdata <- cbind(gener_continue(4, 2), gener_continue(3, 2))
+  controldata <- cbind(gener_continue(3, 2), gener_continue(2, 4))
   
-
-  result <- affect_value_GPC_WO_WR(vecteur1, vecteur2, L = 2)
+  all_data <- rbind(treatmentdata, controldata)
   
-
-  c(result$results[,4], result$Nb[,1],result$Nb[,2 ])
+  permuted_indices <- sample(nrow(all_data)) 
+  
+  permuted_data <- all_data[permuted_indices, ]
+  
+  treatmentdata_perm <- permuted_data[1:nrow(treatmentdata), ]
+  controldata_perm <- permuted_data[(nrow(treatmentdata)+1):nrow(permuted_data), ]
+  
+  result <- affect_value_GPC_WO_WR(treatmentdata_perm, controldata_perm)
+  
+  unname(c(result$results[, 4], result$results[,1] ,result$Nb[, 1], result$Nb[, 2], result$p_value_bilatéral, result$p.value))
 }
 stopCluster(cl)
 end_time <- Sys.time()
 execution_time <- end_time - start_time
 print(execution_time)
-1/40000*unname(results[,2]-results[,3])
-unname(results[,1])
+
+Delta_values <- results[,1] 
+N_w_values <- results[,2] 
+N_l_values <- results[,3]
+p_values_bilat <- unname(results[,4])
+
+
+Theta_values <- N_w_values / (N_w_values + N_l_values)
+Theta_obs <- mean(Theta_values)
+
+IC_lower <- quantile(Theta_values, probs = 0.025)
+IC_upper <- quantile(Theta_values, probs = 0.975)
+
+p_val_empirique <- mean(abs(Theta_values) >= abs(Theta_obs))
+
+cat("\n--- Résumé des Résultats ---\n")
+cat("Theta Observé :", round(Theta_obs, 3), "\n")
+cat("Intervalle de Confiance 95% :", round(IC_lower, 3), "-", round(IC_upper, 3), "\n")
+cat("P-valeur (Permutation) :", round(p_val_empirique, 4), "\n")
+sum(p_values_bilat==0)
+
+results
 ```
+
 
 
 ```{r}
-n_sim=300
-result_GPC=rep(0,n_sim)
-result_WO=rep(0,n_sim)
-result_WR=rep(0,n_sim)
-Nb_win=rep(0,n_sim)
-start_time <- Sys.time()
-
-for (i in 1:n_sim) {
-
-  vecteur1 = cbind(gener_tte(0.75, 0.75),gener_continue(2,1))
-  vecteur2=cbind(gener_tte(0.75,1.5),gener_continue(0,1))
-
-
-  result <- affect_value_GPC_WO_WR(vecteur1, vecteur2, L = 2)
-  result_GPC[i]= result$results[,4]
-  result_WR[i]=result$results[,1]
-  result_WO[i]=result$results[,3]
-
-  Nb_win[i]=result$Nb[,1]
-}
-end_time <- Sys.time()
-total_time <- end_time - start_time
-print(paste("Temps total pour 100 simulations:", total_time))
-mean_GPC <- mean(result_GPC)
-mean_WR <- mean(result_WR)
-mean_WO <- mean(result_WO)
-#result_GPC
-
-alpha <- 0.05
-lower_quantile <- quantile(result_GPC, probs = alpha / 2)
-upper_quantile <- quantile(result_GPC, probs = 1 - alpha / 2)
-cat("Intervalle de confiance à", (1 - alpha) * 100, "% : [", lower_quantile, ",", upper_quantile, "]\n")
-
-sum(result_GPC>=upper_quantile)
-
-obs <- mean_GPC
-hist(result_GPC, breaks = 20, main = "Distribution empirique", col = "lightblue", xlim=c(0.35,0.6))
-abline(v = obs, col = "red", lwd = 2, lty = 2)
-
-
-# Calcul des p-valeurs empiriques
-s1 <- sum(result_GPC >= obs)
-print(s1)
-
-p_val_emp_unilateral <- s1 / n_sim
-
-cat("P-valeur empirique unilatérale :", p_val_emp_unilateral, "\n")
-mean(Nb_win)
-wilcox.test(T_1_4[,1],C_1_4[,1])
-
+heads <- rbinom(1, size = 100, prob = .5)
+heads
+prop.test(heads, 100)
+prop.test(smokers, patients)
 ```
+
