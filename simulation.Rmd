@@ -210,25 +210,21 @@ C_3_6=cbind(gener_binom(0.4), gener_binom(0.6))
 ```
 
 ```{r, normale}
-# Définition des paramètres
+
 mu1 = 4
 sigma1 = 2
-mu2 = 3
-sigma2 = 2
+mu2 = 2.5
+sigma2 = 1.5
 
-# Définition de l'intervalle de valeurs pour l'axe x
 x = seq(mu1 - 4*sigma1, mu1 + 4*sigma1, length.out = 100)
 
-# Calcul des densités
 y1 = dnorm(x, mean = mu1, sd = sigma1)
 y2 = dnorm(x, mean = mu2, sd = sigma2)
 
-# Tracé de la première courbe (N(3,1))
 plot(x, y1, type = "l", lwd = 2, col = "blue", 
-     main = "Densités des lois normales N(3,1) et N(2,2)",
+     main = "Densités des lois normales",
      xlab = "x", ylab = "Densité")
 
-# Ajout de la deuxième courbe (N(2,2))
 lines(x, y2, lwd = 2, col = "red")  
 legend('topright', legend=c("T","C"), col=c("blue", "red"), lwd=c(2,2))
 
@@ -373,7 +369,11 @@ affect_value_GPC_WO_WR = function(treatmentdata, controldata, threshold = 0) {
           paire[p, l] = "favorable" 
         } else if (diff < -threshold) {
           paire[p, l] = "défavorable"
-        } else {
+        }
+        else if (is.na(treatmentdata[i, l]) || is.na(controldata[j, l])){ 
+          paire[p,l] = "non-informative" # s'il y a un NA alors la paire est non-informative 
+        }
+        else {
           paire[p, l] = "neutre"
         }
       }
@@ -383,7 +383,11 @@ affect_value_GPC_WO_WR = function(treatmentdata, controldata, threshold = 0) {
           paire[p, l] = "favorable"
         } else if (treatmentdata[i, l] == 0 && controldata[j, l] == 1) {
           paire[p, l] = "défavorable"
-        } else {
+        } 
+        else if (is.na(treatmentdata[i, l]) || is.na(controldata[j, l])){
+          paire[p,l] = "non-informative" # s'il y a un NA alors la paire est non-informative 
+        }
+        else {
           paire[p, l] = "neutre"
         }
       }
@@ -451,6 +455,20 @@ t2=Sys.time()
 t_end=t2-t1
 t_end
 ```
+
+```{r}
+library(WINS)
+data_continuous
+id=seq(1:(2*n))
+trt=as.factor(rep(c("A","B"), c(n,n)))
+data=rbind(T_3_4,C_3_4)
+data=cbind(id,trt,data)
+colnames(data) = c("id", "arm", "Y_1", "Y_2")
+
+
+win.stat(data = data, ep_type ="continuous", pvalue = "two-sided")
+```
+
 
 ```{r, parallelisation du code}
 n_sim=1000
