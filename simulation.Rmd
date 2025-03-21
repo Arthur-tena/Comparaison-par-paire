@@ -9,7 +9,7 @@ editor_options:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 set.seed(123)
-n=200
+n=40
 library(dplyr)
 library(purrr)
 library(ggplot2)
@@ -211,17 +211,17 @@ C_3_6=cbind(gener_binom(0.4), gener_binom(0.6))
 
 ```{r, normale}
 # Définition des paramètres
-mu1 <- 4
-sigma1 <- 2
-mu2 <- 3
-sigma2 <- 2
+mu1 = 4
+sigma1 = 2
+mu2 = 3
+sigma2 = 2
 
 # Définition de l'intervalle de valeurs pour l'axe x
-x <- seq(mu1 - 4*sigma1, mu1 + 4*sigma1, length.out = 100)
+x = seq(mu1 - 4*sigma1, mu1 + 4*sigma1, length.out = 100)
 
 # Calcul des densités
-y1 <- dnorm(x, mean = mu1, sd = sigma1)
-y2 <- dnorm(x, mean = mu2, sd = sigma2)
+y1 = dnorm(x, mean = mu1, sd = sigma1)
+y2 = dnorm(x, mean = mu2, sd = sigma2)
 
 # Tracé de la première courbe (N(3,1))
 plot(x, y1, type = "l", lwd = 2, col = "blue", 
@@ -237,16 +237,16 @@ legend('topright', legend=c("T","C"), col=c("blue", "red"), lwd=c(2,2))
 
 ```{r, exponentielle}
 
-lambda1 <- 0.35
-lambda2 <- 1.3
-lambda3 <- 0.5
+lambda1 = 0.35
+lambda2 = 1.3
+lambda3 = 0.5
 lambda4= 1
 
-x <- seq(0, 10, length.out = 100)
+x = seq(0, 10, length.out = 100)
 
-y1 <- dexp(x, rate = lambda1)
-y2 <- dexp(x, rate = lambda2)
-y3 <- dexp(x, rate= lambda3)
+y1 = dexp(x, rate = lambda1)
+y2 = dexp(x, rate = lambda2)
+y3 = dexp(x, rate= lambda3)
 y4 = dexp(x, rate= lambda4)
 
 plot(x, y1, type = "l", lwd = 2, col = "blue", 
@@ -304,7 +304,7 @@ extract_tte=function(treatmentdata,l){
 # CI : les intervalles de confiance à 95 des WR et de la Win proportion
 # Nb : les nb de win, de loose et de tie
 # z_score : le z_score utile pour calculer la p-valeur des WR
-# p_value_unilatéral/bilatéral : la p valeur du test unilatéral ou bilatéral sous H_0
+# p_value_bilatéral : la p valeur du test bilatéral sous H_0
 
 affect_value_GPC_WO_WR = function(treatmentdata, controldata, threshold = 0) {
   n1 = nrow(treatmentdata)
@@ -414,103 +414,107 @@ affect_value_GPC_WO_WR = function(treatmentdata, controldata, threshold = 0) {
   
   # Calcul des statistiques finales
   Delta = round((N_w - N_l) / (n1 * n2),3) # proportion en faveur du traitement 
+  #Delta2 = DescTools::BinomRatioCI(x1 = N_w - N_l,n1= n1*n2, x2 = n1*n2, n2 = n1*n2)
+
   WR = round(ifelse(N_l != 0, N_w / N_l, NA),3) # Win ratio
-  WR2= DescTools::BinomRatioCI(x1 = N_w, n1=N_w+N_l, x2 = N_l, n2= N_w+N_l )
-  print(WR)
-  print(WR2)
+  #WR2= DescTools::BinomRatioCI(x1 = N_w, n1=N_w+N_l, x2 = N_l, n2= N_w+N_l )
+  
   WO = round(ifelse(N_t != 0, (N_w + 0.5 * N_t) / (N_l + 0.5 * N_t), WR),3) # win odds
-  WO2 = DescTools::BinomRatioCI(x1 = N_w+N_t/2, n1=N_t+N_w+N_l, x2=N_l+N_t/2, n2=N_t+N_w+N_l)
-  print(WO)
-  print(WO2)
-  P_w=round((N_w)/(N_w+N_l),3) # proportion de win
+  #WO2 = DescTools::BinomRatioCI(x1 = N_w+N_t/2, n1=N_t+N_w+N_l, x2=N_l+N_t/2, n2=N_t+N_w+N_l)
+
+  P_w=round((N_w)/(N_w+N_l),4) # proportion de win
   
   P_L=round(P_w-1.96*sqrt((P_w*(1-P_w))/(N_w+N_l)),3) # borne inférieure
   P_U=round(P_w+1.96*sqrt((P_w*(1-P_w))/(N_w+N_l)),3) # borne supérieure
   
-  sigma_emp <- sqrt((P_w * (1 - P_w)) / (N_w + N_l)) # 
-  z <- (P_w - 0.5) / sigma_emp
-  p_val=prop.test(N_w,N_w+N_l)$p.value
+  sigma_emp = sqrt((P_w * (1 - P_w)) / (N_w + N_l)) 
+  z = (P_w - 0.5) / sigma_emp
   
-  p_val_uni<- round(1 - pnorm(z),4)
-  p_val_bilat <- round(pnorm(abs(z), lower.tail = F) * 2,4)
+  p_val=prop.test(N_w,N_w+N_l, alternative = "two.sided")$p.value
+  p_val_bilat = round(pnorm(abs(z), lower.tail = F) * 2, 4)
   
   data1 = data.frame(WinRatio = WR, Win_Prop = P_w, WinOdds = WO, GPC = Delta, row.names = "")
   data2 = data.frame(row.names = c("Win proportion", "Win ratio"), lower = c(P_L, round(P_L/(1-P_L), 3)), upper = c(P_U, round(P_U/(1-P_U), 3)))
   data3=data.frame(Nb_win=N_w, Nb_lose=N_l, Nb_tie=N_t, row.names = "")
   #data4=data.frame(paire=paire)
 
-return(list(results=data1,CI=data2, Nb=data3, z_score=z, p_value_unilatéral=p_val_uni, p_value_bilatéral=p_val_bilat,p.value=p_val))
+return(list(results=data1,CI=data2, Nb=data3, z_score=z, p_value_bilatéral=p_val_bilat,p.value=p_val))
 }
 ```
 
 ```{r}
 t1=Sys.time()
-resultats_up=affect_value_GPC_WO_WR(T_1_4,C_1_4)
-resultats_eq=affect_value_GPC_WO_WR(T_3_4, C_3_4)
-resultats_lw=affect_value_GPC_WO_WR(T_2_4, C_2_4)
+resultats_up=affect_value_GPC_WO_WR(T_1_4,C_1_4,1)
+resultats_eq=affect_value_GPC_WO_WR(T_3_4, C_3_4,1)
+resultats_lw=affect_value_GPC_WO_WR(T_2_4, C_2_4,1)
 t2=Sys.time()
 t_end=t2-t1
 t_end
 ```
 
 ```{r, parallelisation du code}
-n_sim=500
+n_sim=1000
 nb_core=10
 cl=makeCluster(nb_core)
 registerDoParallel(cl)
 
-start_time <- Sys.time()
-
-results <- foreach(i = 1:n_sim, .combine = rbind, .packages = "survival") %dopar% {
+start_time = Sys.time()
   
-  treatmentdata <- cbind(gener_continue(4, 2), gener_continue(3, 2))
-  controldata <- cbind(gener_continue(3, 2), gener_continue(2, 4))
+results = foreach(i = 1:n_sim, .combine = rbind, .packages = "survival") %dopar% {
   
-  all_data <- rbind(treatmentdata, controldata)
+  treatmentdata = cbind(gener_continue(4, 2), gener_continue(3.5, 1.5))
+  controldata = cbind(gener_continue(2.5, 1.5), gener_continue(2, 4))
   
-  permuted_indices <- sample(nrow(all_data)) 
+  all_data = rbind(treatmentdata, controldata)
   
-  permuted_data <- all_data[permuted_indices, ]
+  permuted_indices = sample(nrow(all_data)) 
   
-  treatmentdata_perm <- permuted_data[1:nrow(treatmentdata), ]
-  controldata_perm <- permuted_data[(nrow(treatmentdata)+1):nrow(permuted_data), ]
+  permuted_data = all_data[permuted_indices, ]
   
-  result <- affect_value_GPC_WO_WR(treatmentdata_perm, controldata_perm)
+  treatmentdata_perm = permuted_data[1:nrow(treatmentdata), ]
+  controldata_perm = permuted_data[(nrow(treatmentdata)+1):nrow(permuted_data), ]
+  
+  result = affect_value_GPC_WO_WR(treatmentdata_perm, controldata_perm,0.5)
   
   unname(c(result$results[, 4], result$results[,1] ,result$Nb[, 1], result$Nb[, 2], result$p_value_bilatéral, result$p.value))
+  
 }
 stopCluster(cl)
-end_time <- Sys.time()
-execution_time <- end_time - start_time
+end_time = Sys.time()
+execution_time = end_time - start_time
 print(execution_time)
 
-Delta_values <- results[,1] 
-N_w_values <- results[,2] 
-N_l_values <- results[,3]
-p_values_bilat <- unname(results[,4])
+Delta_values = results[,1] 
+N_w_values = results[,2] 
+N_l_values = results[,3]
+p_values_bilat = results[,4]
 
 
-Theta_values <- N_w_values / (N_w_values + N_l_values)
-Theta_obs <- mean(Theta_values)
+Theta_values = Delta_values
+Theta_obs = mean(Theta_values)
 
-IC_lower <- quantile(Theta_values, probs = 0.025)
-IC_upper <- quantile(Theta_values, probs = 0.975)
+IC_lower = quantile(Theta_values, probs = 0.025)
+IC_upper = quantile(Theta_values, probs = 0.975)
 
-p_val_empirique <- mean(abs(Theta_values) >= abs(Theta_obs))
+p_val_empirique = mean(abs(Theta_values) >= abs(Theta_obs))
 
 cat("\n--- Résumé des Résultats ---\n")
 cat("Theta Observé :", round(Theta_obs, 3), "\n")
-cat("Intervalle de Confiance 95% :", round(IC_lower, 3), "-", round(IC_upper, 3), "\n")
-cat("P-valeur (Permutation) :", round(p_val_empirique, 4), "\n")
-sum(p_values_bilat==0)
+cat("Intervalle de Confiance 95% :", round(Theta_obs+IC_lower, 3), "-", round(Theta_obs+IC_upper, 3), "\n")
+cat("P-valeur (Permutation) :", p_val_empirique, "\n")
 
-results
+results=data.frame(results)
+colnames(results)=c("gpc","WR", "Nb Win", "Nb loose", "p valeur bilatéral", "p valeur prop test")
+rownames(results)=seq(1:n_sim)
+
+sum(results[,5]>=0.05)/n_sim
+sum(results[,1]<Theta_obs)
 ```
 
 
 
 ```{r}
-heads <- rbinom(1, size = 100, prob = .5)
+heads = rbinom(1, size = 100, prob = .5)
 heads
 prop.test(heads, 100)
 prop.test(smokers, patients)
