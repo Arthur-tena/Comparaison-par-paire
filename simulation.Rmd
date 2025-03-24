@@ -256,7 +256,6 @@ legend('topright',legend=c("T","C") ,col=c('blue','green'), lwd=c(2,2))
 
 ```
 
-
 ## GPC
 
 ```{r, echo = TRUE}
@@ -278,11 +277,12 @@ type_variable = function(treatmentdata, L) {
   
   return(unname(type))
 }
+
 ```
 
 ```{r, echo=TRUE}
 extract_tte=function(treatmentdata,l){
-  if (type_variable(treatmentdata,l)[l]!="tte"){ stop("la variable n'est pas tte")}
+  #if (type_variable(treatmentdata,l)[l]!="tte"){ stop("la variable n'est pas tte")}
   t_obs=treatmentdata[[l]][,1]
   censure=treatmentdata[[l]][,2]
   return(cbind(t_obs,censure))
@@ -447,12 +447,183 @@ return(list(results=data1,CI=data2, Nb=data3, z_score=z, p_value_bilatéral=p_va
 ```
 
 ```{r}
-t1=Sys.time()
-resultats_up=affect_value_GPC_WO_WR(T_1_4,C_1_4,1)
-resultats_eq=affect_value_GPC_WO_WR(T_3_4, C_3_4,1)
-resultats_lw=affect_value_GPC_WO_WR(T_2_4, C_2_4,1)
-t2=Sys.time()
-t_end=t2-t1
+affect_value_GPC_WO_WR2 = function(treatmentdata, controldata, threshold = 0, n_perm = 1000) {
+  n1 = nrow(treatmentdata)
+  n2 = nrow(controldata)
+  L = ncol(treatmentdata)
+  
+  if (ncol(treatmentdata) != ncol(controldata)) {
+    stop("Il n'y a pas le même nombre d'outcomes")
+  }
+  type1 = type_variable(treatmentdata, L)
+  type2 = type_variable(controldata, L)
+  
+  if (!all(type1 == type2)) {
+    stop("Les deux vecteurs ont des outcomes de types différents")
+  }
+
+  compute_statistics <- function(treat, control) {
+    combined = rbind(treat, control)
+    perm_index = sample(nrow(combined))
+    treat = combined[perm_index[1:n1], ]
+    control = combined[perm_index[(n1+1):(n1+n2)], ]
+    
+    paire = matrix("", nrow = n1 * n2, ncol = L)
+    N_w = 0
+    N_l = 0
+    N_t = 0
+    p = 1
+
+    for (i in 1:n1) {
+      for (j in 1:n2) {
+        for (l in 1:L) {
+          if (type1[l] == "tte") {
+            t_obs1 = extract_tte(treat, l)[,1]
+            censure1 = extract_tte(treat, l)[,2]
+            t_obs2 = extract_tte(control, l)[,1]
+            censure2 = extract_tte(control, l)[,2]
+
+            diff_tte = t_obs1[i] - t_obs2[j]
+            
+            if (censure1[i] == 0 && censure2[j] == 0) {
+              if (diff_tte > threshold) {
+                paire[p, l] = "favorable"
+              } else if (diff_tte < -threshold) {
+                paire[p, l] = "défavorable"
+              } else {
+                paire[p, l] = "neutre"
+              }
+            } else if (censure1[i] == 1 && censure2[j] == 0) {
+              if (diff_tte > threshold) {
+                paire[p, l] = "favorable"
+              } else {
+                paire[p, l] = "non-informative"
+              }
+            } else if (censure1[i] == 0 && censure2[j] == 1) {
+              if (diff_tte > threshold) {
+                paire[p, l] = "non-informative"
+              } else {
+                paire[p, l] = "défavorable"
+              }
+            } else {
+              paire[p, l] = "non-informative"
+            }
+          }
+          
+          if (type1[l] == "continue") {
+            diff = treat[i, l] - control[j, l]
+            if (diff > threshold) {
+              paire[p, l] = "favorable"
+            } else if (diff < -threshold) {
+              paire[p, l] = "défavorable"
+            } else if (is.na(treat[i, l]) || is.na(control[j, l])) {
+              paire[p, l] = "non-informative"
+            } else {
+              paire[p, l] = "neutre"
+            }
+          }
+          
+          if (type1[l] == "binaire") {
+            if (treat[i, l] == 1 && control[j, l] == 0) {
+              paire[p, l] = "favorable"
+            } else if (treat[i, l] == 0 && control[j, l] == 1) {
+              paire[p, l] = "défavorable"
+            } else if (is.na(treat[i, l]) || is.na(control[j, l])) {
+              paire[p, l] = "non-informative"
+            } else {
+              paire[p, l] = "neutre"
+            }
+          }
+        }
+        p = p + 1
+      }
+    }
+
+    for (p in 1:(n1 * n2)) {
+      for (l in 1:L) {
+        if (paire[p, l] != "non-informative") {
+          if (paire[p, l] == "favorable") {
+            N_w = N_w + 1
+          } else if (paire[p, l] == "défavorable") {
+            N_l = N_l + 1
+          } else if (paire[p, l] == "neutre") {
+            N_t = N_t + 1
+          }
+          break
+        }
+      }
+    }
+
+    Delta = round((N_w - N_l) / (n1 * n2), 3)
+    WR = round(ifelse(N_l != 0, N_w / N_l, NA), 3)
+    WO = round(ifelse(N_t != 0, (N_w + 0.5 * N_t) / (N_l + 0.5 * N_t), WR), 3)
+
+    return(list(Delta = Delta, WR = WR, WO = WO))
+  }
+
+  results_obs = compute_statistics(treatmentdata, controldata)
+  
+n_cores <- detectCores() - 3
+cl <- makeCluster(n_cores)
+registerDoParallel(cl)
+
+perm_Delta <- numeric(n_perm)
+perm_WR <- numeric(n_perm)
+
+results <- foreach(b = 1:n_perm, .combine = rbind, 
+                     .export = c("compute_statistics", "treatmentdata", "controldata"), .packages = "survival") %dopar% {
+  perm_results <- compute_statistics(treatmentdata, controldata)
+  c(perm_results$Delta, perm_results$WR)
+}
+
+perm_Delta <- results[, 1]
+perm_WR <- results[, 2]
+
+# Arrêter le cluster
+stopCluster(cl)
+  p_val_Delta = mean(abs(perm_Delta) >= abs(results_obs$Delta))
+  p_val_WR = mean(abs(perm_WR) >= abs(results_obs$WR))
+
+  IC_Delta = quantile(perm_Delta, probs = c(0.025, 0.975), na.rm=TRUE)
+  IC_WR = quantile(perm_WR, probs = c(0.025, 0.975), na.rm=TRUE)
+
+  results_final = data.frame(WinRatio = results_obs$WR, WinOdds = results_obs$WO, GPC = results_obs$Delta)
+  CI_final = data.frame(row.names = c("Win Ratio", "GPC"), lower = c(IC_WR[1], IC_Delta[1]), upper = c(IC_WR[2], IC_Delta[2]))
+
+  return(list(results = results_final, CI = CI_final, p_value_WR = p_val_WR, p_value_GPC = p_val_Delta))
+}
+affect_value_GPC_WO_WR2(T_1_4,C_1_4)
+affect_value_GPC_WO_WR2(T_2_4,C_2_4)
+affect_value_GPC_WO_WR2(T_3_4,C_3_4)
+```
+
+
+```{r}
+nb_cores <- 10
+
+
+cl <- makeCluster(nb_cores)
+registerDoParallel(cl)
+
+t1 <- Sys.time()
+
+
+resultats_eq <- foreach(i = 1, .combine = c, .packages = "survival") %dopar% {
+  affect_value_GPC_WO_WR2(T_3_4, C_3_4, 1)
+}
+resultats_up <- foreach(i = 1, .combine = c, .packages = "survival") %dopar% {
+  affect_value_GPC_WO_WR2(T_1_4, C_1_4, 1)
+}
+resultats_lw <- foreach(i = 1, .combine = c, .packages = "survival") %dopar% {
+  affect_value_GPC_WO_WR2(T_2_4, C_2_4, 1)
+}
+
+t2 <- Sys.time()
+
+
+stopCluster(cl)
+
+t_end <- t2 - t1
 t_end
 ```
 
