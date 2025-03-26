@@ -479,10 +479,12 @@ affect_crit=function(treatmentdata,controldata,threshold=0){
     for (j in 1:n2) {
       for (l in 1:L) {
         if (type1[l] == "tte") {
+          
           t_obs1 = extract_tte(comp[groupe=="T",], l+1)[,1]
           censure1 = extract_tte(comp[groupe=="T",], l+1)[,2]
           t_obs2 = extract_tte(comp[groupe=="C",], l+1)[,1]
           censure2 = extract_tte(comp[groupe=="C",], l+1)[,2]
+          
           diff_tte = t_obs1[i] - t_obs2[j]
 
           if (censure1[i] == 0 && censure2[j] == 0) {
@@ -512,7 +514,6 @@ affect_crit=function(treatmentdata,controldata,threshold=0){
   }
   return(paire)
 }
-affect_crit(T_2_5,C_2_5, threshold = 0.5)
 ```
 
 ```{r}
@@ -541,10 +542,7 @@ calcul_stat=function(paire){
   }
   return(c(N_w,N_l,N_t))
 }
-calcul_stat(affect_crit(T_3_5,C_3_5, threshold = 0.25))
 ```
-
-
 
 ```{r}
 affect_value_GPC_WO_WR2 = function(treatmentdata, controldata, threshold = 0, p.val = c("one.sided", "two.sided"), n_perm = 1000) {
@@ -563,14 +561,21 @@ affect_value_GPC_WO_WR2 = function(treatmentdata, controldata, threshold = 0, p.
 
   paire = affect_crit(treatmentdata, controldata, threshold)
   stat_init = calcul_stat(paire)
+  
   N_w = stat_init[1]
   N_l = stat_init[2]
   N_t = stat_init[3]
 
   Delta_obs = round((N_w - N_l) / (n1 * n2), 3)
+  WR_obs = round(N_w/N_l,3)
+  WO_obs = round((N_w+0.5*N_t)/(N_l+0.5*N_t),3)
+  
+  
   N_w_perm=rep(0, n_perm)
   N_l_perm=rep(0, n_perm)
   Delta_perm=rep(0, n_perm)
+  WR_perm=rep(0, n_perm)
+  WO_perm=rep(0, n_perm)
 
   Delta_perm_res = foreach(s = 1:n_perm, .combine = rbind, .packages = c("dplyr", "survival"), 
                            .export = c("affect_crit", "calcul_stat", "type_variable", "extract_tte")) %dopar% {
@@ -582,90 +587,92 @@ affect_value_GPC_WO_WR2 = function(treatmentdata, controldata, threshold = 0, p.
     
     compT = subset(comp_perm, groupe == "T")
     compC = subset(comp_perm, groupe == "C")
+    compT=compT[,-1]
+    compC=compC[,-1]
 
     paire_perm = affect_crit(compT, compC, threshold) 
     stat_perm = calcul_stat(paire_perm)  
 
     N_w_perm = stat_perm[1] 
     N_l_perm = stat_perm[2]  
+    N_t_perm = stat_perm[3]
 
 
     Delta_perm = (N_w_perm - N_l_perm) / (n1 * n2)
+    WR_perm = N_w_perm/N_l_perm
+    WO_perm = (N_w_perm+0.5*N_t_perm)/(N_l_perm+0.5*N_t_perm)
     
     
-    return(c(N_w_perm,N_l_perm,Delta_perm))}
-  print(Delta_perm_res)
+    return(c(N_w_perm,N_l_perm,Delta_perm, WR_perm,WO_perm))}
+  
 
    N_w_perm = Delta_perm_res[, 1]
    N_l_perm = Delta_perm_res[, 2]
    Delta_perm = Delta_perm_res[, 3]
-
+   WR_perm = Delta_perm_res[, 4]
+   WO_perm = Delta_perm_res[, 5]
 
   CI_GPC = quantile(Delta_perm, c(0.025, 0.975), na.rm = TRUE)
   CI_GPC = c(Delta_obs + CI_GPC[1], Delta_obs + CI_GPC[2])
+  
+  CI_WR = quantile(WR_perm, c(0.025, 0.975), na.rm = TRUE)
+  CI_WR = c(WR_obs + CI_WR[1], WR_obs + CI_WR[2])
 
-  hist(Delta_perm, breaks = 30, main = "Distribution de Δ sous H0 (permutation)", 
+  CI_WO = quantile(WO_perm, c(0.025, 0.975), na.rm = TRUE)
+  CI_WO = c(WO_obs + CI_WO[1], WO_obs + CI_WO[2])
+
+  hist(Delta_perm, breaks = 30, main = "Distribution de Δ sous H0 (permutation), GPC", 
        xlab = "Δ permuté", col = "lightblue", border = "black", xlim=c(-1, 1))
   abline(v = Delta_obs, col = "red", lwd = 2, lty = 2)
+  
+  hist(WR_perm, breaks = 30, main = "Distribution de Δ sous H0 (permutation), WR", 
+       xlab = "Δ permuté", col = "lightblue", border = "black", xlim=c(0, 5))
+  abline(v = WR_obs, col = "red", lwd = 2, lty = 2)
+  
+  hist(WO_perm, breaks = 30, main = "Distribution de Δ sous H0 (permutation), WO", 
+       xlab = "Δ permuté", col = "lightblue", border = "black", xlim=c(0, 5))
+  abline(v = WO_obs, col = "red", lwd = 2, lty = 2)
 
   sigma_GPC = sd(Delta_perm)
   z_GPC = (Delta_obs - 0) / sigma_GPC
 
+  sigma_WR = sd(WR_perm)
+  z_WR = (WR_obs - mean(WR_perm)) / sigma_WR
 
-  if (p.val == "one.sided") {
-    p_value_GPC = mean(Delta_perm >= Delta_obs)
-  } else {
-    p_value_GPC = mean(abs(Delta_perm) >= abs(Delta_obs))
-  }
+  sigma_WO = sd(WO_perm)
+  z_WO = (WO_obs - mean(WO_perm)) / sigma_WO
 
-  WR = ifelse(N_l != 0, round(N_w / N_l, 3), NA) 
-  WO = ifelse((N_w + N_l + N_t) != 0, round((N_w + 0.5 * N_t) / (N_l + 0.5 * N_t), 3), NA)
+  # P-values
+  p_value_GPC = ifelse(p.val == "one.sided", mean(Delta_perm >= Delta_obs), mean(abs(Delta_perm) >= abs(Delta_obs)))
+  p_value_WR = ifelse(p.val == "one.sided", mean(WR_perm >= WR_obs), mean(abs(WR_perm) >= abs(WR_obs)))
+  p_value_WO = ifelse(p.val == "one.sided", mean(WO_perm >= WO_obs), mean(abs(WO_perm) >= abs(WO_obs)))
 
-  P_w = N_w / (N_w + N_l)
-  theta_hat = (N_w + 0.5 * N_t) / (N_w + N_l + N_t)
-
-  sigma_WR = sqrt((P_w * (1 - P_w)) / (N_w + N_l))
-  sigma_WO = sqrt(theta_hat * (1 - theta_hat) / (N_w + N_l + N_t))
-
-  z_WR = (P_w - 0.5) / sigma_WR
-  z_WO = (theta_hat - 0.5) / sigma_WO
-
-  CI_WR = c(P_w - 1.96 * sigma_WR, P_w + 1.96 * sigma_WR)
-  CI_WO = c(WO - 1.96 * sigma_WO, WO + 1.96 * sigma_WO)
-
-
-  if (p.val == "one.sided") {
-    p_value_WR = pnorm(-abs(z_WR))
-    p_value_WO = pnorm(-abs(z_WO))
-  } else {
-    p_value_WR = 2 * pnorm(-abs(z_WR))
-    p_value_WO = 2 * pnorm(-abs(z_WO))
-  }
-
-
-  signif_WO = dplyr::case_when(
-    p_value_WO < 0.001 ~ "***",
-    p_value_WO < 0.01 ~ "**",
-    p_value_WO < 0.05 ~ "*",
-    TRUE ~ ""
-  )
-  signif_WR = dplyr::case_when(
-    p_value_WR < 0.001 ~ "***",
-    p_value_WR < 0.01 ~ "**",
-    p_value_WR < 0.05 ~ "*",
-    TRUE ~ ""
-  )
+  # Signification des p-values
   signif_GPC = dplyr::case_when(
     p_value_GPC < 0.001 ~ "***",
     p_value_GPC < 0.01 ~ "**",
     p_value_GPC < 0.05 ~ "*",
     TRUE ~ ""
   )
+  
+  signif_WR = dplyr::case_when(
+    p_value_WR < 0.001 ~ "***",
+    p_value_WR < 0.01 ~ "**",
+    p_value_WR < 0.05 ~ "*",
+    TRUE ~ ""
+  )
+  
+  signif_WO = dplyr::case_when(
+    p_value_WO < 0.001 ~ "***",
+    p_value_WO < 0.01 ~ "**",
+    p_value_WO < 0.05 ~ "*",
+    TRUE ~ ""
+  )
 
-
+  # Tableaux des résultats
   data1 = data.frame(
     Method = c("GPC", "Win Ratio (WR)", "Win Odds (WO)"),
-    Estimate = c(Delta_obs, WR, WO),
+    Estimate = c(Delta_obs, WR_obs, WO_obs),
     Z_score = c(z_GPC, z_WR, z_WO),
     P_value = c(p_value_GPC, p_value_WR, p_value_WO),
     Significance = c(signif_GPC, signif_WR, signif_WO)
@@ -686,7 +693,7 @@ affect_value_GPC_WO_WR2 = function(treatmentdata, controldata, threshold = 0, p.
 
 
 t1=Sys.time()
-affect_value_GPC_WO_WR2(T_3_5,C_3_5, threshold = 0 ,p.val = "two.sided", n_perm = 2)
+affect_value_GPC_WO_WR2(T_2_5,C_2_5, threshold = 0 ,p.val = "two.sided", n_perm = 1000)
 t2=Sys.time()
 t2-t1
 ```
