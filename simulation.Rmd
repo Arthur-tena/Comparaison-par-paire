@@ -16,6 +16,7 @@ library(ggplot2)
 library(tidyr)
 library(npsm)
 library(survival)
+library(coin)
 
 library(gridExtra)
 library(grid)
@@ -31,8 +32,8 @@ library(foreach)
 
 ```{r, echo=TRUE}
 gener_tte=function(mu, lambda=1){
-  X=rexp(n, rate=lambda)
-  C=rexp(n, rate = mu)
+  X=round(rexp(n, rate=lambda),3)
+  C=round(rexp(n, rate = mu),3)
   TT=pmin(X,C)
   delta=as.numeric(X==TT)
   delta=abs(1-delta)
@@ -42,7 +43,7 @@ gener_tte=function(mu, lambda=1){
 }
 
 gener_continue=function(mean=1, sd=0){
-  X=abs(rnorm(n, mean=mean, sd=sd))
+  X=round(abs(rnorm(n, mean=mean, sd=sd)),3)
   return(data.frame(X))
 }
 
@@ -302,7 +303,7 @@ extract_tte=function(treatmentdata,l){
 # z_score : le z_score utile pour calculer la p-valeur des WR
 # p_value_bilatéral : la p valeur du test bilatéral sous H_0
 
-affect_value_GPC_WO_WR = function(treatmentdata, controldata, threshold = 0) {
+affect_value_GPC_WO_WR = function(treatmentdata, controldata, threshold = 0, p.val=c("one.sided","two.sided")) {
   n1 = nrow(treatmentdata)
   n2 = nrow(controldata)
   
@@ -434,7 +435,14 @@ affect_value_GPC_WO_WR = function(treatmentdata, controldata, threshold = 0) {
   sigma_emp = sqrt((P_w * (1 - P_w)) / (N_w + N_l)) 
   z = (P_w - 0.5) / sigma_emp
   
-  p_val=prop.test(N_w,N_w+N_l, alternative = "two.sided")$p.value
+  if(p.val=="one.sided"){
+    p_val=prop.test(N_w,N_w+N_l, alternative = "greater")$p.value
+  }
+  else if (p.val =="two.sided"){
+    p_val=prop.test(N_w,N_w+N_l, alternative = "two.sided")$p.value
+  }
+  
+  
   p_val_bilat = round(pnorm(abs(z), lower.tail = F) * 2, 4)
   
   data1 = data.frame(WinRatio = WR, Win_Prop = P_w, WinOdds = WO, GPC = Delta, row.names = "")
@@ -442,189 +450,266 @@ affect_value_GPC_WO_WR = function(treatmentdata, controldata, threshold = 0) {
   data3=data.frame(Nb_win=N_w, Nb_lose=N_l, Nb_tie=N_t, row.names = "")
   #data4=data.frame(paire=paire)
 
-return(list(results=data1,CI=data2, Nb=data3, z_score=z, p_value_bilatéral=p_val_bilat,p.value=p_val))
+return(list(results=data1,CI=data2, Nb=data3, z_score=z,p.value=p_val))
 }
+affect_value_GPC_WO_WR(T_1_2,C_1_2, p.val = "two.sided")
 ```
 
 ```{r}
-affect_value_GPC_WO_WR2 = function(treatmentdata, controldata, threshold = 0, n_perm = 1000) {
+affect_crit=function(treatmentdata,controldata,threshold=0){
   n1 = nrow(treatmentdata)
   n2 = nrow(controldata)
   L = ncol(treatmentdata)
-  
+
   if (ncol(treatmentdata) != ncol(controldata)) {
-    stop("Il n'y a pas le même nombre d'outcomes")
+    stop("il n'y a pas le même nombre d'outcomes")
   }
+
   type1 = type_variable(treatmentdata, L)
-  type2 = type_variable(controldata, L)
   
-  if (!all(type1 == type2)) {
-    stop("Les deux vecteurs ont des outcomes de types différents")
-  }
+  paire = matrix("", nrow = n1 * n2, ncol = L)
 
-  compute_statistics <- function(treat, control) {
-    combined = rbind(treat, control)
-    perm_index = sample(nrow(combined))
-    treat = combined[perm_index[1:n1], ]
-    control = combined[perm_index[(n1+1):(n1+n2)], ]
-    
-    paire = matrix("", nrow = n1 * n2, ncol = L)
-    N_w = 0
-    N_l = 0
-    N_t = 0
-    p = 1
+  p = 1 
 
-    for (i in 1:n1) {
-      for (j in 1:n2) {
-        for (l in 1:L) {
-          if (type1[l] == "tte") {
-            t_obs1 = extract_tte(treat, l)[,1]
-            censure1 = extract_tte(treat, l)[,2]
-            t_obs2 = extract_tte(control, l)[,1]
-            censure2 = extract_tte(control, l)[,2]
+  groupe = as.factor(rep(c("T", "C"), c(n1, n2)))
+  comp = rbind(treatmentdata, controldata)
+  comp = data.frame(groupe = groupe, outcome = comp)
 
-            diff_tte = t_obs1[i] - t_obs2[j]
-            
-            if (censure1[i] == 0 && censure2[j] == 0) {
-              if (diff_tte > threshold) {
-                paire[p, l] = "favorable"
-              } else if (diff_tte < -threshold) {
-                paire[p, l] = "défavorable"
-              } else {
-                paire[p, l] = "neutre"
-              }
-            } else if (censure1[i] == 1 && censure2[j] == 0) {
-              if (diff_tte > threshold) {
-                paire[p, l] = "favorable"
-              } else {
-                paire[p, l] = "non-informative"
-              }
-            } else if (censure1[i] == 0 && censure2[j] == 1) {
-              if (diff_tte > threshold) {
-                paire[p, l] = "non-informative"
-              } else {
-                paire[p, l] = "défavorable"
-              }
-            } else {
-              paire[p, l] = "non-informative"
-            }
-          }
-          
-          if (type1[l] == "continue") {
-            diff = treat[i, l] - control[j, l]
-            if (diff > threshold) {
-              paire[p, l] = "favorable"
-            } else if (diff < -threshold) {
-              paire[p, l] = "défavorable"
-            } else if (is.na(treat[i, l]) || is.na(control[j, l])) {
-              paire[p, l] = "non-informative"
-            } else {
-              paire[p, l] = "neutre"
-            }
-          }
-          
-          if (type1[l] == "binaire") {
-            if (treat[i, l] == 1 && control[j, l] == 0) {
-              paire[p, l] = "favorable"
-            } else if (treat[i, l] == 0 && control[j, l] == 1) {
-              paire[p, l] = "défavorable"
-            } else if (is.na(treat[i, l]) || is.na(control[j, l])) {
-              paire[p, l] = "non-informative"
-            } else {
-              paire[p, l] = "neutre"
-            }
-          }
-        }
-        p = p + 1
-      }
-    }
-
-    for (p in 1:(n1 * n2)) {
+  for (i in 1:n1) {
+    for (j in 1:n2) {
       for (l in 1:L) {
-        if (paire[p, l] != "non-informative") {
-          if (paire[p, l] == "favorable") {
-            N_w = N_w + 1
-          } else if (paire[p, l] == "défavorable") {
-            N_l = N_l + 1
-          } else if (paire[p, l] == "neutre") {
-            N_t = N_t + 1
+        if (type1[l] == "tte") {
+          t_obs1 = extract_tte(comp[groupe=="T",], l+1)[,1]
+          censure1 = extract_tte(comp[groupe=="T",], l+1)[,2]
+          t_obs2 = extract_tte(comp[groupe=="C",], l+1)[,1]
+          censure2 = extract_tte(comp[groupe=="C",], l+1)[,2]
+          diff_tte = t_obs1[i] - t_obs2[j]
+
+          if (censure1[i] == 0 && censure2[j] == 0) {
+            paire[p, l] = ifelse(diff_tte > threshold, "favorable",
+                          ifelse(diff_tte < -threshold, "défavorable", "neutre"))
+          } else if (censure1[i] == 1 && censure2[j] == 0) {
+            paire[p, l] = ifelse(diff_tte > threshold, "favorable", "non-informative")
+          } else if (censure1[i] == 0 && censure2[j] == 1) {
+            paire[p, l] = ifelse(diff_tte > threshold, "non-informative", "défavorable")
+          } else {
+            paire[p, l] = "non-informative"
           }
-          break
+        } 
+        
+        if (type1[l] == "continue") {
+          diff = comp[groupe=="T", l+1][i] - comp[groupe=="C", l+1][j]
+          paire[p, l] = ifelse(diff > threshold, "favorable",
+                        ifelse(diff < -threshold, "défavorable", "neutre"))
+        }
+        if (type1[l] == "binaire") {
+          paire[p, l] = ifelse(comp[groupe=="T", l+1][i] == 1 & comp[groupe=="C", l+1][j] == 0, "favorable",
+                        ifelse(comp[groupe=="T", l+1][i] == 0 & comp[groupe=="C", l+1][j] == 1, "défavorable", "neutre"))
         }
       }
+      p = p + 1 
     }
-
-    Delta = round((N_w - N_l) / (n1 * n2), 3)
-    WR = round(ifelse(N_l != 0, N_w / N_l, NA), 3)
-    WO = round(ifelse(N_t != 0, (N_w + 0.5 * N_t) / (N_l + 0.5 * N_t), WR), 3)
-
-    return(list(Delta = Delta, WR = WR, WO = WO))
   }
+  return(paire)
+}
+affect_crit(T_2_5,C_2_5, threshold = 0.5)
+```
 
-  results_obs = compute_statistics(treatmentdata, controldata)
+```{r}
+calcul_stat=function(paire){
+  n1 = sqrt(nrow(paire))
+  n2 = sqrt(nrow(paire))
+  L = ncol(paire)
   
-n_cores <- detectCores() - 3
-cl <- makeCluster(n_cores)
-registerDoParallel(cl)
-
-perm_Delta <- numeric(n_perm)
-perm_WR <- numeric(n_perm)
-
-results <- foreach(b = 1:n_perm, .combine = rbind, 
-                     .export = c("compute_statistics", "treatmentdata", "controldata"), .packages = "survival") %dopar% {
-  perm_results <- compute_statistics(treatmentdata, controldata)
-  c(perm_results$Delta, perm_results$WR)
+  N_w = 0
+  N_l = 0
+  N_t = 0
+  
+  for (p in 1:(n1 * n2)) {
+    for (l in 1:L) {
+      if (paire[p, l] != "non-informative") {
+        if (paire[p, l] == "favorable") {
+          N_w = N_w + 1
+        } else if (paire[p, l] == "défavorable") {
+          N_l = N_l + 1
+        } else if (paire[p, l] == "neutre") {
+          N_t = N_t + 1
+        }
+        break
+      }
+    }
+  }
+  return(c(N_w,N_l,N_t))
 }
-
-perm_Delta <- results[, 1]
-perm_WR <- results[, 2]
-
-# Arrêter le cluster
-stopCluster(cl)
-  p_val_Delta = mean(abs(perm_Delta) >= abs(results_obs$Delta))
-  p_val_WR = mean(abs(perm_WR) >= abs(results_obs$WR))
-
-  IC_Delta = quantile(perm_Delta, probs = c(0.025, 0.975), na.rm=TRUE)
-  IC_WR = quantile(perm_WR, probs = c(0.025, 0.975), na.rm=TRUE)
-
-  results_final = data.frame(WinRatio = results_obs$WR, WinOdds = results_obs$WO, GPC = results_obs$Delta)
-  CI_final = data.frame(row.names = c("Win Ratio", "GPC"), lower = c(IC_WR[1], IC_Delta[1]), upper = c(IC_WR[2], IC_Delta[2]))
-
-  return(list(results = results_final, CI = CI_final, p_value_WR = p_val_WR, p_value_GPC = p_val_Delta))
-}
-affect_value_GPC_WO_WR2(T_1_4,C_1_4)
-affect_value_GPC_WO_WR2(T_2_4,C_2_4)
-affect_value_GPC_WO_WR2(T_3_4,C_3_4)
+calcul_stat(affect_crit(T_3_5,C_3_5, threshold = 0.25))
 ```
 
 
+
 ```{r}
-nb_cores <- 10
+affect_value_GPC_WO_WR2 = function(treatmentdata, controldata, threshold = 0, p.val = c("one.sided", "two.sided"), n_perm = 1000) {
+  
+
+  n_cores <- 13  
+  cl <- makeCluster(n_cores)
+  registerDoParallel(cl)
+
+  n1 = nrow(treatmentdata)
+  n2 = nrow(controldata)
+  L = ncol(treatmentdata)
+
+  groupe = as.factor(rep(c("T", "C"), c(n1, n2)))
+  comp = rbind(treatmentdata, controldata)
+  comp = data.frame(groupe = groupe, outcome = comp)
+  print(head(comp))
+
+  paire = affect_crit(treatmentdata, controldata, threshold)
+  stat_init = calcul_stat(paire)
+  N_w = stat_init[1]
+  N_l = stat_init[2]
+  N_t = stat_init[3]
 
 
-cl <- makeCluster(nb_cores)
-registerDoParallel(cl)
+  Delta_obs = round((N_w - N_l) / (n1 * n2), 3)
 
-t1 <- Sys.time()
+  paire_perm_list = vector("list", n_perm)
+  N_w_perm = rep(0, n_perm)
+  N_l_perm = rep(0, n_perm)
 
+  Delta_perm_res <- foreach(s = 1:n_perm, .combine = rbind, .packages = c("dplyr", "survival"), 
+                          .export = c("affect_crit", "calcul_stat","type_variable","extract_tte")) %dopar% {
+  
+  set.seed(s)  # Assure que chaque itération génère un échantillon différent
+  
+  comp_perm = comp
+  # Mélanger les groupes de manière aléatoire
+  comp_perm$groupe_perm <- sample(comp$groupe, size = length(comp$groupe), replace = FALSE)
 
-resultats_eq <- foreach(i = 1, .combine = c, .packages = "survival") %dopar% {
-  affect_value_GPC_WO_WR2(T_3_4, C_3_4, 1)
+  # Séparer les groupes permutés en T et C
+  compT = subset(comp_perm, groupe_perm == "T")
+  compC = subset(comp_perm, groupe_perm == "C")
+  
+  # Vérification de la structure après permutation
+  if (nrow(compT) == 0 | nrow(compC) == 0) {
+    return(c(NA, NA, NA))  # Si l'un des groupes est vide, on retourne des NA
+  }
+
+  # Appel de `affect_crit` pour obtenir les paires pour chaque permutation
+  paire_perm = affect_crit(compT, compC, threshold)
+  
+  # Vérification de la validité de `paire_perm`
+  if (is.null(paire_perm) | nrow(paire_perm) == 0) {
+    return(c(NA, NA, NA))  # Si aucune paire n'est générée, retourner des NA
+  }
+
+  # Calcul des statistiques avec `calcul_stat`
+  stat_perm = calcul_stat(paire_perm)
+  N_w_perm = stat_perm[1]
+  N_l_perm = stat_perm[2]
+  
+  # Calcul de Delta_perm
+  Delta_perm = (N_w_perm - N_l_perm) / (n1 * n2)
+  
+  return(c(N_w_perm, N_l_perm, Delta_perm))  # Retourne les résultats pour cette itération
 }
-resultats_up <- foreach(i = 1, .combine = c, .packages = "survival") %dopar% {
-  affect_value_GPC_WO_WR2(T_1_4, C_1_4, 1)
+
+
+  N_w_perm <- Delta_perm_res[,1]
+  N_l_perm <- Delta_perm_res[,2]
+  Delta_perm <- Delta_perm_res[,3]
+  print(N_l_perm)
+
+
+
+  Delta_perm <- Delta_perm[!is.na(Delta_perm)]
+
+  stopCluster(cl) 
+
+
+  Delta_perm = Delta_perm[!is.na(Delta_perm)]
+
+  CI_GPC = quantile(Delta_perm, c(0.025, 0.975), na.rm = TRUE)
+  CI_GPC = c(Delta_obs + CI_GPC[1], Delta_obs + CI_GPC[2])
+
+   hist(Delta_perm, breaks = 30, main = "Distribution de Δ sous H0 (permutation)", xlab = "Δ permuté", col = "lightblue", border = "black", xlim=c(-1,1))
+  abline(v = Delta_obs, col = "red", lwd = 2, lty = 2) 
+
+  sigma_GPC = sd(Delta_perm)
+  z_GPC = (Delta_obs - 0) / sigma_GPC
+
+  if (p.val == "one.sided") {
+    p_value_GPC = mean(Delta_perm >= Delta_obs)
+  } else {
+    p_value_GPC = mean(abs(Delta_perm) >= abs(Delta_obs))
+  }
+
+  WR = ifelse(N_l != 0, round(N_w / N_l, 3), NA) 
+  WO = ifelse((N_w + N_l + N_t) != 0, round((N_w + 0.5 * N_t) / (N_l + 0.5 * N_t), 3), NA)
+
+  P_w = N_w / (N_w + N_l)
+  theta_hat = (N_w + 0.5 * N_t) / (N_w + N_l + N_t)
+
+  sigma_WR = sqrt((P_w * (1 - P_w)) / (N_w + N_l))
+  sigma_WO = sqrt(theta_hat * (1 - theta_hat) / (N_w + N_l + N_t))
+
+  z_WR = (P_w - 0.5) / sigma_WR
+  z_WO = (theta_hat - 0.5) / sigma_WO
+
+  CI_WR = c(P_w - 1.96 * sigma_WR, P_w + 1.96 * sigma_WR)
+  CI_WO = c(WO - 1.96 * sigma_WO, WO + 1.96 * sigma_WO)
+
+
+  if (p.val == "one.sided") {
+    p_value_WR = pnorm(-abs(z_WR))
+    p_value_WO = pnorm(-abs(z_WO))
+  } else {
+    p_value_WR = 2 * pnorm(-abs(z_WR))
+    p_value_WO = 2 * pnorm(-abs(z_WO))
+  }
+
+
+  signif_WO <- dplyr::case_when(
+    p_value_WO < 0.001 ~ "***",
+    p_value_WO < 0.01 ~ "**",
+    p_value_WO < 0.05 ~ "*",
+    TRUE ~ ""
+  )
+  signif_WR <- dplyr::case_when(
+    p_value_WR < 0.001 ~ "***",
+    p_value_WR < 0.01 ~ "**",
+    p_value_WR < 0.05 ~ "*",
+    TRUE ~ ""
+  )
+  signif_GPC <- dplyr::case_when(
+    p_value_GPC < 0.001 ~ "***",
+    p_value_GPC < 0.01 ~ "**",
+    p_value_GPC < 0.05 ~ "*",
+    TRUE ~ ""
+  )
+
+  data1 = data.frame(
+    Method = c("GPC", "Win Ratio (WR)", "Win Odds (WO)"),
+    Estimate = c(Delta_obs, WR, WO),
+    Z_score = c(z_GPC, z_WR, z_WO),
+    P_value = c(p_value_GPC, p_value_WR, p_value_WO),
+    Significance = c(signif_GPC, signif_WR, signif_WO)
+  )
+
+  data2 = data.frame(
+    Method = c("GPC", "WR", "WO"),
+    CI_lower = c(CI_GPC[1], CI_WR[1], CI_WO[1]),
+    CI_upper = c(CI_GPC[2], CI_WR[2], CI_WO[2])
+  )
+
+  data3 = data.frame(Nb_win = N_w, Nb_lose = N_l, Nb_tie = N_t, row.names = "")
+
+  return(list(results = data1, confidence_intervals = data2, Nb = data3))
 }
-resultats_lw <- foreach(i = 1, .combine = c, .packages = "survival") %dopar% {
-  affect_value_GPC_WO_WR2(T_2_4, C_2_4, 1)
-}
 
-t2 <- Sys.time()
-
-
-stopCluster(cl)
-
-t_end <- t2 - t1
-t_end
+t1=Sys.time()
+affect_value_GPC_WO_WR2(T_3_5,C_3_5, threshold = 0.25 ,p.val = "two.sided")
+t2=Sys.time()
+t2-t1
 ```
 
 ```{r}
@@ -635,7 +720,6 @@ trt=as.factor(rep(c("A","B"), c(n,n)))
 data=rbind(T_3_4,C_3_4)
 data=cbind(id,trt,data)
 colnames(data) = c("id", "arm", "Y_1", "Y_2")
-
 
 win.stat(data = data, ep_type ="continuous", pvalue = "two-sided")
 ```
@@ -649,7 +733,7 @@ registerDoParallel(cl)
 
 start_time = Sys.time()
   
-results = foreach(i = 1:n_sim, .combine = rbind, .packages = "survival") %dopar% {
+results = foreach(i = 1:n_sim, .combine = rbind, .packages = c("survival","coin")) %dopar% {
   
   treatmentdata = cbind(gener_continue(4, 2), gener_continue(3.5, 1.5))
   controldata = cbind(gener_continue(2.5, 1.5), gener_continue(2, 4))
