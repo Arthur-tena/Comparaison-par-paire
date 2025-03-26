@@ -547,7 +547,7 @@ calcul_stat=function(paire){
 ```{r}
 affect_value_GPC_WO_WR2 = function(treatmentdata, controldata, threshold = 0, p.val = c("one.sided", "two.sided"), n_perm = 1000) {
   
-  n_cores = 13  
+  n_cores = detectCores()-3  
   cl = makeCluster(n_cores)
   registerDoParallel(cl)
 
@@ -603,9 +603,9 @@ affect_value_GPC_WO_WR2 = function(treatmentdata, controldata, threshold = 0, p.
     WO_perm = (N_w_perm+0.5*N_t_perm)/(N_l_perm+0.5*N_t_perm)
     
     
-    return(c(N_w_perm,N_l_perm,Delta_perm, WR_perm,WO_perm))}
+    return(c(N_w_perm,N_l_perm,Delta_perm, WR_perm,WO_perm))
+    }
   
-
    N_w_perm = Delta_perm_res[, 1]
    N_l_perm = Delta_perm_res[, 2]
    Delta_perm = Delta_perm_res[, 3]
@@ -642,12 +642,11 @@ affect_value_GPC_WO_WR2 = function(treatmentdata, controldata, threshold = 0, p.
   sigma_WO = sd(WO_perm)
   z_WO = (WO_obs - mean(WO_perm)) / sigma_WO
 
-  # P-values
-  p_value_GPC = ifelse(p.val == "one.sided", mean(Delta_perm >= Delta_obs), mean(abs(Delta_perm) >= abs(Delta_obs)))
-  p_value_WR = ifelse(p.val == "one.sided", mean(WR_perm >= WR_obs), mean(abs(WR_perm) >= abs(WR_obs)))
-  p_value_WO = ifelse(p.val == "one.sided", mean(WO_perm >= WO_obs), mean(abs(WO_perm) >= abs(WO_obs)))
+  p_value_GPC = ifelse(p.val == "one.sided", mean(Delta_perm >= Delta_obs), 2*mean(abs(Delta_perm) >= abs(Delta_obs)))
+  p_value_WR = ifelse(p.val == "one.sided", mean(WR_perm >= WR_obs), 2*mean(abs(WR_perm) >= abs(WR_obs)))
+  p_value_WO = ifelse(p.val == "one.sided", mean(WO_perm >= WO_obs),2* mean(abs(WO_perm) >= abs(WO_obs)))
 
-  # Signification des p-values
+
   signif_GPC = dplyr::case_when(
     p_value_GPC < 0.001 ~ "***",
     p_value_GPC < 0.01 ~ "**",
@@ -669,7 +668,6 @@ affect_value_GPC_WO_WR2 = function(treatmentdata, controldata, threshold = 0, p.
     TRUE ~ ""
   )
 
-  # Tableaux des résultats
   data1 = data.frame(
     Method = c("GPC", "Win Ratio (WR)", "Win Odds (WO)"),
     Estimate = c(Delta_obs, WR_obs, WO_obs),
@@ -693,7 +691,7 @@ affect_value_GPC_WO_WR2 = function(treatmentdata, controldata, threshold = 0, p.
 
 
 t1=Sys.time()
-affect_value_GPC_WO_WR2(T_2_5,C_2_5, threshold = 0 ,p.val = "two.sided", n_perm = 1000)
+affect_value_GPC_WO_WR2(T_3_2,C_3_2, threshold = 0.25 ,p.val = "two.sided", n_perm = 1000)
 t2=Sys.time()
 t2-t1
 ```
