@@ -219,7 +219,7 @@ GPC_WO_WR = function(treatmentdata, controldata, threshold = 0, p.val = c("one.s
                              WO_perm = (N_w_perm+0.5*N_t_perm)/(N_l_perm+0.5*N_t_perm)
                              
                              
-                             return(c(N_w_perm,N_l_perm,Delta_perm, WR_perm,WO_perm))
+                             return(unname(c(N_w_perm,N_l_perm,Delta_perm, WR_perm,WO_perm)))
                            }
   
   N_w_perm = Delta_perm_res[, 1]
@@ -242,15 +242,15 @@ GPC_WO_WR = function(treatmentdata, controldata, threshold = 0, p.val = c("one.s
   abline(v = Delta_obs, col = "red", lwd = 2, lty = 2)
   
   hist(WR_perm, breaks = 30, main = "Distribution de Δ sous H0 (permutation), WR", 
-       xlab = "Δ permuté", col = "lightblue", border = "black", xlim=c(0, max(WR_perm)+0.5))
+       xlab = "Δ permuté", col = "lightblue", border = "black", xlim=c(0, 5))
   abline(v = WR_obs, col = "red", lwd = 2, lty = 2)
   
   hist(WO_perm, breaks = 30, main = "Distribution de Δ sous H0 (permutation), WO", 
-       xlab = "Δ permuté", col = "lightblue", border = "black", xlim=c(0, max(WO_perm)+0.5))
+       xlab = "Δ permuté", col = "lightblue", border = "black", xlim=c(0, 5))
   abline(v = WO_obs, col = "red", lwd = 2, lty = 2)
   
   sigma_GPC = sd(Delta_perm)
-  z_GPC = (Delta_obs - 0) / sigma_GPC
+  z_GPC = (Delta_obs) / sigma_GPC
   
   sigma_WR = sd(WR_perm)
   z_WR = (WR_obs - mean(WR_perm)) / sigma_WR
@@ -304,3 +304,17 @@ GPC_WO_WR = function(treatmentdata, controldata, threshold = 0, p.val = c("one.s
   
   return(list(results = data1, confidence_intervals = data2, Nb = data3))
 }
+
+summary.GPC=function(object, digit = 3){
+  cat("Nombre de sujets : N =", object$n, "\n")
+  cat(paste0("Nombre de sujets dans le groupe du nouveau traitement :", object$n1, "\n")) 
+  cat(paste0("Nombre de sujets dans le groupe du traitement de contrôle :", object$n2, "\n"))
+  cat(paste0("Nombre de paires comaprées : ", object$n1 * object$n2, "\n"))
+  cat(" ","\n")
+}
+
+
+
+
+
+cat(paste0("Active group = group '", object$group1, "'\n"))
