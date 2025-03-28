@@ -174,17 +174,17 @@ GPC_WO_WR = function(treatmentdata, controldata, threshold = 0, p.val = c("one.s
    groupe = as.factor(rep(c("T", "C"), c(n1, n2)))
    comp = rbind(treatmentdata, controldata)
    comp = data.frame(groupe = groupe, outcome = comp)
-  # 
-  # paire = affect_crit(treatmentdata, controldata, threshold)
-  # stat_init = calcul_stat(paire)
-  # 
-  # N_w = stat_init[1]
-  # N_l = stat_init[2]
-  # N_t = stat_init[3]
-  # 
-  # Delta_obs = round((N_w - N_l) / (n1 * n2), 3)
-  # WR_obs = round(N_w/N_l,3)
-  # WO_obs = round((N_w+0.5*N_t)/(N_l+0.5*N_t),3)
+
+  paire = affect_crit(treatmentdata, controldata, threshold)
+  stat_init = calcul_stat(paire)
+
+  N_w = stat_init[1]
+  N_l = stat_init[2]
+  N_t = stat_init[3]
+
+  Delta_obs = round((N_w - N_l) / (n1 * n2), 3)
+  WR_obs = round(N_w/N_l,3)
+  WO_obs = round((N_w+0.5*N_t)/(N_l+0.5*N_t),3)
   
   
   N_w_perm=rep(0, n_perm)
@@ -225,10 +225,6 @@ GPC_WO_WR = function(treatmentdata, controldata, threshold = 0, p.val = c("one.s
   WR_perm = Delta_perm_res[, 4]
   WO_perm = Delta_perm_res[, 5]
   
-  Delta_obs=Delta_perm[sample(1:n_perm, size = 1)]
-  WR_obs=WR_perm[sample(1:n_perm, size= 1)]
-  WO_obs=WO_perm[sample(1:n_perm, size = 1)]
-  
   CI_GPC = quantile(Delta_perm, c(0.025, 0.975), na.rm = TRUE)
   #CI_GPC = c(Delta_obs - CI_GPC[1], Delta_obs + CI_GPC[2])
   
@@ -256,8 +252,8 @@ GPC_WO_WR = function(treatmentdata, controldata, threshold = 0, p.val = c("one.s
   abline(v=CI_WO[1], col = "green", lwd = 2, lty = 2)
   abline(v=CI_WO[2], col = "green", lwd = 2, lty = 2)
   
-  boxplot(WO_perm, main = "Distribution de WO sous H0", col = "lightblue")
-  points(1, WO_obs, col = "red", pch = 19, cex = 1.5)
+  # boxplot(WO_perm, main = "Distribution de WO sous H0", col = "lightblue")
+  # points(1, WO_obs, col = "red", pch = 19, cex = 1.5)
   
   sigma_GPC = sd(Delta_perm)
   z_GPC = (Delta_obs) / sigma_GPC

@@ -269,15 +269,13 @@ t2-t1
 ```
 
 ```{r}
-library(WINS)
-data_continuous
 id=seq(1:(2*n))
 trt=as.factor(rep(c("A","B"), c(n,n)))
 data=rbind(T_3_4,C_3_4)
 data=cbind(id,trt,data)
-colnames(data) = c("id", "arm", "Y_1", "Y_2")
-
-win.stat(data = data, ep_type ="continuous", pvalue = "two-sided")
+colnames(data) = c("id","arm", "Y_1", "Y_2")
+data$arm = as.character(data$arm)
+win.stat(data = data, priority = c(1,2) ,ep_type =c("continuous","continuous"), pvalue = "two-sided", stratum.weight = "unstratified", method = "unadjusted")
 ```
 
 
