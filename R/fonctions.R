@@ -316,18 +316,21 @@ GPC_WO_WR = function(treatmentdata, controldata, threshold = 0, p.val = c("one.s
   return(list(results = data1, confidence_intervals = data2))
 }
 
-t1=Sys.time()
-GPC1=GPC_WO_WR(T_1_2,C_1_2,p.val = "two.sided")
-t2=Sys.time()
-GPC2=GPC_WO_WR2(T_3_2,C_3_2, p.val = "two.sided")
-t3=Sys.time()
-#temps1=t2-t1
-temps2=t3-t2
-temps1
-temps2
-sum(GPC1!=GPC2)
-GPC2
+# t1=Sys.time()
+# GPC1=GPC_WO_WR(T_1_2,C_1_2,p.val = "two.sided")
+# t2=Sys.time()
+# GPC2=GPC_WO_WR2(T_3_2,C_3_2, p.val = "two.sided")
+# t3=Sys.time()
+# temps1=t2-t1
+# temps2=t3-t2
+# temps1
+# temps2
+# sum(GPC1!=GPC2)
+# GPC2
 
+################################################################################
+##########################       stratification        #########################
+################################################################################
 
 treatmentdata = T_1_4
 controldata= C_1_4
@@ -382,7 +385,6 @@ affect_crit_strata = function(treatmentdata, controldata, threshold = 0, strata 
       t_obs2 = extract_tte(comp[groupe == "C", ], l + 1)[, 1]
       censure2 = extract_tte(comp[groupe == "C", ], l + 1)[, 2]
       
-      # Vérification des NA
       if (is.na(t_obs1[i]) || is.na(t_obs2[j])) {
         return("non-informative")
       }
@@ -404,7 +406,6 @@ affect_crit_strata = function(treatmentdata, controldata, threshold = 0, strata 
     if (type1[l] == "continue") {
       diff = comp[comp$groupe == "T", "outcome.X"][i] - comp[comp$groupe == "C", "outcome.X"][j]
       
-      # Vérification des NA
       if (is.na(diff)) {
         return("non-informative")
       }
@@ -417,7 +418,6 @@ affect_crit_strata = function(treatmentdata, controldata, threshold = 0, strata 
       val_T = comp[groupe == "T", l + 1][i]
       val_C = comp[groupe == "C", l + 1][j]
       
-      # Vérification des NA
       if (is.na(val_T) || is.na(val_C)) {
         return("non-informative")
       }
@@ -439,7 +439,7 @@ affect_crit_strata = function(treatmentdata, controldata, threshold = 0, strata 
     
     matrices_list[["all"]] = paire
     
-  } else { #if (!is.null(strata)) {
+  } else {
     
     for (s in unique(comp$strata)) { 
       comp_s = comp[comp$strata == s, ]  
@@ -459,13 +459,10 @@ affect_crit_strata = function(treatmentdata, controldata, threshold = 0, strata 
         for (l in 1:L) {
           paire[, l] = sapply(1:nrow(pairs), function(idx) eval_diff(pairs$i[idx], pairs$j[idx], l))
         }
-        
-        # Stocker la matrice avec un nom associé à la strate
         matrices_list[[paste0("strata_", s)]] = paire
       }
     }
     
-    # Fusionner toutes les matrices des strates en un seul grand tableau
     matrices_list[["all"]] = do.call(rbind, matrices_list)
   }
   
@@ -532,7 +529,7 @@ GPC_WO_WR_strata = function(treatmentdata, controldata, threshold = 0, p.val = c
   N_l = stat_init[2]
   N_t = stat_init[3]
   
-  Delta_obs = round((N_w - N_l) / (n1 * n2), 3)
+  Delta_obs = round((N_w - N_l) / (N_w+N_l+N_t), 3)
   WR_obs = round(N_w/N_l,3)
   WO_obs = round((N_w+0.5*N_t)/(N_l+0.5*N_t),3)
   
@@ -550,12 +547,13 @@ GPC_WO_WR_strata = function(treatmentdata, controldata, threshold = 0, p.val = c
                                comp_perm = rbind(treatmentdata, controldata)
                                comp_perm = data.frame(groupe = groupe, outcome = comp_perm)
                                comp_perm$groupe = sample(comp_perm$groupe)
+                               
                              }
                              else{
                                comp_perm=comp
                                comp_perm$groupe = sample(comp_perm$groupe)
                              }
-                             
+                             str(comp_perm)
                              compT = subset(comp_perm, groupe == "T")[,-1]
                              compC = subset(comp_perm, groupe == "C")[,-1]
                              
