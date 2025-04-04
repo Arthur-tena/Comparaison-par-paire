@@ -341,93 +341,116 @@ controldata=cbind(controldata,strata)
 threshold = 0
 n_perm=1000
 
+U=matrix(0,ncol = n_T, nrow=n_C)
+V = rowSums(U, na.rm = TRUE)
+D <- ifelse(df$group == "T", 1, 0)
+T=sum(V*D)
+
+eval_diff = function(i, j, l, type1, comp, threshold) {
+  indices_T = which(comp$groupe == "T")
+  indices_C = which(comp$groupe == "C")
+  
+  if (type1[l] == "tte") {
+    t_obs1 = extract_tte(comp[indices_T, ], l + 1)[, 1]
+    censure1 = extract_tte(comp[indices_T, ], l + 1)[, 2]
+    t_obs2 = extract_tte(comp[indices_C, ], l + 1)[, 1]
+    censure2 = extract_tte(comp[indices_C, ], l + 1)[, 2]
+    
+    if (is.na(t_obs1[i]) || is.na(t_obs2[j])) {
+      return("non-informative")
+    }
+    
+    diff_tte = t_obs1[i] - t_obs2[j]
+    
+    if (censure1[i] == 0 && censure2[j] == 0) {
+      return(ifelse(diff_tte > threshold, "favorable",
+                    ifelse(diff_tte < -threshold, "défavorable", "neutre")))
+    } else if (censure1[i] == 1 && censure2[j] == 0) {
+      return(ifelse(diff_tte > threshold, "favorable", "non-informative"))
+    } else if (censure1[i] == 0 && censure2[j] == 1) {
+      return(ifelse(diff_tte > threshold, "non-informative", "défavorable"))
+    } else {
+      return("non-informative")
+    }
+  } 
+  
+  if (type1[l] == "continue") {
+    diff = comp[indices_T, l + 1][i] - comp[indices_C, l + 1][j]
+    
+    if (is.na(diff)) {
+      return("non-informative")
+    }
+    
+    return(ifelse(diff > threshold, "favorable",
+                  ifelse(diff < -threshold, "défavorable", "neutre")))
+  }
+  
+  if (type1[l] == "binaire") {
+    val_T = comp[indices_T, l + 1][i]
+    val_C = comp[indices_C, l + 1][j]
+    
+    if (is.na(val_T) || is.na(val_C)) {
+      return("non-informative")
+    }
+    
+    return(ifelse(val_T == 1 & val_C == 0, "favorable",
+                  ifelse(val_T == 0 & val_C == 1, "défavorable", "neutre")))
+  }
+}
+
+
 affect_crit_strata = function(treatmentdata, controldata, threshold = 0, strata = NULL) {
   n1 = nrow(treatmentdata)
   n2 = nrow(controldata)
   
-  if (is.null(strata)){
-    L = ncol(treatmentdata)
-  } else {L = ncol(treatmentdata)-1}
+  if (is.null(strata)) {
+    L = ncol(treatmentdata)  # Si pas de "strata", tous les outcomes sont des colonnes
+  } else {
+    L = ncol(treatmentdata) - 1  # Si strata, une colonne est "strata", donc L est -1
+  }
   
-  col = colnames(treatmentdata)
+  col = colnames(treatmentdata) 
   
   if (ncol(treatmentdata) != ncol(controldata)) {
     stop("Il n'y a pas le même nombre d'outcomes")
   }
   
-  
-  if (is.null(strata)){
-    type1 = type_variable(treatmentdata, L)
-    groupe = as.factor(rep(c("T", "C"), c(n1, n2)))
-    comp = data.frame(groupe = groupe, outcome = rbind(treatmentdata, controldata))
-  } 
-  else {
-    type1 = type_variable(treatmentdata[,-which(col=="strata")], L)
-  groupe = as.factor(rep(c("T", "C"), c(n1, n2)))
-  comp = data.frame(groupe = groupe, 
-                     outcome = rbind(treatmentdata[,-which(col=="strata")], controldata[,-which(col=="strata")]),
-                     strata = c(treatmentdata$strata, controldata$strata))
+  # Créer le tableau "comp" avec traitement des colonnes
+  if (is.null(strata)) {
+    type1 <- type_variable(treatmentdata, L) 
+    groupe <- as.factor(rep(c("T", "C"), c(n1, n2)))
+    comp <- data.frame(groupe = groupe, outcome = rbind(treatmentdata, controldata))
+  } else {
+    type1 <- type_variable(treatmentdata[, -which(colnames(treatmentdata) == "strata")], L)
+    
+    groupe <- as.factor(rep(c("T", "C"), c(n1, n2)))
+    comp <- data.frame(groupe = groupe, 
+                       outcome = rbind(treatmentdata[, -which(colnames(treatmentdata) == "strata")], 
+                                       controldata[, -which(colnames(controldata) == "strata")]),
+                       strata = c(treatmentdata[["strata"]], controldata[["strata"]]))
   }
   
-  #D=rep(0,n1*n2)
-  #D=ifelse(groupe=="T",1,0)
+  # Renommer les colonnes
+  colnames(comp)[which(colnames(comp) == "groupe")] <- "groupe"
   
+  outcome_cols <- colnames(comp)[grep("outcome", colnames(comp))]
+  for (l in 1:L) {
+    if (l <= length(outcome_cols)) {
+      colnames(comp)[which(colnames(comp) == outcome_cols[l])] <- paste("Y_", l, sep = "")
+    }
+  }
+  
+  # Renommage de "strata" si elle existe
+  if ("strata" %in% colnames(comp)) {
+    colnames(comp)[which(colnames(comp) == "strata")] <- "strata"
+  }
+  
+  # Si strata est fourni, vérifier son existence et trier
   if (!is.null(strata)) {
     if (!any("strata" %in% colnames(comp))) {
       stop("La colonne strata spécifiée n'existe pas dans les données")
     }
-     comp = comp[order(comp[["strata"]]), ]
-     comp = comp[, !(colnames(comp) %in% strata)]
-    
-  }
-  
-  eval_diff = function(i, j, l) {
-    if (type1[l] == "tte") {
-      t_obs1 = extract_tte(comp[groupe == "T", ], l + 1)[, 1]
-      censure1 = extract_tte(comp[groupe == "T", ], l + 1)[, 2]
-      t_obs2 = extract_tte(comp[groupe == "C", ], l + 1)[, 1]
-      censure2 = extract_tte(comp[groupe == "C", ], l + 1)[, 2]
-      
-      if (is.na(t_obs1[i]) || is.na(t_obs2[j])) {
-        return("non-informative")
-      }
-      
-      diff_tte = t_obs1[i] - t_obs2[j]
-      
-      if (censure1[i] == 0 && censure2[j] == 0) {
-        return(ifelse(diff_tte > threshold, "favorable",
-                      ifelse(diff_tte < -threshold, "défavorable", "neutre")))
-      } else if (censure1[i] == 1 && censure2[j] == 0) {
-        return(ifelse(diff_tte > threshold, "favorable", "non-informative"))
-      } else if (censure1[i] == 0 && censure2[j] == 1) {
-        return(ifelse(diff_tte > threshold, "non-informative", "défavorable"))
-      } else {
-        return("non-informative")
-      }
-    } 
-    
-    if (type1[l] == "continue") {
-      diff = comp[comp$groupe == "T", "outcome.X"][i] - comp[comp$groupe == "C", "outcome.X"][j]
-      
-      if (is.na(diff)) {
-        return("non-informative")
-      }
-      
-      return(ifelse(diff > threshold, "favorable",
-                    ifelse(diff < -threshold, "défavorable", "neutre")))
-    }
-    
-    if (type1[l] == "binaire") {
-      val_T = comp[groupe == "T", l + 1][i]
-      val_C = comp[groupe == "C", l + 1][j]
-      
-      if (is.na(val_T) || is.na(val_C)) {
-        return("non-informative")
-      }
-      
-      return(ifelse(val_T == 1 & val_C == 0, "favorable",
-                    ifelse(val_T == 0 & val_C == 1, "défavorable", "neutre")))
-    }
+    comp = comp[order(comp[["strata"]]), ]
   }
   
   matrices_list = list()
@@ -437,30 +460,29 @@ affect_crit_strata = function(treatmentdata, controldata, threshold = 0, strata 
     paire = matrix("", nrow = nrow(pairs), ncol = L)
     
     for (l in 1:L) {
-      paire[, l] = mapply(eval_diff, pairs$i, pairs$j, MoreArgs = list(l = l))
+      paire[, l] = mapply(eval_diff, pairs$i, pairs$j, MoreArgs = list(l = l, type1 = type1, comp = comp, threshold = threshold))
     }
     
     matrices_list[["all"]] = paire
     
   } else {
-    
     for (s in unique(comp$strata)) { 
-      comp_s = comp[comp$strata == s, ]  
+      comp_s = subset(comp, strata==s)
       n_T = sum(comp_s$groupe == "T")  
       n_C = sum(comp_s$groupe == "C") 
       
       if (n_T > 0 & n_C > 0) {  
         pairs = expand.grid(i = 1:n_T, j = 1:n_C)
-
+        
         indices_T = which(comp_s$strata == s & comp_s$groupe == "T")
         indices_C = which(comp_s$strata == s & comp_s$groupe == "C")
         pairs$i = indices_T[pairs$i]
         pairs$j = indices_C[pairs$j]
-
+        
         paire = matrix("", nrow = nrow(pairs), ncol = L)
         
         for (l in 1:L) {
-          paire[, l] = sapply(1:nrow(pairs), function(idx) eval_diff(pairs$i[idx], pairs$j[idx], l))
+          paire[, l] = sapply(1:nrow(pairs), function(idx) eval_diff(pairs$i[idx], pairs$j[idx], l, type1 = type1, comp = comp, threshold = threshold))
         }
         matrices_list[[paste0("strata_", s)]] = paire
       }
@@ -472,6 +494,7 @@ affect_crit_strata = function(treatmentdata, controldata, threshold = 0, strata 
   final_matrix = matrices_list[["all"]]
   return(final_matrix)
 }
+
 affect_crit_strata(treatmentdata,controldata, strata=strata)
 
 
@@ -544,7 +567,7 @@ GPC_WO_WR_strata = function(treatmentdata, controldata, threshold = 0, p.val = c
   WO_perm=rep(0, n_perm)
   
   Delta_perm_res = foreach(s = 1:n_perm, .combine = rbind, .packages = c("dplyr", "survival"), 
-                           .export = c("affect_crit_strata", "calcul_stat", "type_variable", "extract_tte")) %dopar% {
+                           .export = c("eval_diff","affect_crit_strata", "calcul_stat", "type_variable", "extract_tte")) %dopar% {
                              
                              comp_perm=comp
                              comp_perm$groupe = sample(comp_perm$groupe)
