@@ -333,11 +333,13 @@ GPC_WO_WR = function(treatmentdata, controldata, threshold = 0, p.val = c("one.s
 ################################################################################
 
 treatmentdata = T_1_4
+nrow(treatmentdata)
 controldata= C_1_4
 strata=rep(c(1,3,5,8), each=10)
 treatmentdata=cbind(treatmentdata,strata)
 controldata=cbind(controldata,strata)
 threshold = 0
+n_perm=1000
 
 affect_crit_strata = function(treatmentdata, controldata, threshold = 0, strata = NULL) {
   n1 = nrow(treatmentdata)
@@ -367,7 +369,8 @@ affect_crit_strata = function(treatmentdata, controldata, threshold = 0, strata 
                      strata = c(treatmentdata$strata, controldata$strata))
   }
   
-  
+  #D=rep(0,n1*n2)
+  #D=ifelse(groupe=="T",1,0)
   
   if (!is.null(strata)) {
     if (!any("strata" %in% colnames(comp))) {
@@ -502,7 +505,7 @@ calcul_stat(affect_crit_strata(treatmentdata,controldata, strata=strata))
 #    l'intervalle de confiance pour ces 3 valeurs et le nombre de win,lose et tie 
 GPC_WO_WR_strata = function(treatmentdata, controldata, threshold = 0, p.val = c("one.sided", "two.sided"), n_perm = 1000, strata=NULL) {
   
-  n_cores = detectCores()-3  
+  n_cores = detectCores()/2  
   cl = makeCluster(n_cores)
   registerDoParallel(cl)
   
@@ -543,17 +546,9 @@ GPC_WO_WR_strata = function(treatmentdata, controldata, threshold = 0, p.val = c
   Delta_perm_res = foreach(s = 1:n_perm, .combine = rbind, .packages = c("dplyr", "survival"), 
                            .export = c("affect_crit_strata", "calcul_stat", "type_variable", "extract_tte")) %dopar% {
                              
-                             if(is.null(strata)){
-                               comp_perm = rbind(treatmentdata, controldata)
-                               comp_perm = data.frame(groupe = groupe, outcome = comp_perm)
-                               comp_perm$groupe = sample(comp_perm$groupe)
-                               
-                             }
-                             else{
-                               comp_perm=comp
-                               comp_perm$groupe = sample(comp_perm$groupe)
-                             }
-                             str(comp_perm)
+                             comp_perm=comp
+                             comp_perm$groupe = sample(comp_perm$groupe)
+                             
                              compT = subset(comp_perm, groupe == "T")[,-1]
                              compC = subset(comp_perm, groupe == "C")[,-1]
                              

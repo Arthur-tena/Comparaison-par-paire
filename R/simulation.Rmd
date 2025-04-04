@@ -280,62 +280,57 @@ win.stat(data = data, priority = c(1,2) ,ep_type =c("continuous","continuous"), 
 
 
 ```{r, parallelisation du code}
-n_sim=1000
-nb_core=10
-cl=makeCluster(nb_core)
+n_sim = 1000
+nb_core = (detectCores() / 2) - 1
+cl = makeCluster(nb_core)
 registerDoParallel(cl)
 
 start_time = Sys.time()
+
+results = foreach(s = 1:n_sim, .combine = rbind, .packages = c("dplyr", "survival")) %dopar% {
   
-results = foreach(i = 1:n_sim, .combine = rbind, .packages = c("survival","coin")) %dopar% {
+  strata = rep(c(1,3,5,8), each = 10)
+  treatmentdata = as.data.frame(cbind(gener_continue(4, 2), gener_continue(3.5, 1.5), strata))
+  controldata = as.data.frame(cbind(gener_continue(2.5, 1.5), gener_continue(2, 4), strata))
   
-  treatmentdata = cbind(gener_continue(4, 2), gener_continue(3.5, 1.5))
-  controldata = cbind(gener_continue(2.5, 1.5), gener_continue(2, 4))
+  treatmentdata$strata = as.factor(treatmentdata$strata)
+  controldata$strata = as.factor(controldata$strata)
   
-  all_data = rbind(treatmentdata, controldata)
+  result = GPC_WO_WR_strata(treatmentdata, controldata, p.val = "two.sided", strata = strata)
   
-  permuted_indices = sample(nrow(all_data)) 
+  val_GPC = result$results[1,2]
+  val_WR  = result$results[2,2]
+  val_WO  = result$results[3,2]
   
-  permuted_data = all_data[permuted_indices, ]
+  p_val_GPC = result$results[1,4]
+  p_val_WR  = result$results[2,4]
+  p_val_WO  = result$results[3,4]
   
-  treatmentdata_perm = permuted_data[1:nrow(treatmentdata), ]
-  controldata_perm = permuted_data[(nrow(treatmentdata)+1):nrow(permuted_data), ]
-  
-  result = affect_value_GPC_WO_WR(treatmentdata_perm, controldata_perm,0.5)
-  
-  unname(c(result$results[, 4], result$results[,1] ,result$Nb[, 1], result$Nb[, 2], result$p_value_bilatéral, result$p.value))
-  
+  return(unname(c(val_GPC, val_WR, val_WO, p_val_GPC, p_val_WR, p_val_WO)))
 }
+
 stopCluster(cl)
 end_time = Sys.time()
 execution_time = end_time - start_time
 print(execution_time)
 
-Delta_values = results[,1] 
-N_w_values = results[,2] 
-N_l_values = results[,3]
-p_values_bilat = results[,4]
+results_df = as.data.frame(results)
+colnames(results_df) = c("val_GPC", "val_WR", "val_WO", "p_val_GPC", "p_val_WR", "p_val_WO")
 
+results_long = results_df %>%
+  pivot_longer(cols = everything(), names_to = "metric", values_to = "value")
 
-Theta_values = Delta_values
-Theta_obs = mean(Theta_values)
-
-IC_lower = quantile(Theta_values, probs = 0.025)
-IC_upper = quantile(Theta_values, probs = 0.975)
-
-p_val_empirique = mean(abs(Theta_values) >= abs(Theta_obs))
-
-cat("\n--- Résumé des Résultats ---\n")
-cat("Theta Observé :", round(Theta_obs, 3), "\n")
-cat("Intervalle de Confiance 95% :", round(Theta_obs+IC_lower, 3), "-", round(Theta_obs+IC_upper, 3), "\n")
-cat("P-valeur (Permutation) :", p_val_empirique, "\n")
-
-results=data.frame(results)
-colnames(results)=c("gpc","WR", "Nb Win", "Nb loose", "p valeur bilatéral", "p valeur prop test")
-rownames(results)=seq(1:n_sim)
-
-sum(results[,5]>=0.05)/n_sim
-sum(results[,1]<Theta_obs)
+ggplot(results_long, aes(x = value, fill = metric)) +
+  geom_histogram(alpha = 0.6, position = "identity", bins = 30) +
+  facet_wrap(~metric, scales = "free") +  # Séparer les graphiques par variable
+  theme_minimal() +
+  labs(title = "Distribution des statistiques et p-values",
+       x = "Valeur", y = "Fréquence") +
+  scale_fill_manual(values = c("blue", "green", "red", "orange", "purple", "cyan")) 
+ggplot(results_long, aes(x = value, fill = metric)) +
+  geom_density(alpha = 0.6) +
+  facet_wrap(~metric, scales = "free") +
+  theme_minimal()
 ```
 
 
