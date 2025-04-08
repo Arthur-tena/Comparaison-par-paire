@@ -65,287 +65,6 @@ extract_tte=function(treatmentdata,l){
   censure=treatmentdata[[l]][,2]
   return(cbind(t_obs,censure))
 }
-
-# affect_crit se base sur les tableaux donné dans le document sur la GPC de Marc Buyse (2010)
-# rentre en argument treatmentdata le nouveau traitement, controldata le traitement de contrôle et threshold le seuil
-# donne en sortie une matrice de taille n1*n2xL de paire suivante si la paire est favorable, défavorablle, neutre ou non-informative
-affect_crit = function(treatmentdata, controldata, threshold = 0) {
-  n1 = nrow(treatmentdata)
-  n2 = nrow(controldata)
-  L = ncol(treatmentdata)
-  
-  if (ncol(treatmentdata) != ncol(controldata)) {
-    stop("il n'y a pas le même nombre d'outcomes")
-  }
-  
-  type1 = type_variable(treatmentdata, L)
-  
-
-  pairs = expand.grid(i = 1:n1, j = 1:n2)
-  
-
-  paire = matrix("", nrow = nrow(pairs), ncol = L)
-  
-  groupe = as.factor(rep(c("T", "C"), c(n1, n2)))
-  comp = data.frame(groupe = groupe, outcome = rbind(treatmentdata, controldata))
-  
-
-  eval_diff = function(i, j, l) {
-    if (type1[l] == "tte") {
-      t_obs1 = extract_tte(comp[groupe == "T", ], l + 1)[, 1]
-      censure1 = extract_tte(comp[groupe == "T", ], l + 1)[, 2]
-      t_obs2 = extract_tte(comp[groupe == "C", ], l + 1)[, 1]
-      censure2 = extract_tte(comp[groupe == "C", ], l + 1)[, 2]
-      
-      diff_tte = t_obs1[i] - t_obs2[j]
-
-      if (censure1[i] == 0 && censure2[j] == 0) {
-        return(ifelse(diff_tte > threshold, "favorable",
-                      ifelse(diff_tte < -threshold, "défavorable", "neutre")))
-      } else if (censure1[i] == 1 && censure2[j] == 0) {
-        return(ifelse(diff_tte > threshold, "favorable", "non-informative"))
-      } else if (censure1[i] == 0 && censure2[j] == 1) {
-        return(ifelse(diff_tte > threshold, "non-informative", "défavorable"))
-      } else {
-        return("non-informative")
-      }
-    } 
-    
-    if (type1[l] == "continue") {
-      diff = comp[groupe == "T", l + 1][i] - comp[groupe == "C", l + 1][j]
-      return(ifelse(diff > threshold, "favorable",
-                    ifelse(diff < -threshold, "défavorable", "neutre")))
-    }
-    if (type1[l] == "binaire") {
-      paire[p, l] = ifelse(comp[groupe=="T", l+1][i] == 1 & comp[groupe=="C", l+1][j] == 0, "favorable",
-                           ifelse(comp[groupe=="T", l+1][i] == 0 & comp[groupe=="C", l+1][j] == 1, "défavorable", "neutre"))
-    }
-  }
-  
-  
-
-  for (l in 1:L) {
-    paire[, l] = mapply(eval_diff, pairs$i, pairs$j, MoreArgs = list(l = l))
-  }
-  
-  return(paire)
-}
-
-# rentre en argument une matrice de paire comportant des valeurs de type charactère donné par la fonction affect_crit
-# donne en sortie le nombre de win, de lose et de tie
-
-
-calcul_stat = function(paire) {
-  n1 = sqrt(nrow(paire))
-  n2 = sqrt(nrow(paire))
-  L = ncol(paire)
-  
-  eval_ligne = function(ligne) {
-    valeur = ligne[ligne != "non-informative"][1]
-    if (is.na(valeur)) return(NA) 
-    return(valeur)
-  }
-  
-  resultats = apply(paire, 1, eval_ligne)
-  
-  N_w = sum(resultats == "favorable", na.rm = TRUE)
-  N_l = sum(resultats == "défavorable", na.rm = TRUE)
-  N_t = sum(resultats == "neutre", na.rm = TRUE)
-  
-  return(c(N_w, N_l, N_t))
-}
-
-# GPC_WO_WR necesiite les package doParallele, parallele et foreach
-# rentre en argument treatmentdata le nouveau traitrement, controldata le traitement de contrôle, threshold le seuil, 
-#   p.val le test unilatéral ou bilatéral et n_perm le nombre de permutation
-# donne en sortie une liste de 3 dataframe avec les résultats de la GPC, des WR et des WO et leur p-valeur,
-#    l'intervalle de confiance pour ces 3 valeurs et le nombre de win,lose et tie 
-GPC_WO_WR = function(treatmentdata, controldata, threshold = 0, p.val = c("one.sided", "two.sided"), n_perm = 1000) {
-  
-  n_cores = detectCores()-3  
-  cl = makeCluster(n_cores)
-  registerDoParallel(cl)
-  
-  n1 = nrow(treatmentdata)
-  n2 = nrow(controldata)
-  L = ncol(treatmentdata)
-  
-  groupe = as.factor(rep(c("T", "C"), c(n1, n2)))
-  comp = rbind(treatmentdata, controldata)
-  comp = data.frame(groupe = groupe, outcome = comp)
-  
-  paire = affect_crit2(treatmentdata, controldata, threshold)
-  stat_init = calcul_stat2(paire)
-  
-  N_w = stat_init[1]
-  N_l = stat_init[2]
-  N_t = stat_init[3]
-  
-  Delta_obs = round((N_w - N_l) / (n1 * n2), 3)
-  WR_obs = round(N_w/N_l,3)
-  WO_obs = round((N_w+0.5*N_t)/(N_l+0.5*N_t),3)
-  
-  
-  N_w_perm=rep(0, n_perm)
-  N_l_perm=rep(0, n_perm)
-  Delta_perm=rep(0, n_perm)
-  WR_perm=rep(0, n_perm)
-  WO_perm=rep(0, n_perm)
-  
-  Delta_perm_res = foreach(s = 1:n_perm, .combine = rbind, .packages = c("dplyr", "survival"), 
-                           .export = c("affect_crit2", "calcul_stat2", "type_variable", "extract_tte")) %dopar% {
-                             
-                             comp_perm = rbind(treatmentdata, controldata)
-                             comp_perm = data.frame(groupe = groupe, outcome = comp_perm)
-                             comp_perm$groupe = sample(comp_perm$groupe)
-                             
-                             compT = subset(comp_perm, groupe == "T")[,-1]
-                             compC = subset(comp_perm, groupe == "C")[,-1]
-                             
-                             paire_perm = affect_crit2(compT, compC, threshold) 
-                             stat_perm = calcul_stat2(paire_perm)  
-                             
-                             N_w_perm = stat_perm[1] 
-                             N_l_perm = stat_perm[2]  
-                             N_t_perm = stat_perm[3]
-                             
-                             
-                             Delta_perm = (N_w_perm - N_l_perm) / (n1 * n2)
-                             WR_perm = N_w_perm/N_l_perm
-                             WO_perm = (N_w_perm+0.5*N_t_perm)/(N_l_perm+0.5*N_t_perm)
-                             
-                             
-                             return(unname(c(N_w_perm,N_l_perm,Delta_perm, WR_perm,WO_perm)))
-                           }
-  
-  N_w_perm = Delta_perm_res[, 1]
-  N_l_perm = Delta_perm_res[, 2]
-  Delta_perm = Delta_perm_res[, 3]
-  WR_perm = Delta_perm_res[, 4]
-  WO_perm = Delta_perm_res[, 5]
-  
-  CI_GPC = quantile(Delta_perm, c(0.025, 0.975), na.rm = TRUE)
-  CI_GPC = c(Delta_obs + CI_GPC[1], Delta_obs + CI_GPC[2])
-  
-  CI_WR = quantile(WR_perm, c(0.025, 0.975), na.rm = TRUE)
-  CI_WR = c(WR_obs - CI_WR[1], WR_obs + CI_WR[2])
-  
-  CI_WO = quantile(WO_perm, c(0.025, 0.975), na.rm = TRUE)
-  CI_WO = c(WO_obs - CI_WO[1], WO_obs + CI_WO[2])
-  
-  hist(Delta_perm, breaks = 30, main = "Distribution de Δ sous H0 (permutation)", 
-       xlab = "Δ permuté", col = "lightblue", border = "black", xlim=c(-1, 1))
-  abline(v = Delta_obs, col = "red", lwd = 2, lty = 2)
-  abline(v=CI_GPC[1], col = "green", lwd = 2, lty = 2)
-  abline(v=CI_GPC[2], col = "green", lwd = 2, lty = 2)
-  abline(v=0, col='black', lwd = 2)
-  legend('topright', col=c("green","red","black"), legend = c("95% CI", "Δ_obs", "H0"), lwd=c(2,2,1), lty = c(2,2,1))
-  
-  hist(WR_perm, breaks = 30, main = "Distribution de WR sous H0 (permutation)", 
-       xlab = "Δ permuté", col = "lightblue", border = "black", xlim=c(0, 5))
-  abline(v = WR_obs, col = "red", lwd = 2, lty = 2)
-  abline(v=CI_WR[1], col = "green", lwd = 2, lty = 2)
-  abline(v=CI_WR[2], col = "green", lwd = 2, lty = 2)
-  abline(v=1, col='black', lwd = 2)
-  legend('topright', col=c("green","red","black"), legend = c("95% CI", "WR_obs", "H0"), lwd=c(2,2,1), lty = c(2,2,1))
-  
-  hist(WO_perm, breaks = 30, main = "Distribution de WO sous H0 (permutation)", 
-       xlab = "Δ permuté", col = "lightblue", border = "black", xlim=c(0, 5))
-  abline(v = WO_obs, col = "red", lwd = 2, lty = 2)
-  abline(v=CI_WO[1], col = "green", lwd = 2, lty = 2)
-  abline(v=CI_WO[2], col = "green", lwd = 2, lty = 2)
-  abline(v=1, col='black', lwd = 2)
-  legend('topright', col=c("green","red","black"), legend = c("95% CI", "WO_obs", "H0"), lwd=c(2,2,2), lty = c(2,2,1))
-  
-  # boxplot(WO_perm, main = "Distribution de WO sous H0", col = "lightblue")
-  # points(1, WO_obs, col = "red", pch = 19, cex = 1.5)
-  
-  sigma_GPC = sd(Delta_perm)
-  z_GPC = (Delta_obs) / sigma_GPC
-  
-  sigma_WR = sd(WR_perm)
-  z_WR = (WR_obs - mean(WR_perm)) / sigma_WR
-  
-  sigma_WO = sd(WO_perm)
-  z_WO = (WO_obs - mean(WO_perm)) / sigma_WO
-  
-  p_value_GPC = ifelse(p.val == "one.sided", mean(Delta_perm >= Delta_obs), 2*mean(abs(Delta_perm) >= abs(Delta_obs)))
-  p_value_WR = ifelse(p.val == "one.sided", mean(WR_perm >= WR_obs), 2*mean(abs(WR_perm) >= abs(WR_obs)))
-  p_value_WO = ifelse(p.val == "one.sided", mean(WO_perm >= WO_obs),2* mean(abs(WO_perm) >= abs(WO_obs)))
-  
-  
-  signif_GPC = dplyr::case_when(
-    p_value_GPC < 0.001 ~ "***",
-    p_value_GPC < 0.01 ~ "**",
-    p_value_GPC < 0.05 ~ "*",
-    TRUE ~ ""
-  )
-  
-  signif_WR = dplyr::case_when(
-    p_value_WR < 0.001 ~ "***",
-    p_value_WR < 0.01 ~ "**",
-    p_value_WR < 0.05 ~ "*",
-    TRUE ~ ""
-  )
-  
-  signif_WO = dplyr::case_when(
-    p_value_WO < 0.001 ~ "***",
-    p_value_WO < 0.01 ~ "**",
-    p_value_WO < 0.05 ~ "*",
-    TRUE ~ ""
-  )
-  
-  data1 = data.frame(
-    Method = c("GPC", "Win Ratio (WR)", "Win Odds (WO)"),
-    Estimate = c(Delta_obs, WR_obs, WO_obs),
-    Z_score = c(z_GPC, z_WR, z_WO),
-    P_value = c(p_value_GPC, p_value_WR, p_value_WO),
-    Signif. = c(signif_GPC, signif_WR, signif_WO)
-  )
-  
-  data2 = data.frame(
-    Method = c("GPC", "WR", "WO"),
-    CI_lower = c(CI_GPC[1], CI_WR[1], CI_WO[1]),
-    CI_upper = c(CI_GPC[2], CI_WR[2], CI_WO[2])
-  )
-  
-  #data3 = data.frame(Nb_win = N_w, Nb_lose = N_l, Nb_tie = N_t, row.names = "")
-  
-  stopCluster(cl)
-  
-  return(list(results = data1, confidence_intervals = data2))
-}
-
-# t1=Sys.time()
-# GPC1=GPC_WO_WR(T_1_2,C_1_2,p.val = "two.sided")
-# t2=Sys.time()
-# GPC2=GPC_WO_WR2(T_3_2,C_3_2, p.val = "two.sided")
-# t3=Sys.time()
-# temps1=t2-t1
-# temps2=t3-t2
-# temps1
-# temps2
-# sum(GPC1!=GPC2)
-# GPC2
-
-################################################################################
-##########################       stratification        #########################
-################################################################################
-
-treatmentdata = T_1_4
-nrow(treatmentdata)
-controldata= C_1_4
-strata=rep(c(1,3,5,8), each=10)
-treatmentdata=cbind(treatmentdata,strata)
-controldata=cbind(controldata,strata)
-threshold = 0
-n_perm=1000
-
-U=matrix(0,ncol = n_T, nrow=n_C)
-V = rowSums(U, na.rm = TRUE)
-D <- ifelse(df$group == "T", 1, 0)
-T=sum(V*D)
-
 eval_diff = function(i, j, l, type1, comp, threshold) {
   indices_T = which(comp$groupe == "T")
   indices_C = which(comp$groupe == "C")
@@ -398,15 +117,15 @@ eval_diff = function(i, j, l, type1, comp, threshold) {
   }
 }
 
-
 affect_crit_strata = function(treatmentdata, controldata, threshold = 0, strata = NULL) {
   n1 = nrow(treatmentdata)
   n2 = nrow(controldata)
   
+  ### On regarde le nb d'outcome 
   if (is.null(strata)) {
-    L = ncol(treatmentdata)  # Si pas de "strata", tous les outcomes sont des colonnes
+    L = ncol(treatmentdata)
   } else {
-    L = ncol(treatmentdata) - 1  # Si strata, une colonne est "strata", donc L est -1
+    L = ncol(treatmentdata) - 1
   }
   
   col = colnames(treatmentdata) 
@@ -415,7 +134,10 @@ affect_crit_strata = function(treatmentdata, controldata, threshold = 0, strata 
     stop("Il n'y a pas le même nombre d'outcomes")
   }
   
-  # Créer le tableau "comp" avec traitement des colonnes
+  
+  
+  ### On crée les tableaux qui nous seront utile suivant s'il y a de la stratification ou non 
+  
   if (is.null(strata)) {
     type1 <- type_variable(treatmentdata, L) 
     groupe <- as.factor(rep(c("T", "C"), c(n1, n2)))
@@ -430,7 +152,8 @@ affect_crit_strata = function(treatmentdata, controldata, threshold = 0, strata 
                        strata = c(treatmentdata[["strata"]], controldata[["strata"]]))
   }
   
-  # Renommer les colonnes
+  
+  ### On écrase le nom du groupe à chaque fois (problème lors de la parallélisation sinon)
   colnames(comp)[which(colnames(comp) == "groupe")] <- "groupe"
   
   outcome_cols <- colnames(comp)[grep("outcome", colnames(comp))]
@@ -440,12 +163,16 @@ affect_crit_strata = function(treatmentdata, controldata, threshold = 0, strata 
     }
   }
   
-  # Renommage de "strata" si elle existe
   if ("strata" %in% colnames(comp)) {
     colnames(comp)[which(colnames(comp) == "strata")] <- "strata"
   }
   
-  # Si strata est fourni, vérifier son existence et trier
+  
+  
+  
+  
+  ### On trie suivant les strates
+  
   if (!is.null(strata)) {
     if (!any("strata" %in% colnames(comp))) {
       stop("La colonne strata spécifiée n'existe pas dans les données")
@@ -453,73 +180,178 @@ affect_crit_strata = function(treatmentdata, controldata, threshold = 0, strata 
     comp = comp[order(comp[["strata"]]), ]
   }
   
+  
+  sum(compT$strata==1)
+  ### On crée les quantités qui nous intéressent U et paires 
+  
   matrices_list = list()
+  U_list = list()
+  Z_list = list()
+  TT_list = list()
+  V_list = list()
   
   if (is.null(strata)) {
+    U = matrix(0, ncol = n1, nrow = n2)
     pairs = expand.grid(i = 1:n1, j = 1:n2)
     paire = matrix("", nrow = nrow(pairs), ncol = L)
     
     for (l in 1:L) {
-      paire[, l] = mapply(eval_diff, pairs$i, pairs$j, MoreArgs = list(l = l, type1 = type1, comp = comp, threshold = threshold))
+      paire[, l] = mapply(eval_diff, pairs$i, pairs$j, 
+                          MoreArgs = list(l = l, type1 = type1, comp = comp, threshold = threshold))
     }
     
+    for (idx in 1:nrow(pairs)) {
+      i <- pairs$i[idx]
+      j <- pairs$j[idx]
+      
+      ligne_paire <- paire[idx, ]
+      
+      ligne_paire[is.na(ligne_paire)] <- "non-informative"
+      
+      res <- ligne_paire[ligne_paire != "non-informative"][1]
+      if (!is.na(res)) {
+        U[i, j] <- ifelse(res == "favorable", 1, 
+                          ifelse(res == "défavorable", -1, 0))
+      } else {
+        U[i, j] <- 0
+      }
+    }
+    
+    V_T=rowsum(U, na.rm = TRUE)
+    V_C=colSums(U, na.rm= TRUE) 
+    V_f= sum(V_T + V_C)
+    TT=sum(V_T)
+    V=((n1*n2)/((n1+n2)(n1+n2-1)))*sum(V_f**2)
+    Z=TT/sqrt(V)
     matrices_list[["all"]] = paire
+    U_list[["all"]] = U
     
   } else {
     for (s in unique(comp$strata)) { 
-      comp_s = subset(comp, strata==s)
+      s=1
+      comp_s = subset(comp, strata == s)
       n_T = sum(comp_s$groupe == "T")  
       n_C = sum(comp_s$groupe == "C") 
+      U = matrix(0, ncol = n_T, nrow = n_C)
       
       if (n_T > 0 & n_C > 0) {  
         pairs = expand.grid(i = 1:n_T, j = 1:n_C)
         
-        indices_T = which(comp_s$strata == s & comp_s$groupe == "T")
-        indices_C = which(comp_s$strata == s & comp_s$groupe == "C")
-        pairs$i = indices_T[pairs$i]
-        pairs$j = indices_C[pairs$j]
+        indices_T = which(comp_s$groupe == "T")
+        indices_C = which(comp_s$groupe == "C")
         
         paire = matrix("", nrow = nrow(pairs), ncol = L)
         
         for (l in 1:L) {
-          paire[, l] = sapply(1:nrow(pairs), function(idx) eval_diff(pairs$i[idx], pairs$j[idx], l, type1 = type1, comp = comp, threshold = threshold))
+          paire[, l] = sapply(1:nrow(pairs), function(idx) {
+            eval_diff(pairs$i[idx], pairs$j[idx], l, type1, comp_s, threshold)
+          })
         }
+        
+        
+        for (idx in 1:nrow(pairs)) {
+          i <- pairs$i[idx]
+          j <- pairs$j[idx]
+          
+          ligne_paire <- paire[idx, ]
+          
+          ligne_paire[is.na(ligne_paire)] <- "non-informative"
+          
+          res <- ligne_paire[ligne_paire != "non-informative"][1]
+          
+          if (!is.na(res)) {
+            U[j, i] <- ifelse(res == "favorable", 1,
+                              ifelse(res == "défavorable", -1, 0))
+          } else {
+            U[j, i] <- 0
+          }
+        }
+        
+        V_T = rowSums(U, na.rm = TRUE)
+        V_C = colSums(U, na.rm = TRUE)
+        V_f = sum(V_T + V_C)
+        TT = sum(V_T)
+        V = ((n_T * n_C) / ((n_T + n_C) * (n_T + n_C - 1))) * sum(V_f^2)
+        Z = TT / sqrt(V)
+        
+        V_list[[paste0("strata_", s)]] = V
+        TT_list[[paste0("strata_", s)]] = TT
+        Z_list[[s]] = Z
+        
         matrices_list[[paste0("strata_", s)]] = paire
+        U_list[[s]] = U
       }
     }
     
     matrices_list[["all"]] = do.call(rbind, matrices_list)
+    U_list[["all"]] = do.call(rbind, U_list)
+    V = do.call(sum, V_list)
+    TT = do.call(sum, TT_list)
+    Z = do.call(sum, Z_list)
   }
   
-  final_matrix = matrices_list[["all"]]
-  return(final_matrix)
+  return(list(
+    paire_glob = matrices_list[["all"]],
+    paire_strata = matrices_list[names(matrices_list) != "all"],
+    #U_strata = U_list,
+    U_global = U_list[["all"]],
+    Z = Z,
+    V = V,
+    TT = TT
+  ))
 }
 
-affect_crit_strata(treatmentdata,controldata, strata=strata)
-
-
 # rentre en argument une matrice de paire comportant des valeurs de type charactère donné par la fonction affect_crit
+# et la colonne de stratification
 # donne en sortie le nombre de win, de lose et de tie
-calcul_stat = function(paire) {
-  n1 = sqrt(nrow(paire))
-  n2 = sqrt(nrow(paire))
-  L = ncol(paire)
-  
-  eval_ligne = function(ligne) {
-    valeur = ligne[ligne != "non-informative"][1]
-    if (is.na(valeur)) return(NA) 
-    return(valeur)
+calcul_stat_strata = function(paire, strata=NULL) {
+  if(is.null(strata)){
+    #   n1 = n2 = sqrt(nrow(paire))
+    #   L = ncol(paire)
+    #   
+    eval_ligne = function(ligne) {
+      valeur = ligne[ligne != "non-informative"][1]
+      if (is.na(valeur)) return(NA) 
+      return(valeur)
+    }
+    
+    resultats = apply(paire, 1, eval_ligne)
+    
+    N_w = sum(resultats, na.rm = TRUE)
+    N_l = sum(resultats, na.rm = TRUE)
+    N_t = sum(resultats, na.rm = TRUE)
+    
+  } else {
+    
+    N_w_list=list()
+    N_l_list=list()
+    N_t_list=list()
+    
+    for (s in unique(strata)) { 
+      paire_s = paire[[paste0("strata_", s)]]
+      # n1 = n2 = sqrt(nrow(paire_s))
+      # L = ncol(paire_s)
+      
+      eval_ligne = function(ligne) {
+        valeur = ligne[ligne != "non-informative"][1]
+        if (is.na(valeur)) return(NA) 
+        return(valeur)
+      }
+      
+      resultats = apply(paire_s, 1, eval_ligne)
+      
+      N_w_list[[as.character(s)]] = sum(resultats == "favorable", na.rm = TRUE)
+      N_l_list[[as.character(s)]] = sum(resultats == "défavorable", na.rm = TRUE)
+      N_t_list[[as.character(s)]] = sum(resultats == "neutre", na.rm = TRUE)
+    }
+    N_w = sum(unlist(N_w_list))
+    N_l = sum(unlist(N_l_list))
+    N_t = sum(unlist(N_t_list))
+    
   }
-  
-  resultats = apply(paire, 1, eval_ligne)
-  
-  N_w = sum(resultats == "favorable", na.rm = TRUE)
-  N_l = sum(resultats == "défavorable", na.rm = TRUE)
-  N_t = sum(resultats == "neutre", na.rm = TRUE)
   
   return(c(N_w, N_l, N_t))
 }
-calcul_stat(affect_crit_strata(treatmentdata,controldata, strata=strata))
 
 # GPC_WO_WR necesiite les package doParallele, parallele et foreach
 # rentre en argument treatmentdata le nouveau traitrement, controldata le traitement de contrôle, threshold le seuil, 
@@ -528,7 +360,7 @@ calcul_stat(affect_crit_strata(treatmentdata,controldata, strata=strata))
 #    l'intervalle de confiance pour ces 3 valeurs et le nombre de win,lose et tie 
 GPC_WO_WR_strata = function(treatmentdata, controldata, threshold = 0, p.val = c("one.sided", "two.sided"), n_perm = 1000, strata=NULL) {
   
-  n_cores = detectCores()/2  
+  n_cores = parallel::detectCores()/2 
   cl = makeCluster(n_cores)
   registerDoParallel(cl)
   
@@ -545,12 +377,20 @@ GPC_WO_WR_strata = function(treatmentdata, controldata, threshold = 0, p.val = c
     L = ncol(treatmentdata)-1
     groupe = as.factor(rep(c("T", "C"), c(n1, n2)))
     comp = data.frame(groupe = groupe, 
-                       outcome = rbind(treatmentdata[,-which(col=="strata")], controldata[,-which(col=="strata")]),
-                       strata = c(treatmentdata$strata, controldata$strata))
+                      outcome = rbind(treatmentdata[,-which(col=="strata")], controldata[,-which(col=="strata")]),
+                      strata = c(treatmentdata$strata, controldata$strata))
+  }
+  af=affect_crit_strata(treatmentdata = treatmentdata, controldata = controldata, threshold = threshold, strata = strata)
+  if(is.null(strata)){
+    paire=af$paire_glob
+  } else {
+    paire=af$paire_strata
   }
   
-  paire=affect_crit_strata(treatmentdata = treatmentdata, controldata = controldata, threshold = threshold, strata = strata)
-  stat_init = calcul_stat(paire)
+  stat_init = calcul_stat_strata(paire, strata = strata)
+  
+  z_WR=af$Z
+  
   N_w = stat_init[1]
   N_l = stat_init[2]
   N_t = stat_init[3]
@@ -559,52 +399,51 @@ GPC_WO_WR_strata = function(treatmentdata, controldata, threshold = 0, p.val = c
   WR_obs = round(N_w/N_l,3)
   WO_obs = round((N_w+0.5*N_t)/(N_l+0.5*N_t),3)
   
-  
-  N_w_perm=rep(0, n_perm)
-  N_l_perm=rep(0, n_perm)
   Delta_perm=rep(0, n_perm)
-  WR_perm=rep(0, n_perm)
-  WO_perm=rep(0, n_perm)
   
-  Delta_perm_res = foreach(s = 1:n_perm, .combine = rbind, .packages = c("dplyr", "survival"), 
+  
+  Delta_perm_res = foreach(p = 1:n_perm, .combine = rbind, .packages = c("dplyr", "survival"), 
                            .export = c("eval_diff","affect_crit_strata", "calcul_stat", "type_variable", "extract_tte")) %dopar% {
+                             set.seed(p)
+                             if(is.null(strata)){
+                               comp_perm=comp
+                               comp_perm$groupe = sample(comp_perm$groupe)
+                               
+                               compT = subset(comp_perm, groupe == "T")[,-1]
+                               compC = subset(comp_perm, groupe == "C")[,-1]
+                               
+                               paire_perm = affect_crit_strata(compT, compC, threshold,strata)$paire_global
+                             }else {
+                               comp_perm=comp
+                               comp_perm$groupe_permute <- ave(comp_perm$groupe, comp_perm$strata, FUN = function(x) sample(x))
+                               sum(comp_perm$groupe_permute=="T" & comp_perm$strata==8)
+                               compT = subset(comp_perm, groupe_permute == "T")[,-c(1,L+3)]
+                               compC = subset(comp_perm, groupe_permute == "C")[,-c(1,L+3)]
+                               
+                               paire_perm  = affect_crit_strata(compT, compC, threshold,strata)$paire_strata
+                             }
                              
-                             comp_perm=comp
-                             comp_perm$groupe = sample(comp_perm$groupe)
-                             
-                             compT = subset(comp_perm, groupe == "T")[,-1]
-                             compC = subset(comp_perm, groupe == "C")[,-1]
-                             
-                             paire_perm = affect_crit_strata(compT, compC, threshold,strata) 
-                             stat_perm = calcul_stat(paire_perm)  
+                             stat_perm = calcul_stat_strata(paire_perm, strata = strata)  
                              
                              N_w_perm = stat_perm[1] 
                              N_l_perm = stat_perm[2]  
                              N_t_perm = stat_perm[3]
                              
                              
-                             Delta_perm = (N_w_perm - N_l_perm) / (n1 * n2)
-                             WR_perm = N_w_perm/N_l_perm
-                             WO_perm = (N_w_perm+0.5*N_t_perm)/(N_l_perm+0.5*N_t_perm)
+                             Delta_perm = (N_w_perm - N_l_perm) / (N_w_perm + N_l_perm + N_t_perm)
                              
                              
-                             return(unname(c(N_w_perm,N_l_perm,Delta_perm, WR_perm,WO_perm)))
+                             return(unname(Delta_perm))
                            }
   
-  N_w_perm = Delta_perm_res[, 1]
-  N_l_perm = Delta_perm_res[, 2]
-  Delta_perm = Delta_perm_res[, 3]
-  WR_perm = Delta_perm_res[, 4]
-  WO_perm = Delta_perm_res[, 5]
+  Delta_perm = Delta_perm_res
+  
   
   CI_GPC = quantile(Delta_perm, c(0.025, 0.975), na.rm = TRUE)
   CI_GPC = c(Delta_obs + CI_GPC[1], Delta_obs + CI_GPC[2])
   
-  CI_WR = quantile(WR_perm, c(0.025, 0.975), na.rm = TRUE)
-  CI_WR = c(WR_obs - CI_WR[1], WR_obs + CI_WR[2])
-  
-  CI_WO = quantile(WO_perm, c(0.025, 0.975), na.rm = TRUE)
-  CI_WO = c(WO_obs - CI_WO[1], WO_obs + CI_WO[2])
+  CI_WR = exp(log(WR_obs) + c(-1.96, 1.96) * sqrt(1/N_w + 1/N_l))
+  CI_WO = exp(log(WO_obs) + c(-1.96, 1.96) * sqrt(1/N_w + 1/N_l + 1/(n1*n2)))
   
   hist(Delta_perm, breaks = 30, main = "Distribution de Δ sous H0 (permutation)", 
        xlab = "Δ permuté", col = "lightblue", border = "black", xlim=c(-1, 1))
@@ -614,37 +453,17 @@ GPC_WO_WR_strata = function(treatmentdata, controldata, threshold = 0, p.val = c
   abline(v=0, col='black', lwd = 2)
   legend('topright', col=c("green","red","black"), legend = c("95% CI", "Δ_obs", "H0"), lwd=c(2,2,1), lty = c(2,2,1))
   
-  hist(WR_perm, breaks = 30, main = "Distribution de WR sous H0 (permutation)", 
-       xlab = "WR permuté", col = "lightblue", border = "black", xlim=c(0, 5))
-  abline(v = WR_obs, col = "red", lwd = 2, lty = 2)
-  abline(v=CI_WR[1], col = "green", lwd = 2, lty = 2)
-  abline(v=CI_WR[2], col = "green", lwd = 2, lty = 2)
-  abline(v=1, col='black', lwd = 2)
-  legend('topright', col=c("green","red","black"), legend = c("95% CI", "WR_obs", "H0"), lwd=c(2,2,1), lty = c(2,2,1))
-  
-  hist(WO_perm, breaks = 30, main = "Distribution de WO sous H0 (permutation)", 
-       xlab = "WO permuté", col = "lightblue", border = "black", xlim=c(0, 5))
-  abline(v = WO_obs, col = "red", lwd = 2, lty = 2)
-  abline(v=CI_WO[1], col = "green", lwd = 2, lty = 2)
-  abline(v=CI_WO[2], col = "green", lwd = 2, lty = 2)
-  abline(v=1, col='black', lwd = 2)
-  legend('topright', col=c("green","red","black"), legend = c("95% CI", "WO_obs", "H0"), lwd=c(2,2,2), lty = c(2,2,1))
-  
-  # boxplot(WO_perm, main = "Distribution de WO sous H0", col = "lightblue")
-  # points(1, WO_obs, col = "red", pch = 19, cex = 1.5)
   
   sigma_GPC = sd(Delta_perm)
   z_GPC = (Delta_obs) / sigma_GPC
   
-  sigma_WR = sd(WR_perm)
-  z_WR = (WR_obs - mean(WR_perm)) / sigma_WR
-  
-  sigma_WO = sd(WO_perm)
-  z_WO = (WO_obs - mean(WO_perm)) / sigma_WO
+  var_log_WO = (N_w + N_l + N_t) / ((N_w + 0.5 * N_t) * (N_l + 0.5 * N_t)) 
+  SE_log_WO = sqrt(var_log_WO)
+  z_WO = log(WO_obs) / SE_log_WO
   
   p_value_GPC = ifelse(p.val == "one.sided", mean(Delta_perm >= Delta_obs), 2*mean(abs(Delta_perm) >= abs(Delta_obs)))
-  p_value_WR = ifelse(p.val == "one.sided", mean(WR_perm >= WR_obs), 2*mean(abs(WR_perm) >= abs(WR_obs)))
-  p_value_WO = ifelse(p.val == "one.sided", mean(WO_perm >= WO_obs),2* mean(abs(WO_perm) >= abs(WO_obs)))
+  p_value_WR = ifelse(p.val == "one.sided", pnorm(z_WR), 2*(1-pnorm(abs(z_WR))))
+  p_value_WO = ifelse(p.val == "one.sided", pnorm(z_WO), 2*(1-pnorm(abs(z_WO))))
   
   
   signif_GPC = dplyr::case_when(
@@ -682,10 +501,10 @@ GPC_WO_WR_strata = function(treatmentdata, controldata, threshold = 0, p.val = c
     CI_upper = c(CI_GPC[2], CI_WR[2], CI_WO[2])
   )
   
-  #data3 = data.frame(Nb_win = N_w, Nb_lose = N_l, Nb_tie = N_t, row.names = "")
-  
   stopCluster(cl)
   
   return(list(results = data1, confidence_intervals = data2))
 }
-GPC_WO_WR_strata(treatmentdata,controldata, p.val="two.sided", strata=strata)
+treatmentdata
+controldata
+GPC_WO_WR_strata(treatmentdata,controldata, threshold = 0.2, p.val="two.sided", n_perm, strata=strata)

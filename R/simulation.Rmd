@@ -7,6 +7,7 @@ editor_options:
 ---
 
 ```{r setup, include=FALSE}
+setwd("~/comparaison-par-paire/R")
 knitr::opts_chunk$set(echo = FALSE)
 set.seed(123)
 library(dplyr)
@@ -252,51 +253,22 @@ legend('topright',legend=c("T","C") ,col=c('blue','green'), lwd=c(2,2))
 
 ```
 
-## GPC
-
-```{r}
-print(exists("GPC_WO_WR"))
-print(environment())  # Vérifie l’environnement d’exécution
-print(ls())
-```
-
-
-```{r}
-t1=Sys.time()
-GPC_WO_WR(T_1_4,C_1_4, threshold = 0.25 ,p.val = "two.sided", n_perm = 1000)
-t2=Sys.time()
-t2-t1
-```
-
-```{r}
-id=seq(1:(2*n))
-trt=as.factor(rep(c("A","B"), c(n,n)))
-data=rbind(T_3_4,C_3_4)
-data=cbind(id,trt,data)
-colnames(data) = c("id","arm", "Y_1", "Y_2")
-data$arm = as.character(data$arm)
-win.stat(data = data, priority = c(1,2) ,ep_type =c("continuous","continuous"), pvalue = "two-sided", stratum.weight = "unstratified", method = "unadjusted")
-```
-
 
 ```{r, parallelisation du code}
 n_sim = 1000
-nb_core = (detectCores() / 2) - 1
+nb_core = (parallel::detectCores() / 2) - 1
 cl = makeCluster(nb_core)
 registerDoParallel(cl)
 
 start_time = Sys.time()
 
-results = foreach(s = 1:n_sim, .combine = rbind, .packages = c("dplyr", "survival")) %dopar% {
+results = foreach(s = 1:n_sim, .combine = rbind, .packages = c("dplyr", "survival", "parallel", "foreach", "doParallel"), .export = c("eval_diff", "affect_crit_strata", "calcul_stat", "type_variable", "extract_tte")) %dopar% {
   
-  strata = rep(c(1,3,5,8), each = 10)
+  strata = sample(rep(c(1,3,5,8), each = 10))
   treatmentdata = as.data.frame(cbind(gener_continue(4, 2), gener_continue(3.5, 1.5), strata))
   controldata = as.data.frame(cbind(gener_continue(2.5, 1.5), gener_continue(2, 4), strata))
   
-  treatmentdata$strata = as.factor(treatmentdata$strata)
-  controldata$strata = as.factor(controldata$strata)
-  
-  result = GPC_WO_WR_strata(treatmentdata, controldata, p.val = "two.sided", strata = strata)
+  result = GPC_WO_WR_strata(treatmentdata, controldata, p.val = "two.sided", strata = strata, threshold = 0.2)
   
   val_GPC = result$results[1,2]
   val_WR  = result$results[2,2]
