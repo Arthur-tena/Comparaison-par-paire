@@ -1,0 +1,316 @@
+---
+title: "simulations"
+output: pdf_document
+date: "2025-03-10"
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+setwd("~/comparaison-par-paire/R")
+knitr::opts_chunk$set(echo = FALSE)
+set.seed(123)
+library(dplyr)
+library(purrr)
+library(ggplot2)
+library(tidyr)
+library(npsm)
+library(survival)
+library(coin)
+
+library(gridExtra)
+library(grid)
+
+library(doParallel)
+library(parallel)
+library(foreach)
+source("fonctions.R")
+```
+
+# Générer les données 
+
+## Différents scénario
+Je prend comme généralités que :
+
+ * pour les binomiales, 1 corresponds à l'évènement d'intérêt et qu'il est meilleur d'avoir 0 que 1
+ * pour les tte, une valeur plus grande est préférable, mais cela dépends aussi de la censure
+ * pour les continues, il n'y a que des valeurs positives et une valeur plus grande est préférable
+ 
+ Les notations des vecteurs T et C sont les suivantes : T_scénario_cas de figure (resp C_scénario_cas de figure)
+ où le scénario varie entre 1 et 3 et les cas de figure entre 1 et 6 comme suit : (1) tte/tte ; (2) tte/continue ; (3) tte/binaire ; (4)  continue/continue ; (5)  continue/binaire ; (6) binaire/binaire. 
+  
+
+### Scénario 1 : T uniformément meilleur que C
+
+```{r}
+n=40
+
+# tte/tte
+T_1_1=cbind(gener_tte(1.1, 0.5),gener_tte(0.75,0.33))
+C_1_1=cbind(gener_tte(0.8, 2.5),gener_tte(0.33,2.5))
+
+# tte/continue
+T_1_2=cbind(gener_tte(0.75, 0.75),gener_continue(2,1))
+C_1_2=cbind(gener_tte(0.75,1.5),gener_continue(0,1))
+
+# tte/binaire
+T_1_3=cbind(gener_tte(0.75,0.5),gener_binom(0.75))
+C_1_3=cbind(gener_tte(0.33,2.3),gener_binom(0.45))
+
+# continue/continue
+T_1_4=cbind(gener_continue(3,1),gener_continue(3,2))
+C_1_4=cbind(gener_continue(2,1),gener_continue(1,1))
+
+# continue/binaire
+T_1_5=cbind(gener_continue(2.5,1),gener_binom(0.65))
+C_1_5=cbind(gener_continue(0,2),gener_binom(0.35))
+
+# binaire/binaire
+T_1_6=cbind(gener_binom(0.75), gener_binom(0.65))
+C_1_6=cbind(gener_binom(0.45), gener_binom(0.5))
+
+```
+
+La visulaisation sert à vérifier si les valeurs correspondent bien au scénario choisis
+
+```{r, visualisation, fig.height=3, fig.width=3}
+#### continue/continue
+
+data41=as.data.frame(cbind(T_1_4[,1], C_1_4[,1]))
+
+data_long41 = data41 %>%
+  mutate(Groupe_T = "T", Groupe_C = "C") %>%
+  tidyr::pivot_longer(cols = c(V1, V2), names_to = "Variable", values_to = "Valeur") %>%
+  mutate(Groupe = ifelse(Variable == "V1", "T", "C")) 
+
+ggplot(data_long41, aes(x = Valeur, fill = Groupe)) +
+  geom_histogram(bins = 20, alpha = 0.5, color = "black", position = "identity") +
+  scale_fill_manual(values = c("T" = "darkblue", "C" = "darkred"), name = "Groupe") +
+  theme_classic()
+
+data42=as.data.frame(cbind(T_1_4[,2], C_1_4[,2]))
+
+data_long42 = data42 %>%
+  mutate(Groupe_T = "T", Groupe_C = "C") %>%
+  tidyr::pivot_longer(cols = c(V1, V2), names_to = "Variable", values_to = "Valeur") %>%
+  mutate(Groupe = ifelse(Variable == "V1", "T", "C")) 
+
+ggplot(data_long42, aes(x = Valeur, fill = Groupe)) +
+  geom_histogram(bins = 20, alpha = 0.5, color = "black", position = "identity") +
+  scale_fill_manual(values = c("T" = "darkblue", "C" = "darkred"), name = "Groupe") +
+  theme_classic() +labs(title = "continue/continue 2")
+
+#### continue/binaire
+
+data5=as.data.frame(cbind(T_1_5[,1],C_1_5[,1]))
+data_long5 = data5 %>%
+  mutate(Groupe_T = "T", Groupe_C = "C") %>%
+  tidyr::pivot_longer(cols = c(V1, V2), names_to = "Variable", values_to = "Valeur") %>%
+  mutate(Groupe = ifelse(Variable == "V1", "T", "C")) 
+
+ggplot(data_long5, aes(x = Valeur, fill = Groupe)) +
+  geom_histogram(bins = 20, alpha = 0.5, color = "black", position = "identity") +
+  scale_fill_manual(values = c("T" = "darkblue", "C" = "darkred"), name = "Groupe") +
+  theme_classic()+labs(title = "continue/binaire")
+
+#### binaire/binaire
+
+data6=as.data.frame(cbind(T_1_6[,1],C_1_6[,1]))
+data_long6 = data6 %>%
+  mutate(Groupe_T = "T", Groupe_C = "C") %>%
+  tidyr::pivot_longer(cols = c(V1, V2), names_to = "Variable", values_to = "Valeur") %>%
+  mutate(Groupe = ifelse(Variable == "V1", "T", "C")) 
+
+
+ggplot(data_long6, aes(x = Valeur, fill = Groupe)) +
+  geom_histogram(bins = 20, alpha = 0.5, color = "black", position = "identity") +
+  scale_fill_manual(values = c("T" = "darkblue", "C" = "darkred"), name = "Groupe") +
+  theme_classic() +labs(title = "binaire/binaire")
+```
+
+### Scénario 2 : C uniformément meilleur que T
+
+```{r}
+# tte/tte
+T_2_1=cbind(gener_tte(0.8, 2.5),gener_tte(0.33,2.5))
+C_2_1=cbind(gener_tte(1.1, 0.5),gener_tte(0.75,0.33))
+
+# tte/continue
+T_2_2=cbind(gener_continue(0,1),gener_tte(0.75,1.5))
+C_2_2=cbind(gener_continue(2,1),gener_tte(0.75, 0.75))
+
+# tte/binaire
+T_2_3=cbind(gener_tte(0.33,2.3),gener_binom(0.45))
+C_2_3=cbind(gener_tte(0.75,0.5),gener_binom(0.75))
+
+# continue/continue
+T_2_4=cbind(gener_continue(2,1),gener_continue(1,1))
+C_2_4=cbind(gener_continue(3,1),gener_continue(3,2))
+
+# continue/binaire
+T_2_5=cbind(gener_continue(0,2),gener_binom(0.35))
+C_2_5=cbind(gener_continue(2.5,1),gener_binom(0.65))
+
+# binaire/binaire
+T_2_6=cbind(gener_binom(0.45), gener_binom(0.5))
+C_2_6=cbind(gener_binom(0.75), gener_binom(0.65))
+```
+
+
+### Scénario 3 : T similaire à C
+
+```{r}
+# tte/tte
+T_3_1=cbind(gener_tte(0.8,1.2),gener_tte(0.35,1.3))
+C_3_1=cbind(gener_tte(0.66,1.25),gener_tte(0.5,1))
+
+# tte/continue
+T_3_2=cbind(gener_tte(0.75,1.5),gener_continue(3,2))
+C_3_2=cbind(gener_tte(0.5,1.5),gener_continue(2.5,2))
+
+# tte/binaire
+T_3_3=cbind(gener_tte(0.5,1),gener_binom(0.45))
+C_3_3=cbind(gener_tte(0.7,1.3),gener_binom(0.5))
+
+# continue/continue
+T_3_4=cbind(gener_continue(4,2),gener_continue(3,2))
+C_3_4=cbind(gener_continue(3,2),gener_continue(2,4))
+
+# continue/binaire
+T_3_5=cbind(gener_continue(3,1),gener_binom(0.45))
+C_3_5=cbind(gener_continue(2.5,2),gener_binom(0.55))
+
+# binaire/binaire
+T_3_6=cbind(gener_binom(0.45), gener_binom(0.55))
+C_3_6=cbind(gener_binom(0.4), gener_binom(0.6))
+
+```
+
+```{r, normale}
+
+mu1 = 4
+sigma1 = 2
+mu2 = 2.5
+sigma2 = 1.5
+
+x = seq(mu1 - 4*sigma1, mu1 + 4*sigma1, length.out = 100)
+
+y1 = dnorm(x, mean = mu1, sd = sigma1)
+y2 = dnorm(x, mean = mu2, sd = sigma2)
+
+plot(x, y1, type = "l", lwd = 2, col = "blue", 
+     main = "Densités des lois normales",
+     xlab = "x", ylab = "Densité")
+
+lines(x, y2, lwd = 2, col = "red")  
+legend('topright', legend=c("T","C"), col=c("blue", "red"), lwd=c(2,2))
+
+```
+
+```{r, normale}
+
+shape = 1
+scale = 4
+
+x = seq(0,100, length.out = 1000)
+
+y1 = dweibull(x, shape = shape, scale = scale)
+
+plot(x, y1, type = "l", lwd = 2, col = "blue", 
+     main = "Densités des lois normales",
+     xlab = "x", ylab = "Densité")
+
+lines(x, y2, lwd = 2, col = "red")  
+legend('topright', legend=c("T","C"), col=c("blue", "red"), lwd=c(2,2))
+
+```
+
+
+```{r, exponentielle}
+
+lambda1 = 0.35
+# lambda2 = 1.3
+# lambda3 = 0.5
+# lambda4= 1
+
+x = seq(0, 10, length.out = 100)
+
+y1 = rexp(1000, rate = lambda1)
+# y2 = dexp(x, rate = lambda2)
+# y3 = dexp(x, rate= lambda3)
+# y4 = dexp(x, rate= lambda4)
+
+hist(y1, breaks = 30
+     )
+# plot(x, y1, type = "l", lwd = 2, col = "blue", 
+#      main = "Densités des lois exponentielles Exp(1) et Exp(0.5)",
+#      xlab = "x", ylab = "Densité")
+
+lines(x, y2, lwd = 2, col = "darkblue")
+lines(x, y3, lwd = 2, col = "green")
+lines(x, y4, lwd=2, col="darkgreen")
+legend('topright',legend=c("T","C") ,col=c('blue','green'), lwd=c(2,2))
+
+```
+
+
+```{r, parallelisation du code}
+n_sim = 1000
+nb_core = (parallel::detectCores() / 2) - 1
+cl = makeCluster(nb_core)
+registerDoParallel(cl)
+
+start_time = Sys.time()
+
+results = foreach(s = 1:n_sim, .combine = rbind, .packages = c("dplyr", "survival", "parallel", "foreach", "doParallel"), .export = c("eval_diff", "affect_crit_strata", "calcul_stat_strata", "type_variable", "extract_tte")) %dopar% {
+  
+  strata = sample(rep(c(1,3,5,8), each = 10))
+  treatmentdata = as.data.frame(cbind(gener_continue(4, 2), gener_continue(3.5, 1.5), strata))
+  controldata = as.data.frame(cbind(gener_continue(2.5, 1.5), gener_continue(2, 4), strata))
+  
+  result = GPC_WO_WR_strata(treatmentdata, controldata, p.val = "two.sided", strata = strata, threshold = 0.2)
+  
+  val_GPC = result$results[1,2]
+  val_WR  = result$results[2,2]
+  val_WO  = result$results[3,2]
+  
+  p_val_GPC = result$results[1,4]
+  p_val_WR  = result$results[2,4]
+  p_val_WO  = result$results[3,4]
+  
+  return(unname(c(val_GPC, val_WR, val_WO, p_val_GPC, p_val_WR, p_val_WO)))
+}
+
+stopCluster(cl)
+end_time = Sys.time()
+execution_time = end_time - start_time
+print(execution_time)
+
+results_df = as.data.frame(results)
+colnames(results_df) = c("val_GPC", "val_WR", "val_WO", "p_val_GPC", "p_val_WR", "p_val_WO")
+
+results_long = results_df %>%
+  pivot_longer(cols = everything(), names_to = "metric", values_to = "value")
+
+ggplot(results_long, aes(x = value, fill = metric)) +
+  geom_histogram(alpha = 0.6, position = "identity", bins = 30) +
+  facet_wrap(~metric, scales = "free") +  # Séparer les graphiques par variable
+  theme_minimal() +
+  labs(title = "Distribution des statistiques et p-values",
+       x = "Valeur", y = "Fréquence") +
+  scale_fill_manual(values = c("blue", "green", "red", "orange", "purple", "cyan")) 
+ggplot(results_long, aes(x = value, fill = metric)) +
+  geom_density(alpha = 0.6) +
+  facet_wrap(~metric, scales = "free") +
+  theme_minimal()
+```
+
+
+
+```{r}
+heads = rbinom(1, size = 100, prob = .5)
+heads
+prop.test(heads, 100)
+prop.test(smokers, patients)
+```
+
