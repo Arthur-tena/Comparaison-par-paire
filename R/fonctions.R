@@ -154,6 +154,7 @@ affect_crit_strata = function(treatmentdata, controldata, threshold = 0, strata 
   
   
   ### On écrase le nom du groupe à chaque fois (problème lors de la parallélisation sinon)
+  
   colnames(comp)[which(colnames(comp) == "groupe")] <- "groupe"
   
   outcome_cols <- colnames(comp)[grep("outcome", colnames(comp))]
@@ -176,13 +177,15 @@ affect_crit_strata = function(treatmentdata, controldata, threshold = 0, strata 
     comp = comp[order(comp[["strata"]]), ]
   }
   
-  ### On crée les quantités qui nous intéressent U et paires 
+  ### On crée les quantités qui nous intéressent U pour les strates sous forme de liste
   
-  matrices_list = list()
-  U_list = list()
-  Z_list = list()
-  TT_list = list()
-  V_list = list()
+  matrices_list = list() # les listes de paires
+  U_list = list() # les listes de la matrice U_ijk
+  TT_list = list() # les listes des quantités T qui sont T=sum_(1:N)U_iD_i où D_i=1 si i est dans le grp tr et 0 sinon
+  V_list = list() # les listes des variances de TT
+  Z_list = list() # les listes des z-score calculé comme étant T/sd(T)
+  
+  
   
   if (is.null(strata)) {
     U = matrix(0, ncol = n1, nrow = n2)
@@ -222,10 +225,10 @@ affect_crit_strata = function(treatmentdata, controldata, threshold = 0, strata 
     
   } else {
     for (s in unique(comp$strata)) { 
-      comp_s = subset(comp, strata == s)
+      comp_s = subset(comp, strata == s) # on crée un data set par strate
       n_T = sum(comp_s$groupe == "T")  
       n_C = sum(comp_s$groupe == "C") 
-      U = matrix(0, ncol = n_T, nrow = n_C)
+      U = matrix(0, ncol = n_T, nrow = n_C) # la matrice U_ijk 
       
       if (n_T > 0 & n_C > 0) {  
         pairs = expand.grid(i = 1:n_T, j = 1:n_C)
@@ -237,7 +240,7 @@ affect_crit_strata = function(treatmentdata, controldata, threshold = 0, strata 
         
         for (l in 1:L) {
           paire[, l] = sapply(1:nrow(pairs), function(idx) {
-            eval_diff(pairs$i[idx], pairs$j[idx], l, type1, comp_s, threshold)
+            eval_diff(pairs$i[idx], pairs$j[idx], l, type1, comp_s, threshold) # on évalue chaque paire de patient 
           })
         }
         
@@ -250,7 +253,7 @@ affect_crit_strata = function(treatmentdata, controldata, threshold = 0, strata 
           
           ligne_paire[is.na(ligne_paire)] <- "non-informative"
           
-          res <- ligne_paire[ligne_paire != "non-informative"][1]
+          res <- ligne_paire[ligne_paire != "non-informative"][1] # on trie les valeurs noon-informative pour prendre le critère suivant
           
           if (!is.na(res)) {
             U[j, i] <- ifelse(res == "favorable", 1,
@@ -260,10 +263,10 @@ affect_crit_strata = function(treatmentdata, controldata, threshold = 0, strata 
           }
         }
         
-        V_T = rowSums(U, na.rm = TRUE)
-        V_C = colSums(U, na.rm = TRUE)
+        V_T = rowSums(U, na.rm = TRUE) # On crée le vecteur V des patients avec le nv. tr.
+        V_C = colSums(U, na.rm = TRUE) # On crée le vecteur V des patients avec le tr. de contrôle
         V_f = sum(V_T + V_C)
-        TT = sum(V_T)
+        TT = sum(V_T) # 
         V = ((n_T * n_C) / ((n_T + n_C) * (n_T + n_C - 1))) * sum(V_f^2)
         Z = TT / sqrt(V)
         
@@ -276,18 +279,19 @@ affect_crit_strata = function(treatmentdata, controldata, threshold = 0, strata 
       }
     }
     
-    matrices_list[["all"]] = do.call(rbind, matrices_list)
-    U_list[["all"]] = do.call(rbind, U_list)
-    V = do.call(sum, V_list)
+    matrices_list[["all"]] = do.call(rbind, matrices_list) # On crée la matrice de paire globale
+    #U_list[["all"]] = do.call(rbind, U_list)
+    V = do.call(sum, V_list)# lorsque l'on stratifie, les variance s'ajoutent
     TT = do.call(sum, TT_list)
-    Z = do.call(sum, Z_list)
-  }
+    Z = do.call(sum, Z_list) # /!\ calculer Z ici plutot /!\ comme étant TT/sqrt(V) et pas calculer la somme des Z
+    # Z=TT/sqrt(V)
+    }
   
   return(list(
     paire_glob = matrices_list[["all"]],
     paire_strata = matrices_list[names(matrices_list) != "all"],
-    #U_strata = U_list,
-    U_global = U_list[["all"]],
+    U_strata = U_list[names(matrices_list) != "all"],
+    #U_global = U_list[["all"]],
     Z = Z,
     V = V,
     TT = TT
@@ -299,9 +303,7 @@ affect_crit_strata = function(treatmentdata, controldata, threshold = 0, strata 
 # donne en sortie le nombre de win, de lose et de tie
 calcul_stat_strata = function(paire, strata=NULL) {
   if(is.null(strata)){
-    #   n1 = n2 = sqrt(nrow(paire))
-    #   L = ncol(paire)
-    #   
+ 
     eval_ligne = function(ligne) {
       valeur = ligne[ligne != "non-informative"][1]
       if (is.na(valeur)) return(NA) 
@@ -322,8 +324,6 @@ calcul_stat_strata = function(paire, strata=NULL) {
     
     for (s in unique(strata)) { 
       paire_s = paire[[paste0("strata_", s)]]
-      # n1 = n2 = sqrt(nrow(paire_s))
-      # L = ncol(paire_s)
       
       eval_ligne = function(ligne) {
         valeur = ligne[ligne != "non-informative"][1]
