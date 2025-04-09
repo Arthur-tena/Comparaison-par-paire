@@ -167,10 +167,6 @@ affect_crit_strata = function(treatmentdata, controldata, threshold = 0, strata 
     colnames(comp)[which(colnames(comp) == "strata")] <- "strata"
   }
   
-  
-  
-  
-  
   ### On trie suivant les strates
   
   if (!is.null(strata)) {
@@ -180,8 +176,6 @@ affect_crit_strata = function(treatmentdata, controldata, threshold = 0, strata 
     comp = comp[order(comp[["strata"]]), ]
   }
   
-  
-  sum(compT$strata==1)
   ### On crée les quantités qui nous intéressent U et paires 
   
   matrices_list = list()
@@ -228,7 +222,6 @@ affect_crit_strata = function(treatmentdata, controldata, threshold = 0, strata 
     
   } else {
     for (s in unique(comp$strata)) { 
-      s=1
       comp_s = subset(comp, strata == s)
       n_T = sum(comp_s$groupe == "T")  
       n_C = sum(comp_s$groupe == "C") 
@@ -403,7 +396,7 @@ GPC_WO_WR_strata = function(treatmentdata, controldata, threshold = 0, p.val = c
   
   
   Delta_perm_res = foreach(p = 1:n_perm, .combine = rbind, .packages = c("dplyr", "survival"), 
-                           .export = c("eval_diff","affect_crit_strata", "calcul_stat", "type_variable", "extract_tte")) %dopar% {
+                           .export = c("eval_diff","affect_crit_strata", "calcul_stat_strata", "type_variable", "extract_tte")) %dopar% {
                              set.seed(p)
                              if(is.null(strata)){
                                comp_perm=comp
@@ -507,4 +500,4 @@ GPC_WO_WR_strata = function(treatmentdata, controldata, threshold = 0, p.val = c
 }
 treatmentdata
 controldata
-GPC_WO_WR_strata(treatmentdata,controldata, threshold = 0.2, p.val="two.sided", n_perm, strata=strata)
+GPC_WO_WR_strata(treatmentdata,controldata, threshold = 0.2, p.val="two.sided", n_perm = 1000, strata=strata)
