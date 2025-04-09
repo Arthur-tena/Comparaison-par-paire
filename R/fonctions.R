@@ -183,7 +183,6 @@ affect_crit_strata = function(treatmentdata, controldata, threshold = 0, strata 
   U_list = list() # les listes de la matrice U_ijk
   TT_list = list() # les listes des quantités T qui sont T=sum_(1:N)U_iD_i où D_i=1 si i est dans le grp tr et 0 sinon
   V_list = list() # les listes des variances de TT
-  Z_list = list() # les listes des z-score calculé comme étant T/sd(T)
   
   
   
@@ -266,16 +265,14 @@ affect_crit_strata = function(treatmentdata, controldata, threshold = 0, strata 
         V_T = rowSums(U, na.rm = TRUE) # On crée le vecteur V des patients avec le nv. tr.
         V_C = colSums(U, na.rm = TRUE) # On crée le vecteur V des patients avec le tr. de contrôle
         V_f = sum(V_T + V_C)
-        TT = sum(V_T) # 
+        TT = sum(V_T) 
         V = ((n_T * n_C) / ((n_T + n_C) * (n_T + n_C - 1))) * sum(V_f^2)
-       # Z = TT / sqrt(V)
         
         V_list[[paste0("strata_", s)]] = V
         TT_list[[paste0("strata_", s)]] = TT
-       # Z_list[[s]] = Z
         
         matrices_list[[paste0("strata_", s)]] = paire
-        U_list[[s]] = U
+        U_list[[paste0("strata_", s)]] = U
       }
     }
     
@@ -283,7 +280,7 @@ affect_crit_strata = function(treatmentdata, controldata, threshold = 0, strata 
     #U_list[["all"]] = do.call(rbind, U_list)
     V = do.call(sum, V_list)# lorsque l'on stratifie, les variance s'ajoutent
     TT = do.call(sum, TT_list)
-     #Z = do.call(sum, Z_list) # /!\ calculer Z ici plutot /!\ comme étant TT/sqrt(V) et pas calculer la somme des Z
+
      Z=TT/sqrt(V)
     }
   
@@ -447,16 +444,18 @@ GPC_WO_WR_strata = function(treatmentdata, controldata, threshold = 0, p.val = c
     legend('topright', col=c("green","red","black"), legend = c("95% CI", "Δ_obs", "H0"), lwd=c(2,2,1), lty = c(2,2,1))
   }
   
-  sigma_GPC = sd(Delta_perm)
-  z_GPC = (Delta_obs) / sigma_GPC
+  #sigma_GPC = 1/2*(quantile_GPC[2]-quantile_GPC[2])/1.96
+  s1= sum(Delta_perm >=Delta_obs)
+  s2 = sum(abs(Delta_perm)>=abs(Delta_obs))
   
-  var_log_WO = (N_w + N_l + N_t) / ((N_w + 0.5 * N_t) * (N_l + 0.5 * N_t)) 
-  SE_log_WO = sqrt(var_log_WO)
-  z_WO = log(WO_obs) / SE_log_WO
+  var_log_WO = (N_w + N_l + N_t) / ((N_w + 0.5 * N_t) * (N_l + 0.5 * N_t))
+  SD_log_WO = sqrt(var_log_WO)
+  z_WO = log(WO_obs) / SD_log_WO
   
-  p_value_GPC = ifelse(p.val == "one.sided", mean(Delta_perm >= Delta_obs), 2*mean(abs(Delta_perm) >= abs(Delta_obs)))
-  p_value_WR = ifelse(p.val == "one.sided", pnorm(z_WR), 2*(1-pnorm(abs(z_WR))))
-  p_value_WO = ifelse(p.val == "one.sided", pnorm(z_WO), 2*(1-pnorm(abs(z_WO))))
+  #p_value_GPC = ifelse(p.val == "one.sided", pnorm(-Delta_obs/sigma_GPC), 2*pnorm(-Delta_obs/sigma_GPC))
+  p_value_GPC = ifelse(p.val == "one.sided", s1/n_perm, s2/n_perm)
+  p_value_WR = ifelse(p.val == "one.sided", 1-pnorm(z_WR), 2*(1-pnorm(abs(z_WR))))
+  p_value_WO = ifelse(p.val == "one.sided", 1-pnorm(z_WO), 2*(1-pnorm(abs(z_WO))))
   
   
   signif_GPC = dplyr::case_when(
@@ -483,7 +482,7 @@ GPC_WO_WR_strata = function(treatmentdata, controldata, threshold = 0, p.val = c
   data1 = data.frame(
     Method = c("GPC", "Win Ratio (WR)", "Win Odds (WO)"),
     Estimate = c(Delta_obs, WR_obs, WO_obs),
-    Z_score = c(z_GPC, z_WR, z_WO),
+    Z_score = c(".", z_WR, z_WO),
     P_value = c(p_value_GPC, p_value_WR, p_value_WO),
     Signif. = c(signif_GPC, signif_WR, signif_WO)
   )
@@ -500,4 +499,8 @@ GPC_WO_WR_strata = function(treatmentdata, controldata, threshold = 0, p.val = c
 }
 # treatmentdata
 # controldata
-# GPC_WO_WR_strata(treatmentdata,controldata, threshold = 0.2, p.val="two.sided", n_perm = 1000, strata=strata)
+set.seed(4) # 4 donne une p-valeur supéreiur à 1
+strata = sample(rep(c(1,3,5,8), each = 10))
+treatmentdata = as.data.frame(cbind(gener_continue(2.5, 1.5), gener_continue(2, 4), strata))
+controldata = as.data.frame(cbind(gener_continue(2.5, 1.5), gener_continue(2, 4), strata))
+GPC_WO_WR_strata(treatmentdata,controldata, threshold = 0.2, p.val="two.sided", n_perm = 1000, strata=strata, histo = T)

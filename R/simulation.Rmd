@@ -255,7 +255,7 @@ legend('topright',legend=c("T","C") ,col=c('blue','green'), lwd=c(2,2))
 
 
 ```{r, parallelisation du code}
-n_sim = 50
+n_sim = 100
 nb_core = (parallel::detectCores() / 2) - 1
 cl = makeCluster(nb_core)
 registerDoParallel(cl)
@@ -327,4 +327,9 @@ ggplot(pvals_long, aes(x = metric, y = p_value, fill = metric)) +
   labs(title = "Distribution des p-valeurs",
        x = "Test", y = "p-valeur") +
   scale_fill_manual(values = c("orange", "purple", "cyan"))
+
+
+sum(pvals_long$metric=="GPC" & pvals_long$p_value < 0.05)
+sum(pvals_long$metric=="WO" & pvals_long$p_value < 0.05)
+sum(pvals_long$metric=="WR" & pvals_long$p_value < 0.05)
 ```
