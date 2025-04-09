@@ -42,7 +42,7 @@ Je prend comme généralités que :
 
 ### Scénario 1 : T uniformément meilleur que C
 
-```{r}
+```{r, scénario 1 traitement}
 n=40
 
 # tte/tte
@@ -130,7 +130,7 @@ ggplot(data_long6, aes(x = Valeur, fill = Groupe)) +
 
 ### Scénario 2 : C uniformément meilleur que T
 
-```{r}
+```{r, scénario 2 contrôle}
 # tte/tte
 T_2_1=cbind(gener_tte(0.8, 2.5),gener_tte(0.33,2.5))
 C_2_1=cbind(gener_tte(1.1, 0.5),gener_tte(0.75,0.33))
@@ -159,7 +159,7 @@ C_2_6=cbind(gener_binom(0.75), gener_binom(0.65))
 
 ### Scénario 3 : T similaire à C
 
-```{r}
+```{r, scénario 3 égal}
 # tte/tte
 T_3_1=cbind(gener_tte(0.8,1.2),gener_tte(0.35,1.3))
 C_3_1=cbind(gener_tte(0.66,1.25),gener_tte(0.5,1))
@@ -207,7 +207,7 @@ legend('topright', legend=c("T","C"), col=c("blue", "red"), lwd=c(2,2))
 
 ```
 
-```{r, normale}
+```{r, weibull}
 
 shape = 1
 scale = 4
@@ -262,7 +262,7 @@ registerDoParallel(cl)
 
 start_time = Sys.time()
 
-results = foreach(s = 1:n_sim, .combine = rbind, .packages = c("dplyr", "survival", "parallel", "foreach", "doParallel"), .export = c("eval_diff", "affect_crit_strata", "calcul_stat", "type_variable", "extract_tte")) %dopar% {
+results = foreach(s = 1:n_sim, .combine = rbind, .packages = c("dplyr", "survival", "parallel", "foreach", "doParallel"), .export = c("eval_diff", "affect_crit_strata", "calcul_stat_strata", "type_variable", "extract_tte")) %dopar% {
   
   strata = sample(rep(c(1,3,5,8), each = 10))
   treatmentdata = as.data.frame(cbind(gener_continue(4, 2), gener_continue(3.5, 1.5), strata))
@@ -294,7 +294,7 @@ results_long = results_df %>%
 
 ggplot(results_long, aes(x = value, fill = metric)) +
   geom_histogram(alpha = 0.6, position = "identity", bins = 30) +
-  facet_wrap(~metric, scales = "free") +  # Séparer les graphiques par variable
+  facet_wrap(~metric, scales = "free") +  
   theme_minimal() +
   labs(title = "Distribution des statistiques et p-values",
        x = "Valeur", y = "Fréquence") +
@@ -304,13 +304,3 @@ ggplot(results_long, aes(x = value, fill = metric)) +
   facet_wrap(~metric, scales = "free") +
   theme_minimal()
 ```
-
-
-
-```{r}
-heads = rbinom(1, size = 100, prob = .5)
-heads
-prop.test(heads, 100)
-prop.test(smokers, patients)
-```
-
