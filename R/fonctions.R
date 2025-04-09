@@ -268,11 +268,11 @@ affect_crit_strata = function(treatmentdata, controldata, threshold = 0, strata 
         V_f = sum(V_T + V_C)
         TT = sum(V_T) # 
         V = ((n_T * n_C) / ((n_T + n_C) * (n_T + n_C - 1))) * sum(V_f^2)
-        Z = TT / sqrt(V)
+       # Z = TT / sqrt(V)
         
         V_list[[paste0("strata_", s)]] = V
         TT_list[[paste0("strata_", s)]] = TT
-        Z_list[[s]] = Z
+       # Z_list[[s]] = Z
         
         matrices_list[[paste0("strata_", s)]] = paire
         U_list[[s]] = U
@@ -283,8 +283,8 @@ affect_crit_strata = function(treatmentdata, controldata, threshold = 0, strata 
     #U_list[["all"]] = do.call(rbind, U_list)
     V = do.call(sum, V_list)# lorsque l'on stratifie, les variance s'ajoutent
     TT = do.call(sum, TT_list)
-    Z = do.call(sum, Z_list) # /!\ calculer Z ici plutot /!\ comme étant TT/sqrt(V) et pas calculer la somme des Z
-    # Z=TT/sqrt(V)
+     #Z = do.call(sum, Z_list) # /!\ calculer Z ici plutot /!\ comme étant TT/sqrt(V) et pas calculer la somme des Z
+     Z=TT/sqrt(V)
     }
   
   return(list(

@@ -255,7 +255,7 @@ legend('topright',legend=c("T","C") ,col=c('blue','green'), lwd=c(2,2))
 
 
 ```{r, parallelisation du code}
-n_sim = 1000
+n_sim = 50
 nb_core = (parallel::detectCores() / 2) - 1
 cl = makeCluster(nb_core)
 registerDoParallel(cl)
@@ -265,10 +265,10 @@ start_time = Sys.time()
 results = foreach(s = 1:n_sim, .combine = rbind, .packages = c("dplyr", "survival", "parallel", "foreach", "doParallel"), .export = c("eval_diff", "affect_crit_strata", "calcul_stat_strata", "type_variable", "extract_tte")) %dopar% {
   
   strata = sample(rep(c(1,3,5,8), each = 10))
-  treatmentdata = as.data.frame(cbind(gener_continue(4, 2), gener_continue(3.5, 1.5), strata))
+  treatmentdata = as.data.frame(cbind(gener_continue(2.5, 1.5), gener_continue(2, 4), strata))
   controldata = as.data.frame(cbind(gener_continue(2.5, 1.5), gener_continue(2, 4), strata))
   
-  result = GPC_WO_WR_strata(treatmentdata, controldata, p.val = "two.sided", strata = strata, threshold = 0.2)
+  result = GPC_WO_WR_strata(treatmentdata, controldata, p.val = "two.sided", strata = strata, threshold = 0.2, histo=FALSE)
   
   val_GPC = result$results[1,2]
   val_WR  = result$results[2,2]
@@ -289,18 +289,42 @@ print(execution_time)
 results_df = as.data.frame(results)
 colnames(results_df) = c("val_GPC", "val_WR", "val_WO", "p_val_GPC", "p_val_WR", "p_val_WO")
 
-results_long = results_df %>%
-  pivot_longer(cols = everything(), names_to = "metric", values_to = "value")
+values_long <- results_df %>%
+  select(starts_with("val_")) %>%
+  pivot_longer(cols = everything(), names_to = "metric", values_to = "value") %>%
+  mutate(metric = recode(metric,
+                         "val_GPC" = "GPC",
+                         "val_WR"  = "WR",
+                         "val_WO"  = "WO"))
 
-ggplot(results_long, aes(x = value, fill = metric)) +
-  geom_histogram(alpha = 0.6, position = "identity", bins = 30) +
-  facet_wrap(~metric, scales = "free") +  
-  theme_minimal() +
-  labs(title = "Distribution des statistiques et p-values",
-       x = "Valeur", y = "Fréquence") +
-  scale_fill_manual(values = c("blue", "green", "red", "orange", "purple", "cyan")) 
-ggplot(results_long, aes(x = value, fill = metric)) +
+pvals_long <- results_df %>%
+  select(starts_with("p_val_")) %>%
+  pivot_longer(cols = everything(), names_to = "metric", values_to = "p_value") %>%
+  mutate(metric = recode(metric,
+                         "p_val_GPC" = "GPC",
+                         "p_val_WR"  = "WR",
+                         "p_val_WO"  = "WO"))
+
+ggplot(values_long, aes(x = value, fill = metric)) +
   geom_density(alpha = 0.6) +
   facet_wrap(~metric, scales = "free") +
-  theme_minimal()
+  theme_minimal() +
+  labs(title = "Distribution des statistiques de test",
+       x = "Valeur", y = "Densité") +
+  scale_fill_manual(values = c("orange", "purple", "cyan"))
+
+ggplot(pvals_long, aes(x = metric, y = p_value, fill = metric)) +
+  geom_boxplot(alpha = 0.7) +
+  theme_minimal() +
+  labs(title = "Distribution des p-valeurs ",
+       x = "Test", y = "p-valeur") +
+  scale_fill_manual(values = c("orange", "purple", "cyan"))
+
+ggplot(pvals_long, aes(x = metric, y = p_value, fill = metric)) +
+  geom_violin(trim = FALSE, alpha = 0.6) +
+  geom_jitter(width = 0.15, size = 1.5, color = "black", alpha = 0.8) +
+  theme_minimal() +
+  labs(title = "Distribution des p-valeurs",
+       x = "Test", y = "p-valeur") +
+  scale_fill_manual(values = c("orange", "purple", "cyan"))
 ```
