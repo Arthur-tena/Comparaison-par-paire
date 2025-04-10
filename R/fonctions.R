@@ -187,7 +187,7 @@ affect_crit_strata = function(treatmentdata, controldata, threshold = 0, strata 
   
   
   if (is.null(strata)) {
-    U = matrix(0, ncol = n1, nrow = n2)
+    U = matrix(NA, ncol = n1, nrow = n2)
     pairs = expand.grid(i = 1:n1, j = 1:n2)
     paire = matrix("", nrow = nrow(pairs), ncol = L)
     
@@ -227,7 +227,7 @@ affect_crit_strata = function(treatmentdata, controldata, threshold = 0, strata 
       comp_s = subset(comp, strata == s) # on crée un data set par strate
       n_T = sum(comp_s$groupe == "T")  
       n_C = sum(comp_s$groupe == "C") 
-      U = matrix(0, ncol = n_T, nrow = n_C) # la matrice U_ijk 
+      U = matrix(NA, ncol = n_T, nrow = n_C) # la matrice U_ijk 
       
       if (n_T > 0 & n_C > 0) {  
         pairs = expand.grid(i = 1:n_T, j = 1:n_C)
@@ -473,9 +473,9 @@ GPC_WO_WR_strata = function(treatmentdata, controldata, threshold = 0, p.val = c
   )
   
   signif_WO = dplyr::case_when(
-    p_value_WO < 0.001 ~ "***",
-    p_value_WO < 0.01 ~ "**",
-    p_value_WO < 0.05 ~ "*",
+    p_value_WR < 0.001 ~ "***",
+    p_value_WR < 0.01 ~ "**",
+    p_value_WR < 0.05 ~ "*",
     TRUE ~ ""
   )
   
@@ -483,7 +483,7 @@ GPC_WO_WR_strata = function(treatmentdata, controldata, threshold = 0, p.val = c
     Method = c("GPC", "Win Ratio (WR)", "Win Odds (WO)"),
     Estimate = c(Delta_obs, WR_obs, WO_obs),
     Z_score = c(".", z_WR, z_WO),
-    P_value = c(p_value_GPC, p_value_WR, p_value_WO),
+    P_value = c(p_value_GPC, p_value_WR, p_value_WR),
     Signif. = c(signif_GPC, signif_WR, signif_WO)
   )
   
