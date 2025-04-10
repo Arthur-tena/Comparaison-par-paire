@@ -188,8 +188,8 @@ C_3_6=cbind(gener_binom(0.4), gener_binom(0.6))
 
 ```{r, normale}
 
-mu1 = 4
-sigma1 = 2
+mu1 = 2.5
+sigma1 = 1.5
 mu2 = 2.5
 sigma2 = 1.5
 
@@ -255,7 +255,7 @@ legend('topright',legend=c("T","C") ,col=c('blue','green'), lwd=c(2,2))
 
 
 ```{r, parallelisation du code}
-n_sim = 100
+n_sim = 50
 nb_core = (parallel::detectCores() / 2) - 1
 cl = makeCluster(nb_core)
 registerDoParallel(cl)
@@ -268,7 +268,7 @@ results = foreach(s = 1:n_sim, .combine = rbind, .packages = c("dplyr", "surviva
   treatmentdata = as.data.frame(cbind(gener_continue(2.5, 1.5), gener_continue(2, 4), strata))
   controldata = as.data.frame(cbind(gener_continue(2.5, 1.5), gener_continue(2, 4), strata))
   
-  result = GPC_WO_WR_strata(treatmentdata, controldata, p.val = "two.sided", strata = strata, threshold = 0.2, histo=FALSE)
+  result = GPC_WO_WR_strata(treatmentdata, controldata, p.val = "two.sided", strata = strata, threshold = 0.5, histo=FALSE)
   
   val_GPC = result$results[1,2]
   val_WR  = result$results[2,2]
