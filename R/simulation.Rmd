@@ -43,7 +43,7 @@ Je prend comme généralités que :
 ### Scénario 1 : T uniformément meilleur que C
 
 ```{r, scénario 1 traitement}
-n=40
+n=100
 
 # tte/tte
 T_1_1=cbind(gener_tte(1.1, 0.5),gener_tte(0.75,0.33))
@@ -255,7 +255,7 @@ legend('topright',legend=c("T","C") ,col=c('blue','green'), lwd=c(2,2))
 
 
 ```{r, parallelisation du code}
-n_sim = 50
+n_sim = 200
 nb_core = (parallel::detectCores() / 2) - 1
 cl = makeCluster(nb_core)
 registerDoParallel(cl)
@@ -264,7 +264,7 @@ start_time = Sys.time()
 
 results = foreach(s = 1:n_sim, .combine = rbind, .packages = c("dplyr", "survival", "parallel", "foreach", "doParallel"), .export = c("eval_diff", "affect_crit_strata", "calcul_stat_strata", "type_variable", "extract_tte")) %dopar% {
   set.seed(s)
-  strata = sample(rep(c(1,3,5,8), each = 10))
+  strata = sample(rep(c(1,3,5,8), each = 25))
   treatmentdata = as.data.frame(cbind(gener_continue(2.5, 1.5), gener_continue(2, 4), strata))
   controldata = as.data.frame(cbind(gener_continue(2.5, 1.5), gener_continue(2, 4), strata))
   
@@ -338,7 +338,7 @@ cat("Pourcentage de p-valeur rejettant H0 à 5% pour les WO : ",sum(pvals_long$m
 cat("Pourcentage de p-valeur rejettant H0 à 5% pour les WR : ",sum(pvals_long$method=="WRO" & pvals_long$p_value < 0.05)/n_sim,"% \n")
 
 
-p_val_WO=subset(pvals_long, method=="WO")
-p_val_WR=subset(pvals_long, method=="WR")
+# p_val_WO=subset(pvals_long, method=="WO")
+# p_val_WR=subset(pvals_long, method=="WR")
 
 ```

@@ -350,7 +350,7 @@ calcul_stat_strata = function(paire, strata=NULL) {
 #    l'intervalle de confiance pour ces 3 valeurs et le nombre de win,lose et tie 
 GPC_WO_WR_strata = function(treatmentdata, controldata, threshold = 0, p.val = c("one.sided", "two.sided"), n_perm = 1000, strata=NULL, histo=TRUE) {
   
-  n_cores = parallel::detectCores()/2 
+  n_cores = parallel::detectCores()/2 -2 
   cl = makeCluster(n_cores)
   registerDoParallel(cl)
   
@@ -503,4 +503,4 @@ set.seed(4) # 4 donne une p-valeur supéreiur à 1
 strata = sample(rep(c(1,3,5,8), each = 10))
 treatmentdata = as.data.frame(cbind(gener_continue(2.5, 1.5), gener_continue(2, 4), strata))
 controldata = as.data.frame(cbind(gener_continue(2.5, 1.5), gener_continue(2, 4), strata))
-GPC_WO_WR_strata(treatmentdata,controldata, threshold = 0.2, p.val="two.sided", n_perm = 1000, strata=strata, histo = T)
+GPC_WO_WR_strata(treatmentdata,controldata, threshold = 0.2, p.val="two.sided", n_perm = 1000, strata=strata, histo = F)
