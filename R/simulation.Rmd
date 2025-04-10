@@ -333,8 +333,12 @@ ggplot(pvals_long, aes(x = method, y = p_value, fill = method)) +
        x = "Test", y = "p-valeur") +
   scale_fill_manual(values = c("orange", "purple", "cyan"))
 
-
 cat("Pourcentage de p-valeur rejettant H0 à 5% pour la GPC : ",sum(pvals_long$method=="GPC" & pvals_long$p_value < 0.05)/n_sim,"% \n")
 cat("Pourcentage de p-valeur rejettant H0 à 5% pour les WO : ",sum(pvals_long$method=="WO" & pvals_long$p_value < 0.05)/n_sim,"% \n")
 cat("Pourcentage de p-valeur rejettant H0 à 5% pour les WR : ",sum(pvals_long$method=="WRO" & pvals_long$p_value < 0.05)/n_sim,"% \n")
+
+
+p_val_WO=subset(pvals_long, method=="WO")
+p_val_WR=subset(pvals_long, method=="WR")
+
 ```
