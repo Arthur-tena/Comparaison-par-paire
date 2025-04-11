@@ -497,10 +497,11 @@ GPC_WO_WR_strata = function(treatmentdata, controldata, threshold = 0, p.val = c
   
   return(list(results = data1, confidence_intervals = data2))
 }
+
 # treatmentdata
 # controldata
-set.seed(4) # 4 donne une p-valeur supéreiur à 1
-strata = sample(rep(c(1,3,5,8), each = 10))
-treatmentdata = as.data.frame(cbind(gener_continue(2.5, 1.5), gener_continue(2, 4), strata))
-controldata = as.data.frame(cbind(gener_continue(2.5, 1.5), gener_continue(2, 4), strata))
-GPC_WO_WR_strata(treatmentdata,controldata, threshold = 0.2, p.val="two.sided", n_perm = 1000, strata=strata, histo = F)
+# set.seed(4) # 4 donne une p-valeur supéreiur à 1
+# strata = sample(rep(c(1,3,5,8), each = 10))
+# treatmentdata = as.data.frame(cbind(gener_continue(2.5, 1.5), gener_continue(2, 4), strata))
+# controldata = as.data.frame(cbind(gener_continue(2.5, 1.5), gener_continue(2, 4), strata))
+# GPC_WO_WR_strata(treatmentdata,controldata, threshold = 0.2, p.val="two.sided", n_perm = 1000, strata=strata, histo = F)
