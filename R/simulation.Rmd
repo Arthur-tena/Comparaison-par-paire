@@ -267,7 +267,7 @@ sd_C = 1
 nb_core = (parallel::detectCores() / 2) + 1
 cl = makeCluster(nb_core)
 registerDoParallel(cl)
-
+count = 0
 start_time = Sys.time()
 
 results = foreach(s = 1:n_sim, .combine = rbind, .packages = c("dplyr", "survival", "parallel", "foreach", "doParallel"), .export = c("eval_diff", "affect_crit_strata", "calcul_stat_strata", "type_variable", "extract_tte")) %dopar% {
@@ -277,6 +277,8 @@ results = foreach(s = 1:n_sim, .combine = rbind, .packages = c("dplyr", "surviva
   controldata = as.data.frame(cbind(gener_continue(mean_C, sd_C), strata))
   
   result = GPC_WO_WR_strata(treatmentdata, controldata, p.val = "two.sided", strata = strata, threshold = 0.5, histo=FALSE)
+  count = count + 1
+  write.table(c(count), file="../output.txt", append = T, col.names = F)
   
   val_GPC = result$results[1,2]
   val_WR  = result$results[2,2]
@@ -319,7 +321,7 @@ vlines <- data.frame(
   linetype_label = "Hypothèse H0"
 )
 
-# Graphique
+# Graphiques
 ggplot(values_long, aes(x = value, fill = method)) +
   geom_density(alpha = 0.6) +
   geom_vline(data = vlines, aes(xintercept = intercept, linetype = linetype_label), 
