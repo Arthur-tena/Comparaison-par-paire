@@ -13,7 +13,6 @@ gener_tte=function(mu, lambda=1){
   C=round(rexp(n, rate = mu),3)
   TT=pmin(X,C)
   delta=as.numeric(X==TT)
-  delta=abs(1-delta)
   S=Surv(time = TT, event = delta)
   S=as.data.frame(S)
   return(S)
