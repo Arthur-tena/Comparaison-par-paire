@@ -747,27 +747,26 @@ arm=rep(c("T","C"), each=200)
   
 U = runif(2*n) 
 
-lambdaT = 0.5
-kT = 0.5
+lambdaT = 0.1
+kT = 0.1
 
 
 Z = ifelse(arm == "T", 1, 0)
-beta = 0.4
+beta = 0.3
 
-prob_T = 0.55
-prob_C = 0.4
+prob_T = 0.65
+prob_C = 0.35
 
 mean_T = 3
-mean_C = 2.5
+mean_C = 2
 sd_T = 2
 sd_C = 2
 
   
 Time_1 = round((-log(1 - U)) / (lambdaT * exp(beta * Z)^(1 / kT)),3)
-fup_censureT = round(rweibull(n, shape = 1, scale =1.8),3)
+fup_censureT = round(rweibull(n, shape = 1, scale =1),3)
 
 Time_T = pmin(Time_1, fup_censureT)
-hist(Time_T)
 deltaT=as.numeric(fup_censureT==Time_T)
 
 Y_2_T=as.numeric(gener_binom(prob = prob_T)[,1] )-1
@@ -779,6 +778,7 @@ Y_3_C= gener_continue(mean = mean_C, sd = sd_C)
 stratum=sample(rep(c(1,3,5,8), each = 50))
 dataT=data.frame(Y_1 = Time_T[Z==1], Delta_1 = deltaT[Z==1], Y_2 = Y_2_T, Y_3 = Y_3_T, stratum = stratum)
 dataC=data.frame(Y_1 = Time_T[Z==0], Delta_1 = deltaT[Z==0], Y_2 = Y_2_C, Y_3 = Y_3_C, stratum = stratum)
+
  
 data1=rbind(dataT,dataC)
 data=data.frame(id=id, arm = arm, Y_1= data1[,1],Delta_1=data1[,2], Y_2 = data1[,3], Y_3 = data1[,4], stratum = data1[,5] )
@@ -788,12 +788,12 @@ result =
     data = data,
     ep_type = c("tte", "binary", "continuous"),
     stratum.weight = "equal",
-    tau = c(0,0,0),
+    tau = c(1,0,1),
     arm.name = c("T", "C"),
     alpha = 0.05,
     digit = 3,
     pvalue = "two-sided",
-    priority = c(3, 1, 2),
+    priority = c(3, 2, 1),
     summary.print = FALSE
   )
 
@@ -841,14 +841,17 @@ GPC_trans = (GPC+1)/(1-GPC)
 
 quantileGPC_lwr=quantile(GPC, 0.025)
 quantileGPC_upr=quantile(GPC, 0.975)
+étendue_GPC= round(quantileGPC_upr - quantileGPC_lwr,4)
 c(quantileGPC_lwr, quantileGPC_upr, quantileGPC_upr - quantileGPC_lwr )
 
 quantileWR_lwr=quantile(WR, 0.025)
 quantileWR_upr=quantile(WR, 0.975)
+étendue_WR= round(quantileWR_upr - quantileWR_lwr,4)
 c(quantileWR_lwr, quantileWR_upr, quantileWR_upr - quantileWR_lwr )
 
 quantileWO_lwr=quantile(WO, 0.025)
 quantileWO_upr=quantile(WO, 0.975)
+étendue_WO= round(quantileWO_upr - quantileWO_lwr,4)
 c(quantileWO_lwr, quantileWO_upr, quantileWO_upr - quantileWO_lwr )
 
 quantileGPC2_lwr=quantile(GPC_trans, 0.025)
@@ -863,7 +866,7 @@ Loose = round(c(mean(as.numeric(results_df$Loose_Edp1)), mean(as.numeric(results
 
 Tie   = round(c(mean(as.numeric(results_df$Tie_Edp1)), mean(as.numeric(results_df$Tie_Edp2)), mean(as.numeric(results_df$Tie_Edp3)), mean(as.numeric(results_df$Tie_Edp3)) ))
 
-df2 = data.frame(
+df321_2 = data.frame(
   row.names = c("endpoint1", "endpoint2",  "endpoint3","overall"),
   Win   = Win,
   Loose = Loose,
@@ -873,8 +876,8 @@ df2 = data.frame(
   GPC = round((Win-Loose)/(Win+Loose+Tie),5),
   GPC_trans = round(((Win-Loose)/(Win+Loose+Tie)+1)/(1-(Win-Loose)/(Win+Loose+Tie)),5)
 )
-View(df2)
-#write.csv(df312, file = "Df312.csv")
+View(df321_2)
+write.csv(df321_2, file = "df321_2.csv")
 
 pvals_long = results_df %>%
   select(starts_with("p_val_")) %>%
@@ -910,9 +913,12 @@ ggplot(values_long, aes(x = value, fill = method)) +
    labs(title = "Distribution des statistiques de test",
         x = "Valeur", y = "Densité") +
    scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
-   scale_fill_manual(values = c("orange", "purple", "cyan"))+ coord_cartesian(xlim = c(-1, 5))
+   scale_fill_manual(values = c("orange", "purple", "cyan"))+ coord_cartesian(xlim = c(-1, 5))+
+  annotate("text", x = 4.5, y = 1.1, label = paste("Étendue GPC : ", étendue_GPC), color = "orange", hjust = 1) +
+  annotate("text", x = 4.5, y = 1.5, label = paste("Étendue WR : ", étendue_WR), color = "purple", hjust = 1) +
+  annotate("text", x = 4.5, y = 2.1, label = paste("Étendue WO : ", étendue_WO), color = "cyan", hjust = 1)
 
-#ggsave("Rplot3_15.pdf", device = "pdf", path = "../plots")
+#ggsave("Rplot1_11.pdf", device = "pdf", path = "../plots")
 
 
 
