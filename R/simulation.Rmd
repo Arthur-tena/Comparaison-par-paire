@@ -752,7 +752,7 @@ kT = 0.1
 
 
 Z = ifelse(arm == "T", 1, 0)
-beta = 0.3
+beta = 3
 
 prob_T = 0.65
 prob_C = 0.35
@@ -788,12 +788,12 @@ result =
     data = data,
     ep_type = c("tte", "binary", "continuous"),
     stratum.weight = "equal",
-    tau = c(1,0,1),
+    tau = c(2,0,2),
     arm.name = c("T", "C"),
     alpha = 0.05,
     digit = 3,
     pvalue = "two-sided",
-    priority = c(3, 2, 1),
+    priority = c(3,1,2),
     summary.print = FALSE
   )
 
@@ -866,7 +866,7 @@ Loose = round(c(mean(as.numeric(results_df$Loose_Edp1)), mean(as.numeric(results
 
 Tie   = round(c(mean(as.numeric(results_df$Tie_Edp1)), mean(as.numeric(results_df$Tie_Edp2)), mean(as.numeric(results_df$Tie_Edp3)), mean(as.numeric(results_df$Tie_Edp3)) ))
 
-df321_2 = data.frame(
+dftau0_pb = data.frame(
   row.names = c("endpoint1", "endpoint2",  "endpoint3","overall"),
   Win   = Win,
   Loose = Loose,
@@ -876,8 +876,8 @@ df321_2 = data.frame(
   GPC = round((Win-Loose)/(Win+Loose+Tie),5),
   GPC_trans = round(((Win-Loose)/(Win+Loose+Tie)+1)/(1-(Win-Loose)/(Win+Loose+Tie)),5)
 )
-View(df321_2)
-write.csv(df321_2, file = "df321_2.csv")
+View(dftau0_pb)
+#write.csv(dftau0_pb, file = "dftau0_pb.csv")
 
 pvals_long = results_df %>%
   select(starts_with("p_val_")) %>%
@@ -918,7 +918,7 @@ ggplot(values_long, aes(x = value, fill = method)) +
   annotate("text", x = 4.5, y = 1.5, label = paste("Étendue WR : ", étendue_WR), color = "purple", hjust = 1) +
   annotate("text", x = 4.5, y = 2.1, label = paste("Étendue WO : ", étendue_WO), color = "cyan", hjust = 1)
 
-#ggsave("Rplot1_11.pdf", device = "pdf", path = "../plots")
+#ggsave("Rplot_tau0_pb.pdf", device = "pdf", path = "../plots")
 
 
 
