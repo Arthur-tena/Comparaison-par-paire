@@ -26,6 +26,11 @@ gener_continue=function(mean=1, sd=0){
   return(data.frame(X))
 }
 
+gener_poisson=function(lambda=1){
+  X=round(rpois(n, lambda = lambda),3)
+  return(data.frame(X))
+}
+
 # générer des variables de type binaire
 # rentre en argument prob, la probabilité de tiré 1 pour une loi binomiale
 # donne un dataframe comportant les données binaire
