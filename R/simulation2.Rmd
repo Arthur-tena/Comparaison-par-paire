@@ -1,14 +1,17 @@
 ---
 title: "Simulations2"
-output: pdf_document
-date: "2025-05-13"
-editor_options: 
-  chunk_output_type: inline
+author: "Arthur Tena"
+date: "2025-05-15"
+output:
+  pdf_document:
+    latex_engine: pdflatex
+    extra_dependencies: ['subcaption', 'caption']
+    toc: true
 ---
 
 ```{r setup, include=FALSE, echo = FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_knit$set(root.dir = "~/comparaison-par-paire/R")
+knitr::opts_knit$set(root.dir = "~/comparaison-par-paire/R", fig.subcap = c("Sous-figure 1", "Sous-figure 2"))
 library(dplyr)
 library(purrr)
 library(ggplot2)
@@ -17,6 +20,7 @@ library(tidyr)
 library(survival)
 
 library(WINS)
+library(knitr)
 
 
 library(doParallel)
@@ -184,7 +188,6 @@ execution_time = end_time - start_time
 
 results_df = as.data.frame(results)
 colnames(results_df) = c("val_GPC", "val_WR","val_WO" ,"Win_Edp1","Loose_Edp1","Tie_Edp1","Win_Edp2","Loose_Edp2","Tie_Edp2","Win_Edp3","Loose_Edp3","Tie_Edp3","min_Y_1C", "min_Y_3C","max_Y_1C", "max_Y_3C","median_Y_1C", "median_Y_3C","min_Y_1T", "min_Y_3T","max_Y_1T", "max_Y_3T","median_Y_1T", "median_Y_3T","nb_0_C","nb_1_C","nb_0_T","nb_1_T", "censure_rateC", "censure_rateT")
-View(results_df)
 
 min_Y_1C=mean(as.numeric(results_df$min_Y_1C))
 min_Y_3C=mean(as.numeric(results_df$min_Y_3C))
@@ -288,6 +291,9 @@ ggplot(values_long, aes(x = value, fill = method)) +
   annotate("text", x = 4.5, y = 3.1, label = paste("Étendue WO : ", étendue_WO), color = "cyan", hjust = 1)
 
 ```
+
+
+
 
 ## tau = 2
 
@@ -427,7 +433,7 @@ execution_time = end_time - start_time
 
 results_df = as.data.frame(results)
 colnames(results_df) = c("val_GPC", "val_WR","val_WO" ,"Win_Edp1","Loose_Edp1","Tie_Edp1","Win_Edp2","Loose_Edp2","Tie_Edp2","Win_Edp3","Loose_Edp3","Tie_Edp3","min_Y_1C", "min_Y_3C","max_Y_1C", "max_Y_3C","median_Y_1C", "median_Y_3C","min_Y_1T", "min_Y_3T","max_Y_1T", "max_Y_3T","median_Y_1T", "median_Y_3T","nb_0_C","nb_1_C","nb_0_T","nb_1_T", "censure_rateC", "censure_rateT")
-View(results_df)
+
 
 min_Y_1C=mean(as.numeric(results_df$min_Y_1C))
 min_Y_3C=mean(as.numeric(results_df$min_Y_3C))
@@ -532,6 +538,7 @@ ggplot(values_long, aes(x = value, fill = method)) +
   annotate("text", x = 4.5, y = 3.1, label = paste("Étendue WO : ", étendue_WO), color = "cyan", hjust = 1)
 
 ```
+
 
 # Scénario 2 : T>>C
 
@@ -686,7 +693,6 @@ execution_time = end_time - start_time
 
 results_df = as.data.frame(results)
 colnames(results_df) = c("val_GPC", "val_WR","val_WO" ,"Win_Edp1","Loose_Edp1","Tie_Edp1","Win_Edp2","Loose_Edp2","Tie_Edp2","Win_Edp3","Loose_Edp3","Tie_Edp3","min_Y_1C", "min_Y_3C","max_Y_1C", "max_Y_3C","median_Y_1C", "median_Y_3C","min_Y_1T", "min_Y_3T","max_Y_1T", "max_Y_3T","median_Y_1T", "median_Y_3T","nb_0_C","nb_1_C","nb_0_T","nb_1_T", "censure_rateC", "censure_rateT")
-View(results_df)
 
 min_Y_1C=mean(as.numeric(results_df$min_Y_1C))
 min_Y_3C=mean(as.numeric(results_df$min_Y_3C))
@@ -792,6 +798,8 @@ ggplot(values_long, aes(x = value, fill = method)) +
 
 
 ```
+
+
 
 ## tau = 2
 
@@ -931,7 +939,7 @@ execution_time = end_time - start_time
 
 results_df = as.data.frame(results)
 colnames(results_df) = c("val_GPC", "val_WR","val_WO" ,"Win_Edp1","Loose_Edp1","Tie_Edp1","Win_Edp2","Loose_Edp2","Tie_Edp2","Win_Edp3","Loose_Edp3","Tie_Edp3","min_Y_1C", "min_Y_3C","max_Y_1C", "max_Y_3C","median_Y_1C", "median_Y_3C","min_Y_1T", "min_Y_3T","max_Y_1T", "max_Y_3T","median_Y_1T", "median_Y_3T","nb_0_C","nb_1_C","nb_0_T","nb_1_T", "censure_rateC", "censure_rateT")
-View(results_df)
+
 
 min_Y_1C=mean(as.numeric(results_df$min_Y_1C))
 min_Y_3C=mean(as.numeric(results_df$min_Y_3C))
@@ -1036,3 +1044,4 @@ ggplot(values_long, aes(x = value, fill = method)) +
   annotate("text", x = 4.5, y = 3.1, label = paste("Étendue WO : ", étendue_WO), color = "cyan", hjust = 1)
 
 ```
+
