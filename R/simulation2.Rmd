@@ -29,17 +29,20 @@ library(foreach)
 source("fonctions.R")
 ```
 
-Soit $U \sim \mathcal{U}([0,1])$, on simulera nos lois tte comme ceci :
+\newpage
+
+Soit $U \sim \mathcal{U}([0,1])$, on simulera nos lois tte avec HR constant comme ceci :
 
 $$X = \frac{-\log(1 - U)}{\lambda \, \left(e^{\beta Z}\right)^{1/k}}$$
+Les paramètres $\lambda$, $k$ et la loi de la censure seront précisés. La covariable $Z$ correspond au traitement, Z = 1 si le patient est dans le groupe traité et 0 sinon.
 
-# Scénario 1 : T ~ C
+# Scénario 1 : $T \sim C$
 
 Paramètres :
 
 - tte :
 
-  $\lambda = 0.5$, $k = 0.5$, $\beta = 0$, $\mathcal{W}(1,2)$
+  $\lambda = 0.5$, $k = 0.5$, $\beta = 0$, la censure sera une distribution $\mathcal{W}(1,2)$
  
 - Continue :
 
@@ -52,7 +55,7 @@ Paramètres :
  
 ## tau = 0
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, warning=TRUE}
 
 n_sim = 2000
 n=200
@@ -72,12 +75,12 @@ arm=rep(c("T","C"), each=200)
   
 U = runif(2*n) 
 
-lambdaT = 0.5
+lambdaT = 1
 kT = 0.5
 
 
 Z = ifelse(arm == "T", 1, 0)
-beta = 0
+beta = -0
 
 prob_T = 0.5
 prob_C = 0.5
@@ -89,7 +92,7 @@ sd_C = 2
 
   
 Time_1 = round((-log(1 - U)) / (lambdaT * exp(beta * Z)^(1 / kT)),3)
-fup_censureT = round(rweibull(n, shape = 1, scale =2),3)
+fup_censureT = round(rweibull(2*n, shape = 1, scale =3),3)
 
 Time_T = pmin(Time_1, fup_censureT)
 deltaT=as.numeric(fup_censureT==Time_T)
@@ -179,49 +182,57 @@ tie_edp3 = tie_edp2-(win_edp3+loose_edp3)
   p_val_WR  = result$p_value[1]
   p_val_WO  = result$p_value[3]
   
-  return(unname(c(val_GPC,val_WR,val_WO,win_edp1,loose_edp1,tie_edp1,win_edp2,loose_edp2,tie_edp2,win_edp3,loose_edp3,tie_edp3,min_Y_1C, min_Y_3C,max_Y_1C, max_Y_3C,median_Y_1C, median_Y_3C,min_Y_1T, min_Y_3T,max_Y_1T, max_Y_3T,median_Y_1T, median_Y_3T,nb_0_C,nb_1_C,nb_0_T,nb_1_T, censure_rateC, censure_rateT)))
+  return(unname(c(val_GPC,val_WR,val_WO,win_edp1,loose_edp1,tie_edp1,win_edp2,loose_edp2,tie_edp2,win_edp3,loose_edp3,tie_edp3,min_Y_1C, min_Y_3C,max_Y_1C, max_Y_3C,median_Y_1C, median_Y_3C,min_Y_1T, min_Y_3T,max_Y_1T, max_Y_3T,median_Y_1T, median_Y_3T,nb_0_C,nb_1_C,nb_0_T,nb_1_T, censure_rateC, censure_rateT, p_val_GPC, p_val_WR, p_val_WO)))
 }
 stopCluster(cl)
 end_time = Sys.time()
 execution_time = end_time - start_time
 
-
 results_df = as.data.frame(results)
-colnames(results_df) = c("val_GPC", "val_WR","val_WO" ,"Win_Edp1","Loose_Edp1","Tie_Edp1","Win_Edp2","Loose_Edp2","Tie_Edp2","Win_Edp3","Loose_Edp3","Tie_Edp3","min_Y_1C", "min_Y_3C","max_Y_1C", "max_Y_3C","median_Y_1C", "median_Y_3C","min_Y_1T", "min_Y_3T","max_Y_1T", "max_Y_3T","median_Y_1T", "median_Y_3T","nb_0_C","nb_1_C","nb_0_T","nb_1_T", "censure_rateC", "censure_rateT")
 
-min_Y_1C=mean(as.numeric(results_df$min_Y_1C))
-min_Y_3C=mean(as.numeric(results_df$min_Y_3C))
 
-max_Y_1C=mean(as.numeric(results_df$max_Y_1C))
-max_Y_3C=mean(as.numeric(results_df$max_Y_3C))
+min_Y_1C=mean(as.numeric(results_df[,13]))
+min_Y_3C=mean(as.numeric(results_df[,14]))
 
-median_Y_1C=mean(as.numeric(results_df$median_Y_1C))
-median_Y_3C=mean(as.numeric(results_df$median_Y_3C))
+max_Y_1C=mean(as.numeric(results_df[,15]))
+max_Y_3C=mean(as.numeric(results_df[,16]))
 
-min_Y_1T=mean(as.numeric(results_df$min_Y_1T))
-min_Y_3T=mean(as.numeric(results_df$min_Y_3T))
+median_Y_1C=mean(as.numeric(results_df[,17]))
+median_Y_3C=mean(as.numeric(results_df[,18]))
 
-max_Y_1T=mean(as.numeric(results_df$max_Y_1T))
-max_Y_3T=mean(as.numeric(results_df$max_Y_3T))
+min_Y_1T=mean(as.numeric(results_df[,19]))
+min_Y_3T=mean(as.numeric(results_df[,20]))
 
-median_Y_1T=mean(as.numeric(results_df$median_Y_1T))
-median_Y_3T=mean(as.numeric(results_df$median_Y_3T))
+max_Y_1T=mean(as.numeric(results_df[,21]))
+max_Y_3T=mean(as.numeric(results_df[,22]))
 
-nb_O_C = mean(results_df$nb_0_C)
-nb_1_C = mean(results_df$nb_1_C)
+median_Y_1T=mean(as.numeric(results_df[,23]))
+median_Y_3T=mean(as.numeric(results_df[,24]))
 
-nb_O_T = mean(results_df$nb_0_T)
-nb_1_T = mean(results_df$nb_1_T)
+nb_O_C = mean(as.numeric(results_df[,25]))
+nb_1_C = mean(as.numeric(results_df[,26]))
 
-censure_rateC= mean(results_df$censure_rateC)
-censure_rateT= mean(results_df$censure_rateT)
+nb_0_T= mean(as.numeric(results_df[,27]))
+nb_1_T = mean(as.numeric(results_df[,28]))
+
+censure_rateC= mean(as.numeric(results_df[,29]))
+censure_rateT= mean(as.numeric(results_df[,30]))
 
 dfC=data.frame(row.names = c("min", "median", "max"), c(min_Y_1C, median_Y_1C, max_Y_1C),c(min_Y_3C, median_Y_3C, max_Y_3C))
 colnames(dfC) = c("Y_1_C (tte)", "Y_3_C (continue)")
 dfT=data.frame(row.names = c("min", "median", "max"), c(min_Y_1T, median_Y_1T, max_Y_1T),c(min_Y_3T, median_Y_3T, max_Y_3T))
 colnames(dfT) = c("Y_1_T (tte)", "Y_3_T (Continue)")
 
-df2 = data.frame(row.name = c("0", "1"), c(nb_O_C,nb_O_T), c(nb_1_C,nb_1_T))
+df2 = data.frame(row.name = c("0", "1"), c(nb_O_C,nb_0_T), c(nb_1_C,nb_1_T))
+
+p_valGPC = results_df[,31]
+p_valWR = results_df[,32]
+p_valWO = results_df[,33]
+
+nb_pval_GPC = sum(p_valGPC< 0.05)
+nb_pval_WR = sum(p_valWR< 0.05)
+nb_pval_WO = sum(p_valWO< 0.05)
+
 colnames(df2)=c(" ","C", "T")
 
 GPC=as.numeric(results_df[,1])
@@ -243,11 +254,11 @@ quantileWO_upr=quantile(WO, 0.975)
 
 
 
-Win   = round(c(mean(as.numeric(results_df$Win_Edp1)), mean(as.numeric(results_df$Win_Edp2)), mean(as.numeric(results_df$Win_Edp3)), mean(as.numeric(results_df$Win_Edp1)) + mean(as.numeric(results_df$Win_Edp2)) +mean(as.numeric(results_df$Win_Edp3)) ))
+Win   = round(c(mean(as.numeric(results_df[,4])), mean(as.numeric(results_df[,7])), mean(as.numeric(results_df[,10])), mean(as.numeric(results_df[,4])) + mean(as.numeric(results_df[,7])) +mean(as.numeric(results_df[,10])) ))
 
-Loose = round(c(mean(as.numeric(results_df$Loose_Edp1)), mean(as.numeric(results_df$Loose_Edp2)),mean(as.numeric(results_df$Loose_Edp3)), mean(as.numeric(results_df$Loose_Edp1))+mean(as.numeric(results_df$Loose_Edp2)) +mean(as.numeric(results_df$Loose_Edp3)) ))
+Loose = round(c(mean(as.numeric(results_df[,5])), mean(as.numeric(results_df[,8])),mean(as.numeric(results_df[,11])), mean(as.numeric(results_df[,5]))+mean(as.numeric(results_df[,8])) +mean(as.numeric(results_df[,11])) ))
 
-Tie   = round(c(mean(as.numeric(results_df$Tie_Edp1)), mean(as.numeric(results_df$Tie_Edp2)), mean(as.numeric(results_df$Tie_Edp3)), mean(as.numeric(results_df$Tie_Edp3)) ))
+Tie   = round(c(mean(as.numeric(results_df[,6])), mean(as.numeric(results_df[,9])), mean(as.numeric(results_df[,12])), mean(as.numeric(results_df[,12])) ))
 
 df3 = data.frame(
   row.names = c("endpoint1", "endpoint2",  "endpoint3","overall"),
@@ -258,15 +269,19 @@ df3 = data.frame(
   WO = round((Win+0.5*Tie)/(Loose+0.5*Tie),5),
   GPC = round((Win-Loose)/(Win+Loose+Tie),5)
 )
-list(Count = df3, value_tte_cont_C = dfC, value_tte_cont_T = dfT, value_binary = df2, censure_rate_T = censure_rateT, censure_rate_C = censure_rateC)
-
+list(Count = df3, value_tte_cont_C = dfC, value_tte_cont_T = dfT, value_binary = df2, censure_rate_T = censure_rateT, censure_rate_C = censure_rateC, p_val_GPC = paste("probabilité d'avoir des p-valeur < 0.05 pour la GPC: ", nb_pval_GPC/n_sim), p_val_WR =  paste("probabilité d'avoir des p-valeur < 0.05 pour le WR: ", nb_pval_WR/n_sim), p_val_WO = paste("probabilité d'avoir des p-valeur < 0.05 pour le WO: ", nb_pval_WO/n_sim))
 
 vlines = data.frame(
     method = c("GPC", "WR", "WO"),
     intercept = c(0, 1, 1),
     linetype_label = "Hypothèse H0")
 
- values_long = results_df %>%
+
+val = results_df[,1:3]
+colnames(val)=c("val_GPC","val_WR","val_WO")
+summ_val=summary(val)
+
+ values_long = val %>%
    select(starts_with("val_")) %>%
    pivot_longer(cols = everything(), names_to = "method", values_to = "value") %>%
    mutate(method = recode(method,
@@ -285,19 +300,543 @@ ggplot(values_long, aes(x = value, fill = method)) +
    labs(title = "Distribution des statistiques de test",
         x = "Valeur", y = "Densité") +
    scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
-   scale_fill_manual(values = c("orange", "purple", "cyan"))+ coord_cartesian(xlim = c(-1, 5))+
+   scale_fill_manual(values = c("orange",  "purple", "cyan")) +
   annotate("text", x = 4.5, y = 1.6, label = paste("Étendue GPC : ", étendue_GPC), color = "orange", hjust = 1) +
-  annotate("text", x = 4.5, y = 2.35, label = paste("Étendue WR : ", étendue_WR), color = "purple", hjust = 1) +
-  annotate("text", x = 4.5, y = 3.1, label = paste("Étendue WO : ", étendue_WO), color = "cyan", hjust = 1)
+  annotate("text", x = 4.5, y = 2.35, label = paste("Étendue WR : ", étendue_WR), color = "cyan", hjust = 1) +
+  annotate("text", x = 4.5, y = 3.1, label = paste("Étendue WO : ", étendue_WO), color = "purple", hjust = 1)
 
 ```
 
-
-
+```{r, echo=FALSE}
+print(summ_val)
+```
 
 ## tau = 2
 
+```{r, echo=FALSE, warning=TRUE}
+
+n_sim = 2000
+n=200
+
+
+nb_core = parallel::detectCores() - 2
+cl = makeCluster(nb_core)
+registerDoParallel(cl)
+count = 0
+start_time = Sys.time()
+
+results = foreach(s = 1:n_sim, .combine = rbind, .packages = c("dplyr", "survival", "parallel", "foreach", "doParallel", "WINS"), .export = c("win.stat")) %dopar% {
+  set.seed(s)
+  
+id=1:(2*n) 
+arm=rep(c("T","C"), each=n)
+  
+U = runif(2*n) 
+
+lambdaT = 1
+kT = 0.5
+
+
+Z = ifelse(arm == "T", 1, 0)
+beta = -0
+
+prob_T = 0.5
+prob_C = 0.5
+
+mean_T = 3
+mean_C = 3
+sd_T = 2
+sd_C = 2
+
+  
+Time_1 = round((-log(1 - U)) / (lambdaT * exp(beta * Z)^(1 / kT)),3)
+fup_censureT = round(rweibull(2*n, shape = 1, scale =3),3)
+
+Time_T = pmin(Time_1, fup_censureT)
+deltaT=as.numeric(fup_censureT==Time_T)
+
+Y_2_T=as.numeric(gener_binom(prob = prob_T)[,1] )-1
+Y_2_C=as.numeric(gener_binom(prob = prob_C)[,1] )-1
+
+Y_3_T= gener_continue(mean = mean_T, sd = sd_T)
+Y_3_C= gener_continue(mean = mean_C, sd = sd_C)
+
+stratum=sample(rep(c(1,3,5,8), each = 50))
+dataT=data.frame(Y_1 = Time_T[Z==1], Delta_1 = deltaT[Z==1], Y_2 = Y_2_T, Y_3 = Y_3_T, stratum = stratum)
+dataC=data.frame(Y_1 = Time_T[Z==0], Delta_1 = deltaT[Z==0], Y_2 = Y_2_C, Y_3 = Y_3_C, stratum = stratum)
+
+ 
+data1=rbind(dataT,dataC)
+
+summT = summary.data.frame(dataT)
+
+min_Y_1T = as.numeric(stringr::str_extract(summT[1,1], "\\d+\\.\\d+"))
+min_Y_3T = as.numeric(stringr::str_extract(summT[1,4], "\\d+\\.\\d+"))
+
+nb_0_C=sum(Y_2_C==0)
+nb_1_C=sum(Y_2_C==1)
+
+nb_0_T=sum(Y_2_T==0)
+nb_1_T=sum(Y_2_T==1)
+
+median_Y_1T = as.numeric(stringr::str_extract( summT[3,1], "\\d+\\.\\d+"))
+median_Y_3T = as.numeric(stringr::str_extract( summT[3,4], "\\d+\\.\\d+"))
+
+max_Y_1T =as.numeric(stringr::str_extract(summT[6,1], "\\d+\\.\\d+"))
+max_Y_3T =as.numeric(stringr::str_extract(summT[6,4], "\\d+\\.\\d+"))
+
+summC = summary.data.frame(dataC)
+
+min_Y_1C = as.numeric(stringr::str_extract(summC[1,1], "\\d+\\.\\d+"))
+min_Y_3C = as.numeric(stringr::str_extract(summC[1,4], "\\d+\\.\\d+"))
+
+
+median_Y_1C = as.numeric(stringr::str_extract( summC[3,1], "\\d+\\.\\d+"))
+median_Y_3C = as.numeric(stringr::str_extract( summC[3,4], "\\d+\\.\\d+"))
+
+max_Y_1C =as.numeric(stringr::str_extract(summC[6,1], "\\d+\\.\\d+"))
+max_Y_3C =as.numeric(stringr::str_extract(summC[6,4], "\\d+\\.\\d+"))
+
+censure_rateT=sum(dataT$Delta_1==0)/n 
+censure_rateC=sum(dataC$Delta_1==0)/n 
+
+
+data=data.frame(id=id, arm = arm, Y_1= data1[,1],Delta_1=data1[,2], Y_2 = data1[,3], Y_3 = data1[,4], stratum = data1[,5] )
+
+result =
+  win.stat(
+    data = data,
+    ep_type = c("tte", "binary", "continuous"),
+    stratum.weight = "equal",
+    tau = c(2,0,2),
+    arm.name = c("T", "C"),
+    alpha = 0.05,
+    digit = 3,
+    pvalue = "two-sided",
+    priority = c(1,2,3),
+    summary.print = FALSE
+  )
+
+win_edp1=sum(result$summary_ep$Trt_Endpoint1[,2])
+loose_edp1=sum(result$summary_ep$Con_Endpoint1[,2])
+tie_edp1=4*2500-sum(win_edp1+loose_edp1)
+
+win_edp2=sum(result$summary_ep$Trt_Endpoint2[,2])
+loose_edp2=sum(result$summary_ep$Con_Endpoint2[,2])
+tie_edp2=4*2500-(win_edp2+loose_edp2)
+
+win_edp3 = sum(result$summary_ep$Trt_Endpoint3[,2])
+loose_edp3 = sum(result$summary_ep$Con_Endpoint3[,2])
+tie_edp3 = 4*2500-(win_edp3+loose_edp3)
+
+
+  count = count + 1
+  write.table(c(count), file="../output.txt", append = T, col.names = F)
+
+  val_GPC = result$Win_statistic$Net_Benefit[1]
+  val_WR  = result$Win_statistic$Win_Ratio[1]
+  val_WO  = result$Win_statistic$Win_Odds[1]
+  
+  p_val_GPC = result$p_value[2]
+  p_val_WR  = result$p_value[1]
+  p_val_WO  = result$p_value[3]
+
+  return(unname(c(val_GPC,val_WR,val_WO,win_edp1,loose_edp1,tie_edp1,win_edp2,loose_edp2,tie_edp2,win_edp3,loose_edp3,tie_edp3,min_Y_1C, min_Y_3C,max_Y_1C, max_Y_3C,median_Y_1C, median_Y_3C,min_Y_1T, min_Y_3T,max_Y_1T, max_Y_3T,median_Y_1T, median_Y_3T,nb_0_C,nb_1_C,nb_0_T,nb_1_T, censure_rateC, censure_rateT, p_val_GPC, p_val_WR, p_val_WO)))
+}
+stopCluster(cl)
+end_time = Sys.time()
+execution_time = end_time - start_time
+
+results_df = as.data.frame(results)
+
+
+min_Y_1C=mean(as.numeric(results_df[,13]))
+min_Y_3C=mean(as.numeric(results_df[,14]))
+
+max_Y_1C=mean(as.numeric(results_df[,15]))
+max_Y_3C=mean(as.numeric(results_df[,16]))
+
+median_Y_1C=mean(as.numeric(results_df[,17]))
+median_Y_3C=mean(as.numeric(results_df[,18]))
+
+min_Y_1T=mean(as.numeric(results_df[,19]))
+min_Y_3T=mean(as.numeric(results_df[,20]))
+
+max_Y_1T=mean(as.numeric(results_df[,21]))
+max_Y_3T=mean(as.numeric(results_df[,22]))
+
+median_Y_1T=mean(as.numeric(results_df[,23]))
+median_Y_3T=mean(as.numeric(results_df[,24]))
+
+nb_O_C = mean(as.numeric(results_df[,25]))
+nb_1_C = mean(as.numeric(results_df[,26]))
+
+nb_0_T= mean(as.numeric(results_df[,27]))
+nb_1_T = mean(as.numeric(results_df[,28]))
+
+censure_rateC= mean(as.numeric(results_df[,29]))
+censure_rateT= mean(as.numeric(results_df[,30]))
+
+dfC=data.frame(row.names = c("min", "median", "max"), c(min_Y_1C, median_Y_1C, max_Y_1C),c(min_Y_3C, median_Y_3C, max_Y_3C))
+colnames(dfC) = c("Y_1_C (tte)", "Y_3_C (continue)")
+dfT=data.frame(row.names = c("min", "median", "max"), c(min_Y_1T, median_Y_1T, max_Y_1T),c(min_Y_3T, median_Y_3T, max_Y_3T))
+colnames(dfT) = c("Y_1_T (tte)", "Y_3_T (Continue)")
+
+df2 = data.frame(row.name = c("0", "1"), c(nb_O_C,nb_0_T), c(nb_1_C,nb_1_T))
+
+p_valGPC = results_df[,31]
+p_valWR = results_df[,32]
+p_valWO = results_df[,33]
+
+nb_pval_GPC = sum(p_valGPC< 0.05)
+nb_pval_WR = sum(p_valWR< 0.05)
+nb_pval_WO = sum(p_valWO< 0.05)
+
+colnames(df2)=c(" ","C", "T")
+
+GPC=as.numeric(results_df[,1])
+WR= as.numeric(results_df[,2])
+WO= as.numeric(results_df[,3])
+
+
+quantileGPC_lwr=quantile(GPC, 0.025)
+quantileGPC_upr=quantile(GPC, 0.975)
+étendue_GPC= round(quantileGPC_upr - quantileGPC_lwr,4)
+
+quantileWR_lwr=quantile(WR, 0.025)
+quantileWR_upr=quantile(WR, 0.975)
+étendue_WR= round(quantileWR_upr - quantileWR_lwr,4)
+
+quantileWO_lwr=quantile(WO, 0.025)
+quantileWO_upr=quantile(WO, 0.975)
+étendue_WO= round(quantileWO_upr - quantileWO_lwr,4)
+
+
+
+Win   = round(c(mean(as.numeric(results_df[,4])), mean(as.numeric(results_df[,7])), mean(as.numeric(results_df[,10])), mean(as.numeric(results_df[,4])) + mean(as.numeric(results_df[,7])) +mean(as.numeric(results_df[,10])) ))
+
+Loose = round(c(mean(as.numeric(results_df[,5])), mean(as.numeric(results_df[,8])),mean(as.numeric(results_df[,11])), mean(as.numeric(results_df[,5]))+mean(as.numeric(results_df[,8])) +mean(as.numeric(results_df[,11])) ))
+
+Tie   = round(c(mean(as.numeric(results_df[,6])), mean(as.numeric(results_df[,9])), mean(as.numeric(results_df[,12])), mean(as.numeric(results_df[,12])) ))
+
+df3 = data.frame(
+  row.names = c("endpoint1", "endpoint2",  "endpoint3","overall"),
+  Win   = Win,
+  Loose = Loose,
+  Tie   = Tie,
+  WR = round(Win/Loose,5),
+  WO = round((Win+0.5*Tie)/(Loose+0.5*Tie),5),
+  GPC = round((Win-Loose)/(Win+Loose+Tie),5)
+)
+list(Count = df3, value_tte_cont_C = dfC, value_tte_cont_T = dfT, value_binary = df2, censure_rate_T = censure_rateT, censure_rate_C = censure_rateC, p_val_GPC = paste("probabilité d'avoir des p-valeur < 0.05 pour la GPC: ", nb_pval_GPC/n_sim), p_val_WR =  paste("probabilité d'avoir des p-valeur < 0.05 pour le WR: ", nb_pval_WR/n_sim), p_val_WO = paste("probabilité d'avoir des p-valeur < 0.05 pour le WO: ", nb_pval_WO/n_sim))
+
+vlines = data.frame(
+    method = c("GPC", "WR", "WO"),
+    intercept = c(0, 1, 1),
+    linetype_label = "Hypothèse H0")
+
+
+val = results_df[,1:3]
+colnames(val)=c("val_GPC","val_WR","val_WO")
+summ_val=summary(val)
+
+ values_long = val %>%
+   select(starts_with("val_")) %>%
+   pivot_longer(cols = everything(), names_to = "method", values_to = "value") %>%
+   mutate(method = recode(method,
+                          "val_GPC" = "GPC",
+                          "val_WR"  = "WR",
+                          "val_WO"  = "WO"))
+ values_long$value = unlist(values_long$value)
+ values_long <- values_long %>% filter(!is.infinite(value))
+
+
+ggplot(values_long, aes(x = value, fill = method)) +
+   geom_density(alpha = 0.6, color = "black") +
+   geom_vline(data = vlines, aes(xintercept = intercept, linetype = linetype_label),
+              color = "black", lwd = 1) +
+   theme_minimal() +
+   labs(title = "Distribution des statistiques de test",
+        x = "Valeur", y = "Densité") +
+   scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
+   scale_fill_manual(values = c("orange",  "purple", "cyan")) +
+  annotate("text", x = 4.5, y = 1.6, label = paste("Étendue GPC : ", étendue_GPC), color = "orange", hjust = 1) +
+  annotate("text", x = 4.5, y = 2.35, label = paste("Étendue WR : ", étendue_WR), color = "cyan", hjust = 1) +
+  annotate("text", x = 4.5, y = 3.1, label = paste("Étendue WO : ", étendue_WO), color = "purple", hjust = 1)
+
+
+```
+
+L'étendue est plus importante pour le **WR** que pour le **WO** même avec des distributions similaire, il voudrait mieux prioriser le **WO** ou la **GPC** suivant les besoins.
+
 ```{r, echo=FALSE}
+print(summ_val)
+```
+
+## Outcome continue de Poisson
+
+La distribution de Poisson continue est de paramètre $\lambda = 3$, le seuil est de 2
+
+```{r, echo=FALSE, warning=TRUE}
+
+n_sim = 2000
+n=200
+
+
+nb_core = parallel::detectCores() - 2
+cl = makeCluster(nb_core)
+registerDoParallel(cl)
+count = 0
+start_time = Sys.time()
+
+results = foreach(s = 1:n_sim, .combine = rbind, .packages = c("dplyr", "survival", "parallel", "foreach", "doParallel", "WINS"), .export = c("win.stat")) %dopar% {
+  set.seed(s)
+  
+id=1:(2*n) 
+arm=rep(c("T","C"), each=n)
+  
+U = runif(2*n) 
+
+lambdaT = 1
+kT = 0.5
+
+
+Z = ifelse(arm == "T", 1, 0)
+beta = -0
+
+prob_T = 0.5
+prob_C = 0.5
+
+lambda_T = 3
+lambda_C = 3
+  
+Time_1 = round((-log(1 - U)) / (lambdaT * exp(beta * Z)^(1 / kT)),3)
+fup_censureT = round(rweibull(2*n, shape = 1, scale =3),3)
+
+Time_T = pmin(Time_1, fup_censureT)
+deltaT=as.numeric(fup_censureT==Time_T)
+
+Y_2_T=as.numeric(gener_binom(prob = prob_T)[,1] )-1
+Y_2_C=as.numeric(gener_binom(prob = prob_C)[,1] )-1
+
+Y_3_T= abs(gener_poisson(lambda = lambda_T))
+Y_3_C= abs(gener_poisson(lambda = lambda_C))
+
+stratum=sample(rep(c(1,3,5,8), each = 50))
+dataT=data.frame(Y_1 = Time_T[Z==1], Delta_1 = deltaT[Z==1], Y_2 = Y_2_T, Y_3 = Y_3_T, stratum = stratum)
+colnames(dataT)= c("Y_1", "Delta_1", "Y_2", "Y_3", "stratum")
+dataC=data.frame(Y_1 = Time_T[Z==0], Delta_1 = deltaT[Z==0], Y_2 = Y_2_C, Y_3 = Y_3_C, stratum = stratum)
+colnames(dataC)= c("Y_1", "Delta_1", "Y_2", "Y_3", "stratum")
+
+ 
+data1=rbind(dataT,dataC)
+
+summT = summary.data.frame(dataT)
+
+min_Y_1T = as.numeric(stringr::str_extract(summT[1,1], "\\d+\\.\\d+"))
+min_Y_3T = as.numeric(stringr::str_extract(summT[1,4], "\\d+\\.\\d+"))
+
+nb_0_C=sum(Y_2_C==0)
+nb_1_C=sum(Y_2_C==1)
+
+nb_0_T=sum(Y_2_T==0)
+nb_1_T=sum(Y_2_T==1)
+
+median_Y_1T = as.numeric(stringr::str_extract( summT[3,1], "\\d+\\.\\d+"))
+median_Y_3T = as.numeric(stringr::str_extract( summT[3,4], "\\d+\\.\\d+"))
+
+max_Y_1T =as.numeric(stringr::str_extract(summT[6,1], "\\d+\\.\\d+"))
+max_Y_3T =as.numeric(stringr::str_extract(summT[6,4], "\\d+\\.\\d+"))
+
+summC = summary.data.frame(dataC)
+
+min_Y_1C = as.numeric(stringr::str_extract(summC[1,1], "\\d+\\.\\d+"))
+min_Y_3C = as.numeric(stringr::str_extract(summC[1,4], "\\d+\\.\\d+"))
+
+
+median_Y_1C = as.numeric(stringr::str_extract( summC[3,1], "\\d+\\.\\d+"))
+median_Y_3C = as.numeric(stringr::str_extract( summC[3,4], "\\d+\\.\\d+"))
+
+max_Y_1C =as.numeric(stringr::str_extract(summC[6,1], "\\d+\\.\\d+"))
+max_Y_3C =as.numeric(stringr::str_extract(summC[6,4], "\\d+\\.\\d+"))
+
+censure_rateT=sum(dataT$Delta_1==0)/n 
+censure_rateC=sum(dataC$Delta_1==0)/n 
+
+
+data=data.frame(id=id, arm = arm, Y_1= data1[,1],Delta_1=data1[,2], Y_2 = data1[,3], Y_3 = data1[,4], stratum = data1[,5] )
+
+result =
+  win.stat(
+    data = data,
+    ep_type = c("tte", "binary", "continuous"),
+    stratum.weight = "equal",
+    tau = c(2,0,2),
+    arm.name = c("T", "C"),
+    alpha = 0.05,
+    digit = 3,
+    pvalue = "two-sided",
+    priority = c(1,2,3),
+    summary.print = FALSE
+  )
+
+win_edp1=sum(result$summary_ep$Trt_Endpoint1[,2])
+loose_edp1=sum(result$summary_ep$Con_Endpoint1[,2])
+tie_edp1=4*2500-sum(win_edp1+loose_edp1)
+
+win_edp2=sum(result$summary_ep$Trt_Endpoint2[,2])
+loose_edp2=sum(result$summary_ep$Con_Endpoint2[,2])
+tie_edp2=4*2500-(win_edp2+loose_edp2)
+
+win_edp3 = sum(result$summary_ep$Trt_Endpoint3[,2])
+loose_edp3 = sum(result$summary_ep$Con_Endpoint3[,2])
+tie_edp3 = 4*2500-(win_edp3+loose_edp3)
+
+
+  count = count + 1
+  write.table(c(count), file="../output.txt", append = T, col.names = F)
+
+  val_GPC = result$Win_statistic$Net_Benefit[1]
+  val_WR  = result$Win_statistic$Win_Ratio[1]
+  val_WO  = result$Win_statistic$Win_Odds[1]
+  
+  p_val_GPC = result$p_value[2]
+  p_val_WR  = result$p_value[1]
+  p_val_WO  = result$p_value[3]
+
+  return(unname(c(val_GPC,val_WR,val_WO,win_edp1,loose_edp1,tie_edp1,win_edp2,loose_edp2,tie_edp2,win_edp3,loose_edp3,tie_edp3,min_Y_1C, min_Y_3C,max_Y_1C, max_Y_3C,median_Y_1C, median_Y_3C,min_Y_1T, min_Y_3T,max_Y_1T, max_Y_3T,median_Y_1T, median_Y_3T,nb_0_C,nb_1_C,nb_0_T,nb_1_T, censure_rateC, censure_rateT, p_val_GPC, p_val_WR, p_val_WO)))
+}
+stopCluster(cl)
+end_time = Sys.time()
+execution_time = end_time - start_time
+
+results_df = as.data.frame(results)
+
+
+min_Y_1C=mean(as.numeric(results_df[,13]))
+min_Y_3C=mean(as.numeric(results_df[,14]))
+
+max_Y_1C=mean(as.numeric(results_df[,15]))
+max_Y_3C=mean(as.numeric(results_df[,16]))
+
+median_Y_1C=mean(as.numeric(results_df[,17]))
+median_Y_3C=mean(as.numeric(results_df[,18]))
+
+min_Y_1T=mean(as.numeric(results_df[,19]))
+min_Y_3T=mean(as.numeric(results_df[,20]))
+
+max_Y_1T=mean(as.numeric(results_df[,21]))
+max_Y_3T=mean(as.numeric(results_df[,22]))
+
+median_Y_1T=mean(as.numeric(results_df[,23]))
+median_Y_3T=mean(as.numeric(results_df[,24]))
+
+nb_O_C = mean(as.numeric(results_df[,25]))
+nb_1_C = mean(as.numeric(results_df[,26]))
+
+nb_0_T= mean(as.numeric(results_df[,27]))
+nb_1_T = mean(as.numeric(results_df[,28]))
+
+censure_rateC= mean(as.numeric(results_df[,29]))
+censure_rateT= mean(as.numeric(results_df[,30]))
+
+dfC=data.frame(row.names = c("min", "median", "max"), c(min_Y_1C, median_Y_1C, max_Y_1C),c(min_Y_3C, median_Y_3C, max_Y_3C))
+colnames(dfC) = c("Y_1_C (tte)", "Y_3_C (poisson)")
+dfT=data.frame(row.names = c("min", "median", "max"), c(min_Y_1T, median_Y_1T, max_Y_1T),c(min_Y_3T, median_Y_3T, max_Y_3T))
+colnames(dfT) = c("Y_1_T (tte)", "Y_3_T (poisson)")
+
+df2 = data.frame(row.name = c("0", "1"), c(nb_O_C,nb_0_T), c(nb_1_C,nb_1_T))
+
+p_valGPC = results_df[,31]
+p_valWR = results_df[,32]
+p_valWO = results_df[,33]
+
+nb_pval_GPC = sum(p_valGPC< 0.05)
+nb_pval_WR = sum(p_valWR< 0.05)
+nb_pval_WO = sum(p_valWO< 0.05)
+
+colnames(df2)=c(" ","C", "T")
+
+GPC=as.numeric(results_df[,1])
+WR= as.numeric(results_df[,2])
+WO= as.numeric(results_df[,3])
+
+
+quantileGPC_lwr=quantile(GPC, 0.025)
+quantileGPC_upr=quantile(GPC, 0.975)
+étendue_GPC= round(quantileGPC_upr - quantileGPC_lwr,4)
+
+quantileWR_lwr=quantile(WR, 0.025)
+quantileWR_upr=quantile(WR, 0.975)
+étendue_WR= round(quantileWR_upr - quantileWR_lwr,4)
+
+quantileWO_lwr=quantile(WO, 0.025)
+quantileWO_upr=quantile(WO, 0.975)
+étendue_WO= round(quantileWO_upr - quantileWO_lwr,4)
+
+
+
+Win   = round(c(mean(as.numeric(results_df[,4])), mean(as.numeric(results_df[,7])), mean(as.numeric(results_df[,10])), mean(as.numeric(results_df[,4])) + mean(as.numeric(results_df[,7])) +mean(as.numeric(results_df[,10])) ))
+
+Loose = round(c(mean(as.numeric(results_df[,5])), mean(as.numeric(results_df[,8])),mean(as.numeric(results_df[,11])), mean(as.numeric(results_df[,5]))+mean(as.numeric(results_df[,8])) +mean(as.numeric(results_df[,11])) ))
+
+Tie   = round(c(mean(as.numeric(results_df[,6])), mean(as.numeric(results_df[,9])), mean(as.numeric(results_df[,12])), mean(as.numeric(results_df[,12])) ))
+
+df3 = data.frame(
+  row.names = c("endpoint1", "endpoint2",  "endpoint3","overall"),
+  Win   = Win,
+  Loose = Loose,
+  Tie   = Tie,
+  WR = round(Win/Loose,5),
+  WO = round((Win+0.5*Tie)/(Loose+0.5*Tie),5),
+  GPC = round((Win-Loose)/(Win+Loose+Tie),5)
+)
+list(Count = df3, value_tte_cont_C = dfC, value_tte_cont_T = dfT, value_binary = df2, censure_rate_T = censure_rateT, censure_rate_C = censure_rateC, p_val_GPC = paste("probabilité d'avoir des p-valeur < 0.05 pour la GPC: ", nb_pval_GPC/n_sim), p_val_WR =  paste("probabilité d'avoir des p-valeur < 0.05 pour le WR: ", nb_pval_WR/n_sim), p_val_WO = paste("probabilité d'avoir des p-valeur < 0.05 pour le WO: ", nb_pval_WO/n_sim))
+
+vlines = data.frame(
+    method = c("GPC", "WR", "WO"),
+    intercept = c(0, 1, 1),
+    linetype_label = "Hypothèse H0")
+
+
+val = results_df[,1:3]
+colnames(val)=c("val_GPC","val_WR","val_WO")
+summ_val=summary(val)
+
+ values_long = val %>%
+   select(starts_with("val_")) %>%
+   pivot_longer(cols = everything(), names_to = "method", values_to = "value") %>%
+   mutate(method = recode(method,
+                          "val_GPC" = "GPC",
+                          "val_WR"  = "WR",
+                          "val_WO"  = "WO"))
+ values_long$value = unlist(values_long$value)
+ values_long <- values_long %>% filter(!is.infinite(value))
+
+
+ggplot(values_long, aes(x = value, fill = method)) +
+   geom_density(alpha = 0.6, color = "black") +
+   geom_vline(data = vlines, aes(xintercept = intercept, linetype = linetype_label),
+              color = "black", lwd = 1) +
+   theme_minimal() +
+   labs(title = "Distribution des statistiques de test",
+        x = "Valeur", y = "Densité") +
+   scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
+   scale_fill_manual(values = c("orange",  "purple", "cyan")) +
+  annotate("text", x = 4.5, y = 1.6, label = paste("Étendue GPC : ", étendue_GPC), color = "orange", hjust = 1) +
+  annotate("text", x = 4.5, y = 2.35, label = paste("Étendue WR : ", étendue_WR), color = "cyan", hjust = 1) +
+  annotate("text", x = 4.5, y = 3.1, label = paste("Étendue WO : ", étendue_WO), color = "purple", hjust = 1)
+
+
+```
+
+```{r, echo=FALSE}
+print(summ_val)
+```
+
+## Outcome binaire en premier
+
+```{r, echo=FALSE, warning=FALSE}
 
 n_sim = 2000
 n=200
@@ -317,12 +856,12 @@ arm=rep(c("T","C"), each=200)
   
 U = runif(2*n) 
 
-lambdaT = 0.5
+lambdaT = 1
 kT = 0.5
 
 
 Z = ifelse(arm == "T", 1, 0)
-beta = 0
+beta = -0
 
 prob_T = 0.5
 prob_C = 0.5
@@ -334,7 +873,7 @@ sd_C = 2
 
   
 Time_1 = round((-log(1 - U)) / (lambdaT * exp(beta * Z)^(1 / kT)),3)
-fup_censureT = round(rweibull(n, shape = 1, scale =2),3)
+fup_censureT = round(rweibull(2*n, shape = 1, scale =3),3)
 
 Time_T = pmin(Time_1, fup_censureT)
 deltaT=as.numeric(fup_censureT==Time_T)
@@ -396,7 +935,7 @@ result =
     alpha = 0.05,
     digit = 3,
     pvalue = "two-sided",
-    priority = c(1,2,3),
+    priority = c(2,1,3),
     summary.print = FALSE
   )
 
@@ -424,50 +963,57 @@ tie_edp3 = tie_edp2-(win_edp3+loose_edp3)
   p_val_WR  = result$p_value[1]
   p_val_WO  = result$p_value[3]
   
-    return(unname(c(val_GPC,val_WR,val_WO,win_edp1,loose_edp1,tie_edp1,win_edp2,loose_edp2,tie_edp2,win_edp3,loose_edp3,tie_edp3,min_Y_1C, min_Y_3C,max_Y_1C, max_Y_3C,median_Y_1C, median_Y_3C,min_Y_1T, min_Y_3T,max_Y_1T, max_Y_3T,median_Y_1T, median_Y_3T,nb_0_C,nb_1_C,nb_0_T,nb_1_T, censure_rateC, censure_rateT)))
+      return(unname(c(val_GPC,val_WR,val_WO,win_edp1,loose_edp1,tie_edp1,win_edp2,loose_edp2,tie_edp2,win_edp3,loose_edp3,tie_edp3,min_Y_1C, min_Y_3C,max_Y_1C, max_Y_3C,median_Y_1C, median_Y_3C,min_Y_1T, min_Y_3T,max_Y_1T, max_Y_3T,median_Y_1T, median_Y_3T,nb_0_C,nb_1_C,nb_0_T,nb_1_T, censure_rateC, censure_rateT, p_val_GPC, p_val_WR, p_val_WO)))
 }
 stopCluster(cl)
 end_time = Sys.time()
 execution_time = end_time - start_time
 
-
 results_df = as.data.frame(results)
-colnames(results_df) = c("val_GPC", "val_WR","val_WO" ,"Win_Edp1","Loose_Edp1","Tie_Edp1","Win_Edp2","Loose_Edp2","Tie_Edp2","Win_Edp3","Loose_Edp3","Tie_Edp3","min_Y_1C", "min_Y_3C","max_Y_1C", "max_Y_3C","median_Y_1C", "median_Y_3C","min_Y_1T", "min_Y_3T","max_Y_1T", "max_Y_3T","median_Y_1T", "median_Y_3T","nb_0_C","nb_1_C","nb_0_T","nb_1_T", "censure_rateC", "censure_rateT")
 
 
-min_Y_1C=mean(as.numeric(results_df$min_Y_1C))
-min_Y_3C=mean(as.numeric(results_df$min_Y_3C))
+min_Y_1C=mean(as.numeric(results_df[,13]))
+min_Y_3C=mean(as.numeric(results_df[,14]))
 
-max_Y_1C=mean(as.numeric(results_df$max_Y_1C))
-max_Y_3C=mean(as.numeric(results_df$max_Y_3C))
+max_Y_1C=mean(as.numeric(results_df[,15]))
+max_Y_3C=mean(as.numeric(results_df[,16]))
 
-median_Y_1C=mean(as.numeric(results_df$median_Y_1C))
-median_Y_3C=mean(as.numeric(results_df$median_Y_3C))
+median_Y_1C=mean(as.numeric(results_df[,17]))
+median_Y_3C=mean(as.numeric(results_df[,18]))
 
-min_Y_1T=mean(as.numeric(results_df$min_Y_1T))
-min_Y_3T=mean(as.numeric(results_df$min_Y_3T))
+min_Y_1T=mean(as.numeric(results_df[,19]))
+min_Y_3T=mean(as.numeric(results_df[,20]))
 
-max_Y_1T=mean(as.numeric(results_df$max_Y_1T))
-max_Y_3T=mean(as.numeric(results_df$max_Y_3T))
+max_Y_1T=mean(as.numeric(results_df[,21]))
+max_Y_3T=mean(as.numeric(results_df[,22]))
 
-median_Y_1T=mean(as.numeric(results_df$median_Y_1T))
-median_Y_3T=mean(as.numeric(results_df$median_Y_3T))
+median_Y_1T=mean(as.numeric(results_df[,23]))
+median_Y_3T=mean(as.numeric(results_df[,24]))
 
-nb_O_C = mean(results_df$nb_0_C)
-nb_1_C = mean(results_df$nb_1_C)
+nb_O_C = mean(as.numeric(results_df[,25]))
+nb_1_C = mean(as.numeric(results_df[,26]))
 
-nb_O_T = mean(results_df$nb_0_T)
-nb_1_T = mean(results_df$nb_1_T)
+nb_0_T= mean(as.numeric(results_df[,27]))
+nb_1_T = mean(as.numeric(results_df[,28]))
 
-censure_rateC= mean(results_df$censure_rateC)
-censure_rateT= mean(results_df$censure_rateT)
+censure_rateC= mean(as.numeric(results_df[,29]))
+censure_rateT= mean(as.numeric(results_df[,30]))
 
 dfC=data.frame(row.names = c("min", "median", "max"), c(min_Y_1C, median_Y_1C, max_Y_1C),c(min_Y_3C, median_Y_3C, max_Y_3C))
-colnames(dfC) = c("Y_1_C (tte)", "Y_3_C (continue)")
+colnames(dfC) = c("Y_2_C (tte)", "Y_3_C (continue)")
 dfT=data.frame(row.names = c("min", "median", "max"), c(min_Y_1T, median_Y_1T, max_Y_1T),c(min_Y_3T, median_Y_3T, max_Y_3T))
-colnames(dfT) = c("Y_1_T (tte)", "Y_3_T (Continue)")
+colnames(dfT) = c("Y_2_T (tte)", "Y_3_T (Continue)")
 
-df2 = data.frame(row.name = c("0", "1"), c(nb_O_C,nb_O_T), c(nb_1_C,nb_1_T))
+df2 = data.frame(row.name = c("0", "1"), c(nb_O_C,nb_0_T), c(nb_1_C,nb_1_T))
+
+p_valGPC = results_df[,31]
+p_valWR = results_df[,32]
+p_valWO = results_df[,33]
+
+nb_pval_GPC = sum(p_valGPC< 0.05)
+nb_pval_WR = sum(p_valWR< 0.05)
+nb_pval_WO = sum(p_valWO< 0.05)
+
 colnames(df2)=c(" ","C", "T")
 
 GPC=as.numeric(results_df[,1])
@@ -489,11 +1035,11 @@ quantileWO_upr=quantile(WO, 0.975)
 
 
 
-Win   = round(c(mean(as.numeric(results_df$Win_Edp1)), mean(as.numeric(results_df$Win_Edp2)), mean(as.numeric(results_df$Win_Edp3)), mean(as.numeric(results_df$Win_Edp1)) + mean(as.numeric(results_df$Win_Edp2)) +mean(as.numeric(results_df$Win_Edp3)) ))
+Win   = round(c(mean(as.numeric(results_df[,4])), mean(as.numeric(results_df[,7])), mean(as.numeric(results_df[,10])), mean(as.numeric(results_df[,4])) + mean(as.numeric(results_df[,7])) +mean(as.numeric(results_df[,10])) ))
 
-Loose = round(c(mean(as.numeric(results_df$Loose_Edp1)), mean(as.numeric(results_df$Loose_Edp2)),mean(as.numeric(results_df$Loose_Edp3)), mean(as.numeric(results_df$Loose_Edp1))+mean(as.numeric(results_df$Loose_Edp2)) +mean(as.numeric(results_df$Loose_Edp3)) ))
+Loose = round(c(mean(as.numeric(results_df[,5])), mean(as.numeric(results_df[,8])),mean(as.numeric(results_df[,11])), mean(as.numeric(results_df[,5]))+mean(as.numeric(results_df[,8])) +mean(as.numeric(results_df[,11])) ))
 
-Tie   = round(c(mean(as.numeric(results_df$Tie_Edp1)), mean(as.numeric(results_df$Tie_Edp2)), mean(as.numeric(results_df$Tie_Edp3)), mean(as.numeric(results_df$Tie_Edp3)) ))
+Tie   = round(c(mean(as.numeric(results_df[,6])), mean(as.numeric(results_df[,9])), mean(as.numeric(results_df[,12])), mean(as.numeric(results_df[,12])) ))
 
 df3 = data.frame(
   row.names = c("endpoint1", "endpoint2",  "endpoint3","overall"),
@@ -504,16 +1050,19 @@ df3 = data.frame(
   WO = round((Win+0.5*Tie)/(Loose+0.5*Tie),5),
   GPC = round((Win-Loose)/(Win+Loose+Tie),5)
 )
-list(Count = df3, value_tte_cont_C = dfC, value_tte_cont_T = dfT, value_binary = df2, censure_rate_T = censure_rateT, censure_rate_C = censure_rateC)
-
-
+list(Count = df3, value_tte_cont_C = dfC, value_tte_cont_T = dfT, value_binary = df2, censure_rate_T = censure_rateT, censure_rate_C = censure_rateC, p_val_GPC = paste("probabilité d'avoir des p-valeur < 0.05 pour la GPC: ", nb_pval_GPC/n_sim), p_val_WR =  paste("probabilité d'avoir des p-valeur < 0.05 pour le WR: ", nb_pval_WR/n_sim), p_val_WO = paste("probabilité d'avoir des p-valeur < 0.05 pour le WO: ", nb_pval_WO/n_sim))
 
 vlines = data.frame(
     method = c("GPC", "WR", "WO"),
     intercept = c(0, 1, 1),
     linetype_label = "Hypothèse H0")
 
- values_long = results_df %>%
+
+val = results_df[,1:3]
+colnames(val)=c("val_GPC","val_WR","val_WO")
+summ_val=summary(val)
+
+ values_long = val %>%
    select(starts_with("val_")) %>%
    pivot_longer(cols = everything(), names_to = "method", values_to = "value") %>%
    mutate(method = recode(method,
@@ -532,21 +1081,35 @@ ggplot(values_long, aes(x = value, fill = method)) +
    labs(title = "Distribution des statistiques de test",
         x = "Valeur", y = "Densité") +
    scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
-   scale_fill_manual(values = c("orange", "purple", "cyan"))+ coord_cartesian(xlim = c(-1, 5))+
+   scale_fill_manual(values = c("orange",  "purple", "cyan")) +
   annotate("text", x = 4.5, y = 1.6, label = paste("Étendue GPC : ", étendue_GPC), color = "orange", hjust = 1) +
-  annotate("text", x = 4.5, y = 2.35, label = paste("Étendue WR : ", étendue_WR), color = "purple", hjust = 1) +
-  annotate("text", x = 4.5, y = 3.1, label = paste("Étendue WO : ", étendue_WO), color = "cyan", hjust = 1)
+  annotate("text", x = 4.5, y = 2.35, label = paste("Étendue WR : ", étendue_WR), color = "cyan", hjust = 1) +
+  annotate("text", x = 4.5, y = 3.1, label = paste("Étendue WO : ", étendue_WO), color = "purple", hjust = 1)
+
 
 ```
 
+Une petite différence est notable entre le moment où l'outcome principal est tte ou binaire
 
-# Scénario 2 : T>>C
+|  | Outcome tte  | Outcome Binaire |
+|-----------|-----------|-----------|
+| WO | 0.4312  | 0.4393  |
+| WR  | 0.5958  | 0.61  |
+| GPC  | 0.2121  | 0.2156  |
+
+```{r, echo=FALSE}
+print(summ_val)
+```
+
+\newpage 
+
+# Scénario 2 : $T \gg C$
 
 Paramètres :
 
 - tte :
 
-  $\lambda = 0.1$, $k = 5$, $\beta = 5$, $\mathcal{W}(1,1)$
+  $\lambda = 1$, $k = 2$, $\beta = -2$, la censure sera une distribution $\mathcal{W}(1,3)$
  
 - Continue :
 
@@ -558,7 +1121,7 @@ Paramètres :
 
 ## tau = 0
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, warning=FALSE}
 
 n_sim = 2000
 n=200
@@ -578,12 +1141,12 @@ arm=rep(c("T","C"), each=200)
   
 U = runif(2*n) 
 
-lambdaT = 0.01
-kT = 5
+lambdaT = 1
+kT = 2
 
 
 Z = ifelse(arm == "T", 1, 0)
-beta = 5
+beta = -2
 
 prob_T = 0.65
 prob_C = 0.3
@@ -595,7 +1158,7 @@ sd_C = 2
 
   
 Time_1 = round((-log(1 - U)) / (lambdaT * exp(beta * Z)^(1 / kT)),3)
-fup_censureT = round(rweibull(n, shape = 1, scale =3),3)
+fup_censureT = round(rweibull(2*n, shape = 1, scale =3),3)
 
 Time_T = pmin(Time_1, fup_censureT)
 deltaT=as.numeric(fup_censureT==Time_T)
@@ -684,49 +1247,57 @@ tie_edp3 = tie_edp2-(win_edp3+loose_edp3)
   p_val_WR  = result$p_value[1]
   p_val_WO  = result$p_value[3]
   
-    return(unname(c(val_GPC,val_WR,val_WO,win_edp1,loose_edp1,tie_edp1,win_edp2,loose_edp2,tie_edp2,win_edp3,loose_edp3,tie_edp3,min_Y_1C, min_Y_3C,max_Y_1C, max_Y_3C,median_Y_1C, median_Y_3C,min_Y_1T, min_Y_3T,max_Y_1T, max_Y_3T,median_Y_1T, median_Y_3T,nb_0_C,nb_1_C,nb_0_T,nb_1_T, censure_rateC, censure_rateT)))
+      return(unname(c(val_GPC,val_WR,val_WO,win_edp1,loose_edp1,tie_edp1,win_edp2,loose_edp2,tie_edp2,win_edp3,loose_edp3,tie_edp3,min_Y_1C, min_Y_3C,max_Y_1C, max_Y_3C,median_Y_1C, median_Y_3C,min_Y_1T, min_Y_3T,max_Y_1T, max_Y_3T,median_Y_1T, median_Y_3T,nb_0_C,nb_1_C,nb_0_T,nb_1_T, censure_rateC, censure_rateT, p_val_GPC, p_val_WR, p_val_WO)))
 }
 stopCluster(cl)
 end_time = Sys.time()
 execution_time = end_time - start_time
 
-
 results_df = as.data.frame(results)
-colnames(results_df) = c("val_GPC", "val_WR","val_WO" ,"Win_Edp1","Loose_Edp1","Tie_Edp1","Win_Edp2","Loose_Edp2","Tie_Edp2","Win_Edp3","Loose_Edp3","Tie_Edp3","min_Y_1C", "min_Y_3C","max_Y_1C", "max_Y_3C","median_Y_1C", "median_Y_3C","min_Y_1T", "min_Y_3T","max_Y_1T", "max_Y_3T","median_Y_1T", "median_Y_3T","nb_0_C","nb_1_C","nb_0_T","nb_1_T", "censure_rateC", "censure_rateT")
 
-min_Y_1C=mean(as.numeric(results_df$min_Y_1C))
-min_Y_3C=mean(as.numeric(results_df$min_Y_3C))
 
-max_Y_1C=mean(as.numeric(results_df$max_Y_1C))
-max_Y_3C=mean(as.numeric(results_df$max_Y_3C))
+min_Y_1C=mean(as.numeric(results_df[,13]))
+min_Y_3C=mean(as.numeric(results_df[,14]))
 
-median_Y_1C=mean(as.numeric(results_df$median_Y_1C))
-median_Y_3C=mean(as.numeric(results_df$median_Y_3C))
+max_Y_1C=mean(as.numeric(results_df[,15]))
+max_Y_3C=mean(as.numeric(results_df[,16]))
 
-min_Y_1T=mean(as.numeric(results_df$min_Y_1T))
-min_Y_3T=mean(as.numeric(results_df$min_Y_3T))
+median_Y_1C=mean(as.numeric(results_df[,17]))
+median_Y_3C=mean(as.numeric(results_df[,18]))
 
-max_Y_1T=mean(as.numeric(results_df$max_Y_1T))
-max_Y_3T=mean(as.numeric(results_df$max_Y_3T))
+min_Y_1T=mean(as.numeric(results_df[,19]))
+min_Y_3T=mean(as.numeric(results_df[,20]))
 
-median_Y_1T=mean(as.numeric(results_df$median_Y_1T))
-median_Y_3T=mean(as.numeric(results_df$median_Y_3T))
+max_Y_1T=mean(as.numeric(results_df[,21]))
+max_Y_3T=mean(as.numeric(results_df[,22]))
 
-nb_O_C = mean(results_df$nb_0_C)
-nb_1_C = mean(results_df$nb_1_C)
+median_Y_1T=mean(as.numeric(results_df[,23]))
+median_Y_3T=mean(as.numeric(results_df[,24]))
 
-nb_O_T = mean(results_df$nb_0_T)
-nb_1_T = mean(results_df$nb_1_T)
+nb_O_C = mean(as.numeric(results_df[,25]))
+nb_1_C = mean(as.numeric(results_df[,26]))
 
-censure_rateC= mean(results_df$censure_rateC)
-censure_rateT= mean(results_df$censure_rateT)
+nb_0_T= mean(as.numeric(results_df[,27]))
+nb_1_T = mean(as.numeric(results_df[,28]))
+
+censure_rateC= mean(as.numeric(results_df[,29]))
+censure_rateT= mean(as.numeric(results_df[,30]))
 
 dfC=data.frame(row.names = c("min", "median", "max"), c(min_Y_1C, median_Y_1C, max_Y_1C),c(min_Y_3C, median_Y_3C, max_Y_3C))
 colnames(dfC) = c("Y_1_C (tte)", "Y_3_C (continue)")
 dfT=data.frame(row.names = c("min", "median", "max"), c(min_Y_1T, median_Y_1T, max_Y_1T),c(min_Y_3T, median_Y_3T, max_Y_3T))
 colnames(dfT) = c("Y_1_T (tte)", "Y_3_T (Continue)")
 
-df2 = data.frame(row.name = c("0", "1"), c(nb_O_C,nb_O_T), c(nb_1_C,nb_1_T))
+df2 = data.frame(row.name = c("0", "1"), c(nb_O_C,nb_0_T), c(nb_1_C,nb_1_T))
+
+p_valGPC = results_df[,31]
+p_valWR = results_df[,32]
+p_valWO = results_df[,33]
+
+nb_pval_GPC = sum(p_valGPC< 0.05)
+nb_pval_WR = sum(p_valWR< 0.05)
+nb_pval_WO = sum(p_valWO< 0.05)
+
 colnames(df2)=c(" ","C", "T")
 
 GPC=as.numeric(results_df[,1])
@@ -748,11 +1319,11 @@ quantileWO_upr=quantile(WO, 0.975)
 
 
 
-Win   = round(c(mean(as.numeric(results_df$Win_Edp1)), mean(as.numeric(results_df$Win_Edp2)), mean(as.numeric(results_df$Win_Edp3)), mean(as.numeric(results_df$Win_Edp1)) + mean(as.numeric(results_df$Win_Edp2)) +mean(as.numeric(results_df$Win_Edp3)) ))
+Win   = round(c(mean(as.numeric(results_df[,4])), mean(as.numeric(results_df[,7])), mean(as.numeric(results_df[,10])), mean(as.numeric(results_df[,4])) + mean(as.numeric(results_df[,7])) +mean(as.numeric(results_df[,10])) ))
 
-Loose = round(c(mean(as.numeric(results_df$Loose_Edp1)), mean(as.numeric(results_df$Loose_Edp2)),mean(as.numeric(results_df$Loose_Edp3)), mean(as.numeric(results_df$Loose_Edp1))+mean(as.numeric(results_df$Loose_Edp2)) +mean(as.numeric(results_df$Loose_Edp3)) ))
+Loose = round(c(mean(as.numeric(results_df[,5])), mean(as.numeric(results_df[,8])),mean(as.numeric(results_df[,11])), mean(as.numeric(results_df[,5]))+mean(as.numeric(results_df[,8])) +mean(as.numeric(results_df[,11])) ))
 
-Tie   = round(c(mean(as.numeric(results_df$Tie_Edp1)), mean(as.numeric(results_df$Tie_Edp2)), mean(as.numeric(results_df$Tie_Edp3)), mean(as.numeric(results_df$Tie_Edp3)) ))
+Tie   = round(c(mean(as.numeric(results_df[,6])), mean(as.numeric(results_df[,9])), mean(as.numeric(results_df[,12])), mean(as.numeric(results_df[,12])) ))
 
 df3 = data.frame(
   row.names = c("endpoint1", "endpoint2",  "endpoint3","overall"),
@@ -763,16 +1334,19 @@ df3 = data.frame(
   WO = round((Win+0.5*Tie)/(Loose+0.5*Tie),5),
   GPC = round((Win-Loose)/(Win+Loose+Tie),5)
 )
-list(Count = df3, value_tte_cont_C = dfC, value_tte_cont_T = dfT, value_binary = df2, censure_rate_T = censure_rateT, censure_rate_C = censure_rateC)
-
-
+list(Count = df3, value_tte_cont_C = dfC, value_tte_cont_T = dfT, value_binary = df2, censure_rate_T = censure_rateT, censure_rate_C = censure_rateC, p_val_GPC = paste("probabilité d'avoir des p-valeur < 0.05 pour la GPC: ", nb_pval_GPC/n_sim), p_val_WR =  paste("probabilité d'avoir des p-valeur < 0.05 pour le WR: ", nb_pval_WR/n_sim), p_val_WO = paste("probabilité d'avoir des p-valeur < 0.05 pour le WO: ", nb_pval_WO/n_sim))
 
 vlines = data.frame(
     method = c("GPC", "WR", "WO"),
     intercept = c(0, 1, 1),
     linetype_label = "Hypothèse H0")
 
- values_long = results_df %>%
+
+val = results_df[,1:3]
+colnames(val)=c("val_GPC","val_WR","val_WO")
+summ_val=summary(val)
+
+ values_long = val %>%
    select(starts_with("val_")) %>%
    pivot_longer(cols = everything(), names_to = "method", values_to = "value") %>%
    mutate(method = recode(method,
@@ -791,19 +1365,21 @@ ggplot(values_long, aes(x = value, fill = method)) +
    labs(title = "Distribution des statistiques de test",
         x = "Valeur", y = "Densité") +
    scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
-   scale_fill_manual(values = c("orange", "purple", "cyan"))+ coord_cartesian(xlim = c(-1, 5))+
+   scale_fill_manual(values = c("orange",  "purple", "cyan")) +
   annotate("text", x = 4.5, y = 1.6, label = paste("Étendue GPC : ", étendue_GPC), color = "orange", hjust = 1) +
-  annotate("text", x = 4.5, y = 2.35, label = paste("Étendue WR : ", étendue_WR), color = "purple", hjust = 1) +
-  annotate("text", x = 4.5, y = 3.1, label = paste("Étendue WO : ", étendue_WO), color = "cyan", hjust = 1)
+  annotate("text", x = 4.5, y = 2.35, label = paste("Étendue WR : ", étendue_WR), color = "cyan", hjust = 1) +
+  annotate("text", x = 4.5, y = 3.1, label = paste("Étendue WO : ", étendue_WO), color = "purple", hjust = 1)
 
 
 ```
 
-
+```{r, echo=FALSE}
+print(summ_val)
+```
 
 ## tau = 2
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, warning=FALSE}
 
 n_sim = 2000
 n=200
@@ -823,12 +1399,12 @@ arm=rep(c("T","C"), each=200)
   
 U = runif(2*n) 
 
-lambdaT = 0.01
-kT = 5
+lambdaT = 1
+kT = 2
 
 
 Z = ifelse(arm == "T", 1, 0)
-beta = 10
+beta = -2
 
 prob_T = 0.65
 prob_C = 0.3
@@ -840,7 +1416,7 @@ sd_C = 2
 
   
 Time_1 = round((-log(1 - U)) / (lambdaT * exp(beta * Z)^(1 / kT)),3)
-fup_censureT = round(rweibull(n, shape = 1, scale =3),3)
+fup_censureT = round(rweibull(2*n, shape = 1, scale =3),3)
 
 Time_T = pmin(Time_1, fup_censureT)
 deltaT=as.numeric(fup_censureT==Time_T)
@@ -930,50 +1506,57 @@ tie_edp3 = tie_edp2-(win_edp3+loose_edp3)
   p_val_WR  = result$p_value[1]
   p_val_WO  = result$p_value[3]
   
-    return(unname(c(val_GPC,val_WR,val_WO,win_edp1,loose_edp1,tie_edp1,win_edp2,loose_edp2,tie_edp2,win_edp3,loose_edp3,tie_edp3,min_Y_1C, min_Y_3C,max_Y_1C, max_Y_3C,median_Y_1C, median_Y_3C,min_Y_1T, min_Y_3T,max_Y_1T, max_Y_3T,median_Y_1T, median_Y_3T,nb_0_C,nb_1_C,nb_0_T,nb_1_T, censure_rateC, censure_rateT)))
+  return(unname(c(val_GPC,val_WR,val_WO,win_edp1,loose_edp1,tie_edp1,win_edp2,loose_edp2,tie_edp2,win_edp3,loose_edp3,tie_edp3,min_Y_1C, min_Y_3C,max_Y_1C, max_Y_3C,median_Y_1C, median_Y_3C,min_Y_1T, min_Y_3T,max_Y_1T, max_Y_3T,median_Y_1T, median_Y_3T,nb_0_C,nb_1_C,nb_0_T,nb_1_T, censure_rateC, censure_rateT, p_val_GPC, p_val_WR, p_val_WO)))
 }
 stopCluster(cl)
 end_time = Sys.time()
 execution_time = end_time - start_time
 
-
 results_df = as.data.frame(results)
-colnames(results_df) = c("val_GPC", "val_WR","val_WO" ,"Win_Edp1","Loose_Edp1","Tie_Edp1","Win_Edp2","Loose_Edp2","Tie_Edp2","Win_Edp3","Loose_Edp3","Tie_Edp3","min_Y_1C", "min_Y_3C","max_Y_1C", "max_Y_3C","median_Y_1C", "median_Y_3C","min_Y_1T", "min_Y_3T","max_Y_1T", "max_Y_3T","median_Y_1T", "median_Y_3T","nb_0_C","nb_1_C","nb_0_T","nb_1_T", "censure_rateC", "censure_rateT")
 
 
-min_Y_1C=mean(as.numeric(results_df$min_Y_1C))
-min_Y_3C=mean(as.numeric(results_df$min_Y_3C))
+min_Y_1C=mean(as.numeric(results_df[,13]))
+min_Y_3C=mean(as.numeric(results_df[,14]))
 
-max_Y_1C=mean(as.numeric(results_df$max_Y_1C))
-max_Y_3C=mean(as.numeric(results_df$max_Y_3C))
+max_Y_1C=mean(as.numeric(results_df[,15]))
+max_Y_3C=mean(as.numeric(results_df[,16]))
 
-median_Y_1C=mean(as.numeric(results_df$median_Y_1C))
-median_Y_3C=mean(as.numeric(results_df$median_Y_3C))
+median_Y_1C=mean(as.numeric(results_df[,17]))
+median_Y_3C=mean(as.numeric(results_df[,18]))
 
-min_Y_1T=mean(as.numeric(results_df$min_Y_1T))
-min_Y_3T=mean(as.numeric(results_df$min_Y_3T))
+min_Y_1T=mean(as.numeric(results_df[,19]))
+min_Y_3T=mean(as.numeric(results_df[,20]))
 
-max_Y_1T=mean(as.numeric(results_df$max_Y_1T))
-max_Y_3T=mean(as.numeric(results_df$max_Y_3T))
+max_Y_1T=mean(as.numeric(results_df[,21]))
+max_Y_3T=mean(as.numeric(results_df[,22]))
 
-median_Y_1T=mean(as.numeric(results_df$median_Y_1T))
-median_Y_3T=mean(as.numeric(results_df$median_Y_3T))
+median_Y_1T=mean(as.numeric(results_df[,23]))
+median_Y_3T=mean(as.numeric(results_df[,24]))
 
-nb_O_C = mean(results_df$nb_0_C)
-nb_1_C = mean(results_df$nb_1_C)
+nb_O_C = mean(as.numeric(results_df[,25]))
+nb_1_C = mean(as.numeric(results_df[,26]))
 
-nb_O_T = mean(results_df$nb_0_T)
-nb_1_T = mean(results_df$nb_1_T)
+nb_0_T= mean(as.numeric(results_df[,27]))
+nb_1_T = mean(as.numeric(results_df[,28]))
 
-censure_rateC= mean(results_df$censure_rateC)
-censure_rateT= mean(results_df$censure_rateT)
+censure_rateC= mean(as.numeric(results_df[,29]))
+censure_rateT= mean(as.numeric(results_df[,30]))
 
 dfC=data.frame(row.names = c("min", "median", "max"), c(min_Y_1C, median_Y_1C, max_Y_1C),c(min_Y_3C, median_Y_3C, max_Y_3C))
 colnames(dfC) = c("Y_1_C (tte)", "Y_3_C (continue)")
 dfT=data.frame(row.names = c("min", "median", "max"), c(min_Y_1T, median_Y_1T, max_Y_1T),c(min_Y_3T, median_Y_3T, max_Y_3T))
 colnames(dfT) = c("Y_1_T (tte)", "Y_3_T (Continue)")
 
-df2 = data.frame(row.name = c("0", "1"), c(nb_O_C,nb_O_T), c(nb_1_C,nb_1_T))
+df2 = data.frame(row.name = c("0", "1"), c(nb_O_C,nb_0_T), c(nb_1_C,nb_1_T))
+
+p_valGPC = results_df[,31]
+p_valWR = results_df[,32]
+p_valWO = results_df[,33]
+
+nb_pval_GPC = sum(p_valGPC< 0.05)
+nb_pval_WR = sum(p_valWR< 0.05)
+nb_pval_WO = sum(p_valWO< 0.05)
+
 colnames(df2)=c(" ","C", "T")
 
 GPC=as.numeric(results_df[,1])
@@ -995,11 +1578,11 @@ quantileWO_upr=quantile(WO, 0.975)
 
 
 
-Win   = round(c(mean(as.numeric(results_df$Win_Edp1)), mean(as.numeric(results_df$Win_Edp2)), mean(as.numeric(results_df$Win_Edp3)), mean(as.numeric(results_df$Win_Edp1)) + mean(as.numeric(results_df$Win_Edp2)) +mean(as.numeric(results_df$Win_Edp3)) ))
+Win   = round(c(mean(as.numeric(results_df[,4])), mean(as.numeric(results_df[,7])), mean(as.numeric(results_df[,10])), mean(as.numeric(results_df[,4])) + mean(as.numeric(results_df[,7])) +mean(as.numeric(results_df[,10])) ))
 
-Loose = round(c(mean(as.numeric(results_df$Loose_Edp1)), mean(as.numeric(results_df$Loose_Edp2)),mean(as.numeric(results_df$Loose_Edp3)), mean(as.numeric(results_df$Loose_Edp1))+mean(as.numeric(results_df$Loose_Edp2)) +mean(as.numeric(results_df$Loose_Edp3)) ))
+Loose = round(c(mean(as.numeric(results_df[,5])), mean(as.numeric(results_df[,8])),mean(as.numeric(results_df[,11])), mean(as.numeric(results_df[,5]))+mean(as.numeric(results_df[,8])) +mean(as.numeric(results_df[,11])) ))
 
-Tie   = round(c(mean(as.numeric(results_df$Tie_Edp1)), mean(as.numeric(results_df$Tie_Edp2)), mean(as.numeric(results_df$Tie_Edp3)), mean(as.numeric(results_df$Tie_Edp3)) ))
+Tie   = round(c(mean(as.numeric(results_df[,6])), mean(as.numeric(results_df[,9])), mean(as.numeric(results_df[,12])), mean(as.numeric(results_df[,12])) ))
 
 df3 = data.frame(
   row.names = c("endpoint1", "endpoint2",  "endpoint3","overall"),
@@ -1010,16 +1593,19 @@ df3 = data.frame(
   WO = round((Win+0.5*Tie)/(Loose+0.5*Tie),5),
   GPC = round((Win-Loose)/(Win+Loose+Tie),5)
 )
-list(Count = df3, value_tte_cont_C = dfC, value_tte_cont_T = dfT, value_binary = df2, censure_rate_T = censure_rateT, censure_rate_C = censure_rateC)
-
-
+list(Count = df3, value_tte_cont_C = dfC, value_tte_cont_T = dfT, value_binary = df2, censure_rate_T = censure_rateT, censure_rate_C = censure_rateC, p_val_GPC = paste("probabilité d'avoir des p-valeur < 0.05 pour la GPC: ", nb_pval_GPC/n_sim), p_val_WR =  paste("probabilité d'avoir des p-valeur < 0.05 pour le WR: ", nb_pval_WR/n_sim), p_val_WO = paste("probabilité d'avoir des p-valeur < 0.05 pour le WO: ", nb_pval_WO/n_sim))
 
 vlines = data.frame(
     method = c("GPC", "WR", "WO"),
     intercept = c(0, 1, 1),
     linetype_label = "Hypothèse H0")
 
- values_long = results_df %>%
+
+val = results_df[,1:3]
+colnames(val)=c("val_GPC","val_WR","val_WO")
+summ_val=summary(val)
+
+ values_long = val %>%
    select(starts_with("val_")) %>%
    pivot_longer(cols = everything(), names_to = "method", values_to = "value") %>%
    mutate(method = recode(method,
@@ -1038,10 +1624,2700 @@ ggplot(values_long, aes(x = value, fill = method)) +
    labs(title = "Distribution des statistiques de test",
         x = "Valeur", y = "Densité") +
    scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
-   scale_fill_manual(values = c("orange", "purple", "cyan"))+ coord_cartesian(xlim = c(-1, 5))+
+   scale_fill_manual(values = c("orange",  "purple", "cyan")) +
   annotate("text", x = 4.5, y = 1.6, label = paste("Étendue GPC : ", étendue_GPC), color = "orange", hjust = 1) +
-  annotate("text", x = 4.5, y = 2.35, label = paste("Étendue WR : ", étendue_WR), color = "purple", hjust = 1) +
-  annotate("text", x = 4.5, y = 3.1, label = paste("Étendue WO : ", étendue_WO), color = "cyan", hjust = 1)
+  annotate("text", x = 4.5, y = 2.35, label = paste("Étendue WR : ", étendue_WR), color = "cyan", hjust = 1) +
+  annotate("text", x = 4.5, y = 3.1, label = paste("Étendue WO : ", étendue_WO), color = "purple", hjust = 1)
 
+
+```
+
+Grosse étendue pour le **WR** valant 2.33 alors qu'elle est aux alentours de 1.2 pour le **WO** et la **GPC** par transformation. On y voit des valeurs plus disparates le premier endpoint est assez parlant, on y voit une valeur de 3.6 pour le WR, on pourait penser que la p-valeur est très faible alors que pour le **WO** et la **GPC** la p-valeur devrait être élevée. 
+
+Une petite différence est notable entre le moment où l'outcome principal est tte ou binaire
+
+|  | Outcome tte  | Outcome Binaire |
+|-----------|-----------|-----------|
+| WO | 1.1513  | 1.2054  |
+| WR  | 2.3298  | 2.4251  |
+| GPC  | 0.178  | 0.1844  |
+
+```{r, echo=FALSE}
+print(summ_val)
+```
+
+## Outcome continue de poisson
+
+Ici, on aura un seuil de 2 et les 2 distribution de poisson seront les suivantes :
+
+$$ \mathcal{P}_T(5) \quad ; \quad \mathcal{P}_C(1) $$
+
+```{r, echo=FALSE, warning=TRUE}
+
+n_sim = 2000
+n=200
+
+
+nb_core = parallel::detectCores() - 2
+cl = makeCluster(nb_core)
+registerDoParallel(cl)
+count = 0
+start_time = Sys.time()
+
+results = foreach(s = 1:n_sim, .combine = rbind, .packages = c("dplyr", "survival", "parallel", "foreach", "doParallel", "WINS"), .export = c("win.stat")) %dopar% {
+  set.seed(s)
+  
+id=1:(2*n) 
+arm=rep(c("T","C"), each=n)
+  
+U = runif(2*n) 
+
+lambdaT = 1
+kT = 2
+
+
+Z = ifelse(arm == "T", 1, 0)
+beta = -2
+
+prob_T = 0.65
+prob_C = 0.3
+
+lambda_T = 5
+lambda_C = 1
+  
+Time_1 = round((-log(1 - U)) / (lambdaT * exp(beta * Z)^(1 / kT)),3)
+fup_censureT = round(rweibull(2*n, shape = 1, scale =3),3)
+
+Time_T = pmin(Time_1, fup_censureT)
+deltaT=as.numeric(fup_censureT==Time_T)
+
+Y_2_T=as.numeric(gener_binom(prob = prob_T)[,1] )-1
+Y_2_C=as.numeric(gener_binom(prob = prob_C)[,1] )-1
+
+Y_3_T= gener_poisson(lambda = lambda_T)
+Y_3_C= gener_poisson(lambda = lambda_C)
+
+stratum=sample(rep(c(1,3,5,8), each = 50))
+dataT=data.frame(Y_1 = Time_T[Z==1], Delta_1 = deltaT[Z==1], Y_2 = Y_2_T, Y_3 = Y_3_T, stratum = stratum)
+colnames(dataT)= c("Y_1", "Delta_1", "Y_2", "Y_3", "stratum")
+dataC=data.frame(Y_1 = Time_T[Z==0], Delta_1 = deltaT[Z==0], Y_2 = Y_2_C, Y_3 = Y_3_C, stratum = stratum)
+colnames(dataC)= c("Y_1", "Delta_1", "Y_2", "Y_3", "stratum")
+
+ 
+data1=rbind(dataT,dataC)
+
+summT = summary.data.frame(dataT)
+
+min_Y_1T = as.numeric(stringr::str_extract(summT[1,1], "\\d+\\.\\d+"))
+min_Y_3T = as.numeric(stringr::str_extract(summT[1,4], "\\d+\\.\\d+"))
+
+nb_0_C=sum(Y_2_C==0)
+nb_1_C=sum(Y_2_C==1)
+
+nb_0_T=sum(Y_2_T==0)
+nb_1_T=sum(Y_2_T==1)
+
+median_Y_1T = as.numeric(stringr::str_extract( summT[3,1], "\\d+\\.\\d+"))
+median_Y_3T = as.numeric(stringr::str_extract( summT[3,4], "\\d+\\.\\d+"))
+
+max_Y_1T =as.numeric(stringr::str_extract(summT[6,1], "\\d+\\.\\d+"))
+max_Y_3T =as.numeric(stringr::str_extract(summT[6,4], "\\d+\\.\\d+"))
+
+summC = summary.data.frame(dataC)
+
+min_Y_1C = as.numeric(stringr::str_extract(summC[1,1], "\\d+\\.\\d+"))
+min_Y_3C = as.numeric(stringr::str_extract(summC[1,4], "\\d+\\.\\d+"))
+
+
+median_Y_1C = as.numeric(stringr::str_extract( summC[3,1], "\\d+\\.\\d+"))
+median_Y_3C = as.numeric(stringr::str_extract( summC[3,4], "\\d+\\.\\d+"))
+
+max_Y_1C =as.numeric(stringr::str_extract(summC[6,1], "\\d+\\.\\d+"))
+max_Y_3C =as.numeric(stringr::str_extract(summC[6,4], "\\d+\\.\\d+"))
+
+censure_rateT=sum(dataT$Delta_1==0)/n 
+censure_rateC=sum(dataC$Delta_1==0)/n 
+
+
+data=data.frame(id=id, arm = arm, Y_1= data1[,1],Delta_1=data1[,2], Y_2 = data1[,3], Y_3 = data1[,4], stratum = data1[,5] )
+
+result =
+  win.stat(
+    data = data,
+    ep_type = c("tte", "binary", "continuous"),
+    stratum.weight = "equal",
+    tau = c(2,0,2),
+    arm.name = c("T", "C"),
+    alpha = 0.05,
+    digit = 3,
+    pvalue = "two-sided",
+    priority = c(1,2,3),
+    summary.print = FALSE
+  )
+
+win_edp1=sum(result$summary_ep$Trt_Endpoint1[,2])
+loose_edp1=sum(result$summary_ep$Con_Endpoint1[,2])
+tie_edp1=4*2500-sum(win_edp1+loose_edp1)
+
+win_edp2=sum(result$summary_ep$Trt_Endpoint2[,2])
+loose_edp2=sum(result$summary_ep$Con_Endpoint2[,2])
+tie_edp2=4*2500-(win_edp2+loose_edp2)
+
+win_edp3 = sum(result$summary_ep$Trt_Endpoint3[,2])
+loose_edp3 = sum(result$summary_ep$Con_Endpoint3[,2])
+tie_edp3 = 4*2500-(win_edp3+loose_edp3)
+
+
+  count = count + 1
+  write.table(c(count), file="../output.txt", append = T, col.names = F)
+
+  val_GPC = result$Win_statistic$Net_Benefit[1]
+  val_WR  = result$Win_statistic$Win_Ratio[1]
+  val_WO  = result$Win_statistic$Win_Odds[1]
+  
+  p_val_GPC = result$p_value[2]
+  p_val_WR  = result$p_value[1]
+  p_val_WO  = result$p_value[3]
+
+  return(unname(c(val_GPC,val_WR,val_WO,win_edp1,loose_edp1,tie_edp1,win_edp2,loose_edp2,tie_edp2,win_edp3,loose_edp3,tie_edp3,min_Y_1C, min_Y_3C,max_Y_1C, max_Y_3C,median_Y_1C, median_Y_3C,min_Y_1T, min_Y_3T,max_Y_1T, max_Y_3T,median_Y_1T, median_Y_3T,nb_0_C,nb_1_C,nb_0_T,nb_1_T, censure_rateC, censure_rateT, p_val_GPC, p_val_WR, p_val_WO)))
+}
+stopCluster(cl)
+end_time = Sys.time()
+execution_time = end_time - start_time
+
+results_df = as.data.frame(results)
+
+
+min_Y_1C=mean(as.numeric(results_df[,13]))
+min_Y_3C=mean(as.numeric(results_df[,14]))
+
+max_Y_1C=mean(as.numeric(results_df[,15]))
+max_Y_3C=mean(as.numeric(results_df[,16]))
+
+median_Y_1C=mean(as.numeric(results_df[,17]))
+median_Y_3C=mean(as.numeric(results_df[,18]))
+
+min_Y_1T=mean(as.numeric(results_df[,19]))
+min_Y_3T=mean(as.numeric(results_df[,20]))
+
+max_Y_1T=mean(as.numeric(results_df[,21]))
+max_Y_3T=mean(as.numeric(results_df[,22]))
+
+median_Y_1T=mean(as.numeric(results_df[,23]))
+median_Y_3T=mean(as.numeric(results_df[,24]))
+
+nb_O_C = mean(as.numeric(results_df[,25]))
+nb_1_C = mean(as.numeric(results_df[,26]))
+
+nb_0_T= mean(as.numeric(results_df[,27]))
+nb_1_T = mean(as.numeric(results_df[,28]))
+
+censure_rateC= mean(as.numeric(results_df[,29]))
+censure_rateT= mean(as.numeric(results_df[,30]))
+
+dfC=data.frame(row.names = c("min", "median", "max"), c(min_Y_1C, median_Y_1C, max_Y_1C),c(min_Y_3C, median_Y_3C, max_Y_3C))
+colnames(dfC) = c("Y_1_C (tte)", "Y_3_C (poisson)")
+dfT=data.frame(row.names = c("min", "median", "max"), c(min_Y_1T, median_Y_1T, max_Y_1T),c(min_Y_3T, median_Y_3T, max_Y_3T))
+colnames(dfT) = c("Y_1_T (tte)", "Y_3_T (poisson)")
+
+df2 = data.frame(row.name = c("0", "1"), c(nb_O_C,nb_0_T), c(nb_1_C,nb_1_T))
+
+p_valGPC = results_df[,31]
+p_valWR = results_df[,32]
+p_valWO = results_df[,33]
+
+nb_pval_GPC = sum(p_valGPC< 0.05)
+nb_pval_WR = sum(p_valWR< 0.05)
+nb_pval_WO = sum(p_valWO< 0.05)
+
+colnames(df2)=c(" ","C", "T")
+
+GPC=as.numeric(results_df[,1])
+WR= as.numeric(results_df[,2])
+WO= as.numeric(results_df[,3])
+
+
+quantileGPC_lwr=quantile(GPC, 0.025)
+quantileGPC_upr=quantile(GPC, 0.975)
+étendue_GPC= round(quantileGPC_upr - quantileGPC_lwr,4)
+
+quantileWR_lwr=quantile(WR, 0.025)
+quantileWR_upr=quantile(WR, 0.975)
+étendue_WR= round(quantileWR_upr - quantileWR_lwr,4)
+
+quantileWO_lwr=quantile(WO, 0.025)
+quantileWO_upr=quantile(WO, 0.975)
+étendue_WO= round(quantileWO_upr - quantileWO_lwr,4)
+
+
+
+Win   = round(c(mean(as.numeric(results_df[,4])), mean(as.numeric(results_df[,7])), mean(as.numeric(results_df[,10])), mean(as.numeric(results_df[,4])) + mean(as.numeric(results_df[,7])) +mean(as.numeric(results_df[,10])) ))
+
+Loose = round(c(mean(as.numeric(results_df[,5])), mean(as.numeric(results_df[,8])),mean(as.numeric(results_df[,11])), mean(as.numeric(results_df[,5]))+mean(as.numeric(results_df[,8])) +mean(as.numeric(results_df[,11])) ))
+
+Tie   = round(c(mean(as.numeric(results_df[,6])), mean(as.numeric(results_df[,9])), mean(as.numeric(results_df[,12])), mean(as.numeric(results_df[,12])) ))
+
+df3 = data.frame(
+  row.names = c("endpoint1", "endpoint2",  "endpoint3","overall"),
+  Win   = Win,
+  Loose = Loose,
+  Tie   = Tie,
+  WR = round(Win/Loose,5),
+  WO = round((Win+0.5*Tie)/(Loose+0.5*Tie),5),
+  GPC = round((Win-Loose)/(Win+Loose+Tie),5)
+)
+list(Count = df3, value_tte_cont_C = dfC, value_tte_cont_T = dfT, value_binary = df2, censure_rate_T = censure_rateT, censure_rate_C = censure_rateC, p_val_GPC = paste("probabilité d'avoir des p-valeur < 0.05 pour la GPC: ", nb_pval_GPC/n_sim), p_val_WR =  paste("probabilité d'avoir des p-valeur < 0.05 pour le WR: ", nb_pval_WR/n_sim), p_val_WO = paste("probabilité d'avoir des p-valeur < 0.05 pour le WO: ", nb_pval_WO/n_sim))
+
+vlines = data.frame(
+    method = c("GPC", "WR", "WO"),
+    intercept = c(0, 1, 1),
+    linetype_label = "Hypothèse H0")
+
+
+val = results_df[,1:3]
+colnames(val)=c("val_GPC","val_WR","val_WO")
+summ_val=summary(val)
+
+ values_long = val %>%
+   select(starts_with("val_")) %>%
+   pivot_longer(cols = everything(), names_to = "method", values_to = "value") %>%
+   mutate(method = recode(method,
+                          "val_GPC" = "GPC",
+                          "val_WR"  = "WR",
+                          "val_WO"  = "WO"))
+ values_long$value = unlist(values_long$value)
+ values_long <- values_long %>% filter(!is.infinite(value))
+
+
+ggplot(values_long, aes(x = value, fill = method)) +
+   geom_density(alpha = 0.6, color = "black") +
+   geom_vline(data = vlines, aes(xintercept = intercept, linetype = linetype_label),
+              color = "black", lwd = 1) +
+   theme_minimal() +
+   labs(title = "Distribution des statistiques de test",
+        x = "Valeur", y = "Densité") +
+   scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
+   scale_fill_manual(values = c("orange",  "purple", "cyan")) +
+  annotate("text", x = 4.5, y = 1.6, label = paste("Étendue GPC : ", étendue_GPC), color = "orange", hjust = 1) +
+  annotate("text", x = 4.5, y = 2.35, label = paste("Étendue WR : ", étendue_WR), color = "cyan", hjust = 1) +
+  annotate("text", x = 4.5, y = 3.1, label = paste("Étendue WO : ", étendue_WO), color = "purple", hjust = 1)
+
+
+```
+
+```{r, echo=FALSE}
+print(summ_val)
+```
+
+## Outcome binaire en premier
+
+```{r, echo=FALSE, warning=FALSE}
+
+n_sim = 2000
+n=200
+
+
+nb_core = parallel::detectCores() - 2
+cl = makeCluster(nb_core)
+registerDoParallel(cl)
+count = 0
+start_time = Sys.time()
+
+results = foreach(s = 1:n_sim, .combine = rbind, .packages = c("dplyr", "survival", "parallel", "foreach", "doParallel", "WINS"), .export = c("win.stat")) %dopar% {
+  set.seed(s)
+  
+id=1:(2*n) 
+arm=rep(c("T","C"), each=200)
+  
+U = runif(2*n) 
+
+lambdaT = 1
+kT = 2
+
+
+Z = ifelse(arm == "T", 1, 0)
+beta = -2
+
+prob_T = 0.65
+prob_C = 0.3
+
+mean_T = 3
+mean_C = 2
+sd_T = 2
+sd_C = 2
+
+  
+Time_1 = round((-log(1 - U)) / (lambdaT * exp(beta * Z)^(1 / kT)),3)
+fup_censureT = round(rweibull(2*n, shape = 1, scale =3),3)
+
+Time_T = pmin(Time_1, fup_censureT)
+deltaT=as.numeric(fup_censureT==Time_T)
+
+Y_2_T=as.numeric(gener_binom(prob = prob_T)[,1] )-1
+Y_2_C=as.numeric(gener_binom(prob = prob_C)[,1] )-1
+
+Y_3_T= gener_continue(mean = mean_T, sd = sd_T)
+Y_3_C= gener_continue(mean = mean_C, sd = sd_C)
+
+stratum=sample(rep(c(1,3,5,8), each = 50))
+dataT=data.frame(Y_1 = Time_T[Z==1], Delta_1 = deltaT[Z==1], Y_2 = Y_2_T, Y_3 = Y_3_T, stratum = stratum)
+dataC=data.frame(Y_1 = Time_T[Z==0], Delta_1 = deltaT[Z==0], Y_2 = Y_2_C, Y_3 = Y_3_C, stratum = stratum)
+
+ 
+data1=rbind(dataT,dataC)
+
+summT = summary.data.frame(dataT)
+
+min_Y_1T = as.numeric(stringr::str_extract(summT[1,1], "\\d+\\.\\d+"))
+min_Y_3T = as.numeric(stringr::str_extract(summT[1,4], "\\d+\\.\\d+"))
+
+nb_0_C=sum(Y_2_C==0)
+nb_1_C=sum(Y_2_C==1)
+
+nb_0_T=sum(Y_2_T==0)
+nb_1_T=sum(Y_2_T==1)
+
+median_Y_1T = as.numeric(stringr::str_extract( summT[3,1], "\\d+\\.\\d+"))
+median_Y_3T = as.numeric(stringr::str_extract( summT[3,4], "\\d+\\.\\d+"))
+
+max_Y_1T =as.numeric(stringr::str_extract(summT[6,1], "\\d+\\.\\d+"))
+max_Y_3T =as.numeric(stringr::str_extract(summT[6,4], "\\d+\\.\\d+"))
+
+summC = summary.data.frame(dataC)
+
+min_Y_1C = as.numeric(stringr::str_extract(summC[1,1], "\\d+\\.\\d+"))
+min_Y_3C = as.numeric(stringr::str_extract(summC[1,4], "\\d+\\.\\d+"))
+
+
+median_Y_1C = as.numeric(stringr::str_extract( summC[3,1], "\\d+\\.\\d+"))
+median_Y_3C = as.numeric(stringr::str_extract( summC[3,4], "\\d+\\.\\d+"))
+
+max_Y_1C =as.numeric(stringr::str_extract(summC[6,1], "\\d+\\.\\d+"))
+max_Y_3C =as.numeric(stringr::str_extract(summC[6,4], "\\d+\\.\\d+"))
+
+censure_rateT=sum(dataT$Delta_1==0)/n 
+censure_rateC=sum(dataC$Delta_1==0)/n 
+
+data=data.frame(id=id, arm = arm, Y_1= data1[,1],Delta_1=data1[,2], Y_2 = data1[,3], Y_3 = data1[,4], stratum = data1[,5] )
+
+result =
+  win.stat(
+    data = data,
+    ep_type = c("tte", "binary", "continuous"),
+    stratum.weight = "equal",
+    tau = c(2,0,2),
+    arm.name = c("T", "C"),
+    alpha = 0.05,
+    digit = 3,
+    pvalue = "two-sided",
+    priority = c(2,1,3),
+    summary.print = FALSE
+  )
+
+win_edp1=sum(result$summary_ep$Trt_Endpoint1[,2])
+loose_edp1=sum(result$summary_ep$Con_Endpoint1[,2])
+tie_edp1=4*2500-sum(win_edp1+loose_edp1)
+
+win_edp2=sum(result$summary_ep$Trt_Endpoint2[,2])
+loose_edp2=sum(result$summary_ep$Con_Endpoint2[,2])
+tie_edp2=tie_edp1-(loose_edp2+win_edp2)
+
+win_edp3 = sum(result$summary_ep$Trt_Endpoint3[,2])
+loose_edp3 = sum(result$summary_ep$Con_Endpoint3[,2])
+tie_edp3 = tie_edp2-(win_edp3+loose_edp3)
+
+
+  count = count + 1
+  write.table(c(count), file="../output.txt", append = T, col.names = F)
+  
+  val_GPC = result$Win_statistic$Net_Benefit[1]
+  val_WR  = result$Win_statistic$Win_Ratio[1]
+  val_WO  = result$Win_statistic$Win_Odds[1]
+  
+  p_val_GPC = result$p_value[2]
+  p_val_WR  = result$p_value[1]
+  p_val_WO  = result$p_value[3]
+  
+   return(unname(c(val_GPC,val_WR,val_WO,win_edp1,loose_edp1,tie_edp1,win_edp2,loose_edp2,tie_edp2,win_edp3,loose_edp3,tie_edp3,min_Y_1C, min_Y_3C,max_Y_1C, max_Y_3C,median_Y_1C, median_Y_3C,min_Y_1T, min_Y_3T,max_Y_1T, max_Y_3T,median_Y_1T, median_Y_3T,nb_0_C,nb_1_C,nb_0_T,nb_1_T, censure_rateC, censure_rateT, p_val_GPC, p_val_WR, p_val_WO)))
+}
+stopCluster(cl)
+end_time = Sys.time()
+execution_time = end_time - start_time
+
+results_df = as.data.frame(results)
+
+
+min_Y_1C=mean(as.numeric(results_df[,13]))
+min_Y_3C=mean(as.numeric(results_df[,14]))
+
+max_Y_1C=mean(as.numeric(results_df[,15]))
+max_Y_3C=mean(as.numeric(results_df[,16]))
+
+median_Y_1C=mean(as.numeric(results_df[,17]))
+median_Y_3C=mean(as.numeric(results_df[,18]))
+
+min_Y_1T=mean(as.numeric(results_df[,19]))
+min_Y_3T=mean(as.numeric(results_df[,20]))
+
+max_Y_1T=mean(as.numeric(results_df[,21]))
+max_Y_3T=mean(as.numeric(results_df[,22]))
+
+median_Y_1T=mean(as.numeric(results_df[,23]))
+median_Y_3T=mean(as.numeric(results_df[,24]))
+
+nb_O_C = mean(as.numeric(results_df[,25]))
+nb_1_C = mean(as.numeric(results_df[,26]))
+
+nb_0_T= mean(as.numeric(results_df[,27]))
+nb_1_T = mean(as.numeric(results_df[,28]))
+
+censure_rateC= mean(as.numeric(results_df[,29]))
+censure_rateT= mean(as.numeric(results_df[,30]))
+
+dfC=data.frame(row.names = c("min", "median", "max"), c(min_Y_1C, median_Y_1C, max_Y_1C),c(min_Y_3C, median_Y_3C, max_Y_3C))
+colnames(dfC) = c("Y_2_C (tte)", "Y_3_C (continue)")
+dfT=data.frame(row.names = c("min", "median", "max"), c(min_Y_1T, median_Y_1T, max_Y_1T),c(min_Y_3T, median_Y_3T, max_Y_3T))
+colnames(dfT) = c("Y_2_T (tte)", "Y_3_T (Continue)")
+
+df2 = data.frame(row.name = c("0", "1"), c(nb_O_C,nb_0_T), c(nb_1_C,nb_1_T))
+
+p_valGPC = results_df[,31]
+p_valWR = results_df[,32]
+p_valWO = results_df[,33]
+
+nb_pval_GPC = sum(p_valGPC< 0.05)
+nb_pval_WR = sum(p_valWR< 0.05)
+nb_pval_WO = sum(p_valWO< 0.05)
+
+colnames(df2)=c(" ","C", "T")
+
+GPC=as.numeric(results_df[,1])
+WR= as.numeric(results_df[,2])
+WO= as.numeric(results_df[,3])
+
+
+quantileGPC_lwr=quantile(GPC, 0.025)
+quantileGPC_upr=quantile(GPC, 0.975)
+étendue_GPC= round(quantileGPC_upr - quantileGPC_lwr,4)
+
+quantileWR_lwr=quantile(WR, 0.025)
+quantileWR_upr=quantile(WR, 0.975)
+étendue_WR= round(quantileWR_upr - quantileWR_lwr,4)
+
+quantileWO_lwr=quantile(WO, 0.025)
+quantileWO_upr=quantile(WO, 0.975)
+étendue_WO= round(quantileWO_upr - quantileWO_lwr,4)
+
+
+
+Win   = round(c(mean(as.numeric(results_df[,4])), mean(as.numeric(results_df[,7])), mean(as.numeric(results_df[,10])), mean(as.numeric(results_df[,4])) + mean(as.numeric(results_df[,7])) +mean(as.numeric(results_df[,10])) ))
+
+Loose = round(c(mean(as.numeric(results_df[,5])), mean(as.numeric(results_df[,8])),mean(as.numeric(results_df[,11])), mean(as.numeric(results_df[,5]))+mean(as.numeric(results_df[,8])) +mean(as.numeric(results_df[,11])) ))
+
+Tie   = round(c(mean(as.numeric(results_df[,6])), mean(as.numeric(results_df[,9])), mean(as.numeric(results_df[,12])), mean(as.numeric(results_df[,12])) ))
+
+df3 = data.frame(
+  row.names = c("endpoint1", "endpoint2",  "endpoint3","overall"),
+  Win   = Win,
+  Loose = Loose,
+  Tie   = Tie,
+  WR = round(Win/Loose,5),
+  WO = round((Win+0.5*Tie)/(Loose+0.5*Tie),5),
+  GPC = round((Win-Loose)/(Win+Loose+Tie),5)
+)
+list(Count = df3, value_tte_cont_C = dfC, value_tte_cont_T = dfT, value_binary = df2, censure_rate_T = censure_rateT, censure_rate_C = censure_rateC, p_val_GPC = paste("probabilité d'avoir des p-valeur < 0.05 pour la GPC: ", nb_pval_GPC/n_sim), p_val_WR =  paste("probabilité d'avoir des p-valeur < 0.05 pour le WR: ", nb_pval_WR/n_sim), p_val_WO = paste("probabilité d'avoir des p-valeur < 0.05 pour le WO: ", nb_pval_WO/n_sim))
+
+vlines = data.frame(
+    method = c("GPC", "WR", "WO"),
+    intercept = c(0, 1, 1),
+    linetype_label = "Hypothèse H0")
+
+
+val = results_df[,1:3]
+colnames(val)=c("val_GPC","val_WR","val_WO")
+summ_val=summary(val)
+
+ values_long = val %>%
+   select(starts_with("val_")) %>%
+   pivot_longer(cols = everything(), names_to = "method", values_to = "value") %>%
+   mutate(method = recode(method,
+                          "val_GPC" = "GPC",
+                          "val_WR"  = "WR",
+                          "val_WO"  = "WO"))
+ values_long$value = unlist(values_long$value)
+ values_long <- values_long %>% filter(!is.infinite(value))
+
+
+ggplot(values_long, aes(x = value, fill = method)) +
+   geom_density(alpha = 0.6, color = "black") +
+   geom_vline(data = vlines, aes(xintercept = intercept, linetype = linetype_label),
+              color = "black", lwd = 1) +
+   theme_minimal() +
+   labs(title = "Distribution des statistiques de test",
+        x = "Valeur", y = "Densité") +
+   scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
+   scale_fill_manual(values = c("orange",  "purple", "cyan")) +
+  annotate("text", x = 4.5, y = 1.6, label = paste("Étendue GPC : ", étendue_GPC), color = "orange", hjust = 1) +
+  annotate("text", x = 4.5, y = 2.35, label = paste("Étendue WR : ", étendue_WR), color = "cyan", hjust = 1) +
+  annotate("text", x = 4.5, y = 3.1, label = paste("Étendue WO : ", étendue_WO), color = "purple", hjust = 1)
+
+
+```
+
+```{r, echo=FALSE}
+print(summ_val)
+```
+
+\newpage
+
+# Modèle avec les HR non-constant
+
+On travaille avec un modèle AFT où les HR ne sont pas constant. Le seuil $\tau$ vaut 2 pour les outcomes 1 (tte) et 3 (continue). La formule pour de simulation pour le modèle AFt est la suivante : 
+
+$$(\frac{1}{1-U}-1) \times \lambda^{-1/k} \times e^{Z \beta} $$
+
+Où $U \sim \mathcal{U}([0,1])$, Z la covariable valant 1 si le patient suit le traitement et 0 s'il suit le contrôle. Les paramètres $\lambda$ et $k$ vaudront respectivement 0.1 et 0.5.
+
+Les distributions des outcomes binaire et continue sont les suivantes : 
+
+$$ \mathcal{B}_T(0.65) \quad ; \quad \mathcal{B}_C(0.3) \quad ; \quad \mathcal{N}_T(3,2) \quad ; \quad \mathcal{N}_C(2,2) $$
+
+## tau = 0
+
+```{r, echo=FALSE, warning=FALSE}
+
+n_sim = 2000
+n=200
+
+
+nb_core = parallel::detectCores() - 2
+cl = makeCluster(nb_core)
+registerDoParallel(cl)
+count = 0
+start_time = Sys.time()
+
+results = foreach(s = 1:n_sim, .combine = rbind, .packages = c("dplyr", "survival", "parallel", "foreach", "doParallel", "WINS"), .export = c("win.stat")) %dopar% {
+  set.seed(s)
+  
+id=1:(2*n) 
+arm=rep(c("T","C"), each=200)
+
+U = runif(2*n) 
+
+lambdaT = 1
+kT = 0.5
+
+
+Z = ifelse(arm == "T", 1, 0)
+beta = 2
+
+prob_T = 0.65
+prob_C = 0.3
+
+mean_T = 3
+mean_C = 2
+sd_T = 2
+sd_C = 2
+
+
+Time_1 = round((((1/(1-U)-1)*(1/lambdaT))^(1/kT)*exp(Z*beta)), 3)
+fup_censureT = round(rweibull(2*n, shape = 1, scale =2),3)
+
+Time_T = pmin(Time_1, fup_censureT)
+
+deltaT=as.numeric(fup_censureT==Time_T)
+
+Y_2_T=as.numeric(gener_binom(prob = prob_T)[,1] )-1
+Y_2_C=as.numeric(gener_binom(prob = prob_C)[,1] )-1
+
+Y_3_T= gener_continue(mean = mean_T, sd = sd_T)
+Y_3_C= gener_continue(mean = mean_C, sd = sd_C)
+
+stratum=sample(rep(c(1,3,5,8), each = 50))
+dataT=data.frame(Y_1 = Time_T[Z==1], Delta_1 = deltaT[Z==1], Y_2 = Y_2_T, Y_3 = Y_3_T, stratum = stratum)
+dataC=data.frame(Y_1 = Time_T[Z==0], Delta_1 = deltaT[Z==0], Y_2 = Y_2_C, Y_3 = Y_3_C, stratum = stratum)
+
+ 
+data1=rbind(dataT,dataC)
+
+summT = summary.data.frame(dataT)
+
+min_Y_1T = as.numeric(stringr::str_extract(summT[1,1], "\\d+\\.\\d+"))
+min_Y_3T = as.numeric(stringr::str_extract(summT[1,4], "\\d+\\.\\d+"))
+
+nb_0_C=sum(Y_2_C==0)
+nb_1_C=sum(Y_2_C==1)
+
+nb_0_T=sum(Y_2_T==0)
+nb_1_T=sum(Y_2_T==1)
+
+median_Y_1T = as.numeric(stringr::str_extract( summT[3,1], "\\d+\\.\\d+"))
+median_Y_3T = as.numeric(stringr::str_extract( summT[3,4], "\\d+\\.\\d+"))
+
+max_Y_1T =as.numeric(stringr::str_extract(summT[6,1], "\\d+\\.\\d+"))
+max_Y_3T =as.numeric(stringr::str_extract(summT[6,4], "\\d+\\.\\d+"))
+
+summC = summary.data.frame(dataC)
+
+min_Y_1C = as.numeric(stringr::str_extract(summC[1,1], "\\d+\\.\\d+"))
+min_Y_3C = as.numeric(stringr::str_extract(summC[1,4], "\\d+\\.\\d+"))
+
+
+median_Y_1C = as.numeric(stringr::str_extract( summC[3,1], "\\d+\\.\\d+"))
+median_Y_3C = as.numeric(stringr::str_extract( summC[3,4], "\\d+\\.\\d+"))
+
+max_Y_1C =as.numeric(stringr::str_extract(summC[6,1], "\\d+\\.\\d+"))
+max_Y_3C =as.numeric(stringr::str_extract(summC[6,4], "\\d+\\.\\d+"))
+
+censure_rateT=sum(dataT$Delta_1==0)/n 
+censure_rateC=sum(dataC$Delta_1==0)/n 
+
+data=data.frame(id=id, arm = arm, Y_1= data1[,1],Delta_1=data1[,2], Y_2 = data1[,3], Y_3 = data1[,4], stratum = data1[,5] )
+
+result =
+  win.stat(
+    data = data,
+    ep_type = c("tte", "binary", "continuous"),
+    stratum.weight = "equal",
+    tau = c(0,0,0),
+    arm.name = c("T", "C"),
+    alpha = 0.05,
+    digit = 3,
+    pvalue = "two-sided",
+    priority = c(1,2,3),
+    summary.print = FALSE
+  )
+
+win_edp1=sum(result$summary_ep$Trt_Endpoint1[,2])
+loose_edp1=sum(result$summary_ep$Con_Endpoint1[,2])
+tie_edp1=4*2500-sum(win_edp1+loose_edp1)
+
+win_edp2=sum(result$summary_ep$Trt_Endpoint2[,2])
+loose_edp2=sum(result$summary_ep$Con_Endpoint2[,2])
+tie_edp2=tie_edp1-(loose_edp2+win_edp2)
+
+win_edp3 = sum(result$summary_ep$Trt_Endpoint3[,2])
+loose_edp3 = sum(result$summary_ep$Con_Endpoint3[,2])
+tie_edp3 = tie_edp2-(win_edp3+loose_edp3)
+
+
+  count = count + 1
+  write.table(c(count), file="../output.txt", append = T, col.names = F)
+  
+  val_GPC = result$Win_statistic$Net_Benefit[1]
+  val_WR  = result$Win_statistic$Win_Ratio[1]
+  val_WO  = result$Win_statistic$Win_Odds[1]
+  
+  p_val_GPC = result$p_value[2]
+  p_val_WR  = result$p_value[1]
+  p_val_WO  = result$p_value[3]
+  
+  return(unname(c(val_GPC,val_WR,val_WO,win_edp1,loose_edp1,tie_edp1,win_edp2,loose_edp2,tie_edp2,win_edp3,loose_edp3,tie_edp3,min_Y_1C, min_Y_3C,max_Y_1C, max_Y_3C,median_Y_1C, median_Y_3C,min_Y_1T, min_Y_3T,max_Y_1T, max_Y_3T,median_Y_1T, median_Y_3T,nb_0_C,nb_1_C,nb_0_T,nb_1_T, censure_rateC, censure_rateT, p_val_GPC, p_val_WR, p_val_WO)))
+}
+stopCluster(cl)
+end_time = Sys.time()
+execution_time = end_time - start_time
+
+results_df = as.data.frame(results)
+
+
+min_Y_1C=mean(as.numeric(results_df[,13]))
+min_Y_3C=mean(as.numeric(results_df[,14]))
+
+max_Y_1C=mean(as.numeric(results_df[,15]))
+max_Y_3C=mean(as.numeric(results_df[,16]))
+
+median_Y_1C=mean(as.numeric(results_df[,17]))
+median_Y_3C=mean(as.numeric(results_df[,18]))
+
+min_Y_1T=mean(as.numeric(results_df[,19]))
+min_Y_3T=mean(as.numeric(results_df[,20]))
+
+max_Y_1T=mean(as.numeric(results_df[,21]))
+max_Y_3T=mean(as.numeric(results_df[,22]))
+
+median_Y_1T=mean(as.numeric(results_df[,23]))
+median_Y_3T=mean(as.numeric(results_df[,24]))
+
+nb_O_C = mean(as.numeric(results_df[,25]))
+nb_1_C = mean(as.numeric(results_df[,26]))
+
+nb_0_T= mean(as.numeric(results_df[,27]))
+nb_1_T = mean(as.numeric(results_df[,28]))
+
+censure_rateC= mean(as.numeric(results_df[,29]))
+censure_rateT= mean(as.numeric(results_df[,30]))
+
+dfC=data.frame(row.names = c("min", "median", "max"), c(min_Y_1C, median_Y_1C, max_Y_1C),c(min_Y_3C, median_Y_3C, max_Y_3C))
+colnames(dfC) = c("Y_1_C (tte)", "Y_3_C (continue)")
+dfT=data.frame(row.names = c("min", "median", "max"), c(min_Y_1T, median_Y_1T, max_Y_1T),c(min_Y_3T, median_Y_3T, max_Y_3T))
+colnames(dfT) = c("Y_1_T (tte)", "Y_3_T (Continue)")
+
+df2 = data.frame(row.name = c("0", "1"), c(nb_O_C,nb_0_T), c(nb_1_C,nb_1_T))
+
+p_valGPC = results_df[,31]
+p_valWR = results_df[,32]
+p_valWO = results_df[,33]
+
+nb_pval_GPC = sum(p_valGPC< 0.05)
+nb_pval_WR = sum(p_valWR< 0.05)
+nb_pval_WO = sum(p_valWO< 0.05)
+
+colnames(df2)=c(" ","C", "T")
+
+GPC=as.numeric(results_df[,1])
+WR= as.numeric(results_df[,2])
+WO= as.numeric(results_df[,3])
+
+
+quantileGPC_lwr=quantile(GPC, 0.025)
+quantileGPC_upr=quantile(GPC, 0.975)
+étendue_GPC= round(quantileGPC_upr - quantileGPC_lwr,4)
+
+quantileWR_lwr=quantile(WR, 0.025)
+quantileWR_upr=quantile(WR, 0.975)
+étendue_WR= round(quantileWR_upr - quantileWR_lwr,4)
+
+quantileWO_lwr=quantile(WO, 0.025)
+quantileWO_upr=quantile(WO, 0.975)
+étendue_WO= round(quantileWO_upr - quantileWO_lwr,4)
+
+
+
+Win   = round(c(mean(as.numeric(results_df[,4])), mean(as.numeric(results_df[,7])), mean(as.numeric(results_df[,10])), mean(as.numeric(results_df[,4])) + mean(as.numeric(results_df[,7])) +mean(as.numeric(results_df[,10])) ))
+
+Loose = round(c(mean(as.numeric(results_df[,5])), mean(as.numeric(results_df[,8])),mean(as.numeric(results_df[,11])), mean(as.numeric(results_df[,5]))+mean(as.numeric(results_df[,8])) +mean(as.numeric(results_df[,11])) ))
+
+Tie   = round(c(mean(as.numeric(results_df[,6])), mean(as.numeric(results_df[,9])), mean(as.numeric(results_df[,12])), mean(as.numeric(results_df[,12])) ))
+
+df3 = data.frame(
+  row.names = c("endpoint1", "endpoint2",  "endpoint3","overall"),
+  Win   = Win,
+  Loose = Loose,
+  Tie   = Tie,
+  WR = round(Win/Loose,5),
+  WO = round((Win+0.5*Tie)/(Loose+0.5*Tie),5),
+  GPC = round((Win-Loose)/(Win+Loose+Tie),5)
+)
+list(Count = df3, value_tte_cont_C = dfC, value_tte_cont_T = dfT, value_binary = df2, censure_rate_T = censure_rateT, censure_rate_C = censure_rateC, p_val_GPC = paste("probabilité d'avoir des p-valeur < 0.05 pour la GPC: ", nb_pval_GPC/n_sim), p_val_WR =  paste("probabilité d'avoir des p-valeur < 0.05 pour le WR: ", nb_pval_WR/n_sim), p_val_WO = paste("probabilité d'avoir des p-valeur < 0.05 pour le WO: ", nb_pval_WO/n_sim))
+
+vlines = data.frame(
+    method = c("GPC", "WR", "WO"),
+    intercept = c(0, 1, 1),
+    linetype_label = "Hypothèse H0")
+
+
+val = results_df[,1:3]
+colnames(val)=c("val_GPC","val_WR","val_WO")
+summ_val=summary(val)
+
+ values_long = val %>%
+   select(starts_with("val_")) %>%
+   pivot_longer(cols = everything(), names_to = "method", values_to = "value") %>%
+   mutate(method = recode(method,
+                          "val_GPC" = "GPC",
+                          "val_WR"  = "WR",
+                          "val_WO"  = "WO"))
+ values_long$value = unlist(values_long$value)
+ values_long <- values_long %>% filter(!is.infinite(value))
+
+
+ggplot(values_long, aes(x = value, fill = method)) +
+   geom_density(alpha = 0.6, color = "black") +
+   geom_vline(data = vlines, aes(xintercept = intercept, linetype = linetype_label),
+              color = "black", lwd = 1) +
+   theme_minimal() +
+   labs(title = "Distribution des statistiques de test",
+        x = "Valeur", y = "Densité") +
+   scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
+   scale_fill_manual(values = c("orange",  "purple", "cyan")) +
+  annotate("text", x = 4.5, y = 1.6, label = paste("Étendue GPC : ", étendue_GPC), color = "orange", hjust = 1) +
+  annotate("text", x = 4.5, y = 2.35, label = paste("Étendue WR : ", étendue_WR), color = "cyan", hjust = 1) +
+  annotate("text", x = 4.5, y = 3.1, label = paste("Étendue WO : ", étendue_WO), color = "purple", hjust = 1)
+
+
+```
+
+On remarque, en comparant avec le scénario 2 où les distribution continue et binaire ont les même lois que dans cette section que le résultatest très différent. En effet, la probabilité d'avoir des p-valeur inférieur à 0.05 était de 1 alors qu'ici avec un modèle AFT, la probabilité est de 0.11 environ. Cela est dû à la construction du
+
+```{r, echo=FALSE}
+print(summ_val)
+```
+
+## tau = 2
+
+```{r, echo=FALSE, warning=FALSE}
+
+n_sim = 2000
+n=200
+
+
+nb_core = parallel::detectCores() - 2
+cl = makeCluster(nb_core)
+registerDoParallel(cl)
+count = 0
+start_time = Sys.time()
+
+results = foreach(s = 1:n_sim, .combine = rbind, .packages = c("dplyr", "survival", "parallel", "foreach", "doParallel", "WINS"), .export = c("win.stat")) %dopar% {
+  set.seed(s)
+  
+id=1:(2*n) 
+arm=rep(c("T","C"), each=200)
+  
+U = runif(2*n) 
+lambdaT = 1
+kT = 0.5
+
+
+Z = ifelse(arm == "T", 1, 0)
+beta = 2
+
+
+prob_T = 0.65
+prob_C = 0.3
+
+mean_T = 3
+mean_C = 2
+sd_T = 2
+sd_C = 2
+
+
+Time_1 = round((((1/(1-U)-1)*(1/lambdaT))^(1/kT)*exp(Z*beta)), 3)
+fup_censureT = round(rweibull(2*n, shape = 1, scale =2),3)
+
+
+Time_T = pmin(Time_1, fup_censureT)
+
+deltaT=as.numeric(fup_censureT==Time_T)
+
+Y_2_T=as.numeric(gener_binom(prob = prob_T)[,1] )-1
+Y_2_C=as.numeric(gener_binom(prob = prob_C)[,1] )-1
+
+Y_3_T= gener_continue(mean = mean_T, sd = sd_T)
+Y_3_C= gener_continue(mean = mean_C, sd = sd_C)
+
+stratum=sample(rep(c(1,3,5,8), each = 50))
+dataT=data.frame(Y_1 = Time_T[Z==1], Delta_1 = deltaT[Z==1], Y_2 = Y_2_T, Y_3 = Y_3_T, stratum = stratum)
+dataC=data.frame(Y_1 = Time_T[Z==0], Delta_1 = deltaT[Z==0], Y_2 = Y_2_C, Y_3 = Y_3_C, stratum = stratum)
+
+ 
+data1=rbind(dataT,dataC)
+
+summT = summary.data.frame(dataT)
+
+min_Y_1T = as.numeric(stringr::str_extract(summT[1,1], "\\d+\\.\\d+"))
+min_Y_3T = as.numeric(stringr::str_extract(summT[1,4], "\\d+\\.\\d+"))
+
+nb_0_C=sum(Y_2_C==0)
+nb_1_C=sum(Y_2_C==1)
+
+nb_0_T=sum(Y_2_T==0)
+nb_1_T=sum(Y_2_T==1)
+
+median_Y_1T = as.numeric(stringr::str_extract( summT[3,1], "\\d+\\.\\d+"))
+median_Y_3T = as.numeric(stringr::str_extract( summT[3,4], "\\d+\\.\\d+"))
+
+max_Y_1T =as.numeric(stringr::str_extract(summT[6,1], "\\d+\\.\\d+"))
+max_Y_3T =as.numeric(stringr::str_extract(summT[6,4], "\\d+\\.\\d+"))
+
+summC = summary.data.frame(dataC)
+
+min_Y_1C = as.numeric(stringr::str_extract(summC[1,1], "\\d+\\.\\d+"))
+min_Y_3C = as.numeric(stringr::str_extract(summC[1,4], "\\d+\\.\\d+"))
+
+
+median_Y_1C = as.numeric(stringr::str_extract( summC[3,1], "\\d+\\.\\d+"))
+median_Y_3C = as.numeric(stringr::str_extract( summC[3,4], "\\d+\\.\\d+"))
+
+max_Y_1C =as.numeric(stringr::str_extract(summC[6,1], "\\d+\\.\\d+"))
+max_Y_3C =as.numeric(stringr::str_extract(summC[6,4], "\\d+\\.\\d+"))
+
+censure_rateT=sum(dataT$Delta_1==0)/n 
+censure_rateC=sum(dataC$Delta_1==0)/n 
+
+data=data.frame(id=id, arm = arm, Y_1= data1[,1],Delta_1=data1[,2], Y_2 = data1[,3], Y_3 = data1[,4], stratum = data1[,5] )
+
+result =
+  win.stat(
+    data = data,
+    ep_type = c("tte", "binary", "continuous"),
+    stratum.weight = "equal",
+    tau = c(2,0,2),
+    arm.name = c("T", "C"),
+    alpha = 0.05,
+    digit = 3,
+    pvalue = "two-sided",
+    priority = c(1,2,3),
+    summary.print = FALSE
+  )
+
+win_edp1=sum(result$summary_ep$Trt_Endpoint1[,2])
+loose_edp1=sum(result$summary_ep$Con_Endpoint1[,2])
+tie_edp1=4*2500-sum(win_edp1+loose_edp1)
+
+win_edp2=sum(result$summary_ep$Trt_Endpoint2[,2])
+loose_edp2=sum(result$summary_ep$Con_Endpoint2[,2])
+tie_edp2=tie_edp1-(loose_edp2+win_edp2)
+
+win_edp3 = sum(result$summary_ep$Trt_Endpoint3[,2])
+loose_edp3 = sum(result$summary_ep$Con_Endpoint3[,2])
+tie_edp3 = tie_edp2-(win_edp3+loose_edp3)
+
+
+  count = count + 1
+  write.table(c(count), file="../output.txt", append = T, col.names = F)
+  
+  val_GPC = result$Win_statistic$Net_Benefit[1]
+  val_WR  = result$Win_statistic$Win_Ratio[1]
+  val_WO  = result$Win_statistic$Win_Odds[1]
+  
+  p_val_GPC = result$p_value[2]
+  p_val_WR  = result$p_value[1]
+  p_val_WO  = result$p_value[3]
+  
+  return(unname(c(val_GPC,val_WR,val_WO,win_edp1,loose_edp1,tie_edp1,win_edp2,loose_edp2,tie_edp2,win_edp3,loose_edp3,tie_edp3,min_Y_1C, min_Y_3C,max_Y_1C, max_Y_3C,median_Y_1C, median_Y_3C,min_Y_1T, min_Y_3T,max_Y_1T, max_Y_3T,median_Y_1T, median_Y_3T,nb_0_C,nb_1_C,nb_0_T,nb_1_T, censure_rateC, censure_rateT, p_val_GPC, p_val_WR, p_val_WO)))
+}
+stopCluster(cl)
+end_time = Sys.time()
+execution_time = end_time - start_time
+
+results_df = as.data.frame(results)
+
+
+min_Y_1C=mean(as.numeric(results_df[,13]))
+min_Y_3C=mean(as.numeric(results_df[,14]))
+
+max_Y_1C=mean(as.numeric(results_df[,15]))
+max_Y_3C=mean(as.numeric(results_df[,16]))
+
+median_Y_1C=mean(as.numeric(results_df[,17]))
+median_Y_3C=mean(as.numeric(results_df[,18]))
+
+min_Y_1T=mean(as.numeric(results_df[,19]))
+min_Y_3T=mean(as.numeric(results_df[,20]))
+
+max_Y_1T=mean(as.numeric(results_df[,21]))
+max_Y_3T=mean(as.numeric(results_df[,22]))
+
+median_Y_1T=mean(as.numeric(results_df[,23]))
+median_Y_3T=mean(as.numeric(results_df[,24]))
+
+nb_O_C = mean(as.numeric(results_df[,25]))
+nb_1_C = mean(as.numeric(results_df[,26]))
+
+nb_0_T= mean(as.numeric(results_df[,27]))
+nb_1_T = mean(as.numeric(results_df[,28]))
+
+censure_rateC= mean(as.numeric(results_df[,29]))
+censure_rateT= mean(as.numeric(results_df[,30]))
+
+dfC=data.frame(row.names = c("min", "median", "max"), c(min_Y_1C, median_Y_1C, max_Y_1C),c(min_Y_3C, median_Y_3C, max_Y_3C))
+colnames(dfC) = c("Y_1_C (tte)", "Y_3_C (continue)")
+dfT=data.frame(row.names = c("min", "median", "max"), c(min_Y_1T, median_Y_1T, max_Y_1T),c(min_Y_3T, median_Y_3T, max_Y_3T))
+colnames(dfT) = c("Y_1_T (tte)", "Y_3_T (Continue)")
+
+df2 = data.frame(row.name = c("0", "1"), c(nb_O_C,nb_0_T), c(nb_1_C,nb_1_T))
+
+p_valGPC = results_df[,31]
+p_valWR = results_df[,32]
+p_valWO = results_df[,33]
+
+nb_pval_GPC = sum(p_valGPC< 0.05)
+nb_pval_WR = sum(p_valWR< 0.05)
+nb_pval_WO = sum(p_valWO< 0.05)
+
+colnames(df2)=c(" ","C", "T")
+
+GPC=as.numeric(results_df[,1])
+WR= as.numeric(results_df[,2])
+WO= as.numeric(results_df[,3])
+
+
+quantileGPC_lwr=quantile(GPC, 0.025)
+quantileGPC_upr=quantile(GPC, 0.975)
+étendue_GPC= round(quantileGPC_upr - quantileGPC_lwr,4)
+
+quantileWR_lwr=quantile(WR, 0.025)
+quantileWR_upr=quantile(WR, 0.975)
+étendue_WR= round(quantileWR_upr - quantileWR_lwr,4)
+
+quantileWO_lwr=quantile(WO, 0.025)
+quantileWO_upr=quantile(WO, 0.975)
+étendue_WO= round(quantileWO_upr - quantileWO_lwr,4)
+
+
+
+Win   = round(c(mean(as.numeric(results_df[,4])), mean(as.numeric(results_df[,7])), mean(as.numeric(results_df[,10])), mean(as.numeric(results_df[,4])) + mean(as.numeric(results_df[,7])) +mean(as.numeric(results_df[,10])) ))
+
+Loose = round(c(mean(as.numeric(results_df[,5])), mean(as.numeric(results_df[,8])),mean(as.numeric(results_df[,11])), mean(as.numeric(results_df[,5]))+mean(as.numeric(results_df[,8])) +mean(as.numeric(results_df[,11])) ))
+
+Tie   = round(c(mean(as.numeric(results_df[,6])), mean(as.numeric(results_df[,9])), mean(as.numeric(results_df[,12])), mean(as.numeric(results_df[,12])) ))
+
+df3 = data.frame(
+  row.names = c("endpoint1", "endpoint2",  "endpoint3","overall"),
+  Win   = Win,
+  Loose = Loose,
+  Tie   = Tie,
+  WR = round(Win/Loose,5),
+  WO = round((Win+0.5*Tie)/(Loose+0.5*Tie),5),
+  GPC = round((Win-Loose)/(Win+Loose+Tie),5)
+)
+list(Count = df3, value_tte_cont_C = dfC, value_tte_cont_T = dfT, value_binary = df2, censure_rate_T = censure_rateT, censure_rate_C = censure_rateC, p_val_GPC = paste("probabilité d'avoir des p-valeur < 0.05 pour la GPC: ", nb_pval_GPC/n_sim), p_val_WR =  paste("probabilité d'avoir des p-valeur < 0.05 pour le WR: ", nb_pval_WR/n_sim), p_val_WO = paste("probabilité d'avoir des p-valeur < 0.05 pour le WO: ", nb_pval_WO/n_sim))
+
+vlines = data.frame(
+    method = c("GPC", "WR", "WO"),
+    intercept = c(0, 1, 1),
+    linetype_label = "Hypothèse H0")
+
+
+val = results_df[,1:3]
+colnames(val)=c("val_GPC","val_WR","val_WO")
+summ_val=summary(val)
+
+ values_long = val %>%
+   select(starts_with("val_")) %>%
+   pivot_longer(cols = everything(), names_to = "method", values_to = "value") %>%
+   mutate(method = recode(method,
+                          "val_GPC" = "GPC",
+                          "val_WR"  = "WR",
+                          "val_WO"  = "WO"))
+ values_long$value = unlist(values_long$value)
+ values_long <- values_long %>% filter(!is.infinite(value))
+
+
+ggplot(values_long, aes(x = value, fill = method)) +
+   geom_density(alpha = 0.6, color = "black") +
+   geom_vline(data = vlines, aes(xintercept = intercept, linetype = linetype_label),
+              color = "black", lwd = 1) +
+   theme_minimal() +
+   labs(title = "Distribution des statistiques de test",
+        x = "Valeur", y = "Densité") +
+   scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
+   scale_fill_manual(values = c("orange",  "purple", "cyan")) +
+  annotate("text", x = 4.5, y = 1.6, label = paste("Étendue GPC : ", étendue_GPC), color = "orange", hjust = 1) +
+  annotate("text", x = 4.5, y = 2.35, label = paste("Étendue WR : ", étendue_WR), color = "cyan", hjust = 1) +
+  annotate("text", x = 4.5, y = 3.1, label = paste("Étendue WO : ", étendue_WO), color = "purple", hjust = 1)
+
+
+```
+
+```{r, echo=FALSE}
+print(summ_val)
+```
+
+\newpage
+
+# Distribution très différente 
+
+## tau = 0
+
+```{r, echo=FALSE, warning=FALSE}
+
+n_sim = 2000
+n=200
+
+
+nb_core = parallel::detectCores() - 2
+cl = makeCluster(nb_core)
+registerDoParallel(cl)
+count = 0
+start_time = Sys.time()
+
+results = foreach(s = 1:n_sim, .combine = rbind, .packages = c("dplyr", "survival", "parallel", "foreach", "doParallel", "WINS"), .export = c("win.stat")) %dopar% {
+  set.seed(s)
+  
+id=1:(2*n) 
+arm=rep(c("T","C"), each=200)
+  
+U = runif(2*n) 
+
+lambdaT = 0.01
+kT = 5
+
+
+Z = ifelse(arm == "T", 1, 0)
+beta = -10
+
+prob_T = 0.7
+prob_C = 0.3
+
+mean_T = 3
+mean_C = 1.3
+sd_T = 2
+sd_C = 1
+
+  
+Time_1 = round((-log(1 - U)) / (lambdaT * exp(beta * Z)^(1 / kT)),3)
+fup_censureT = round(rweibull(2*n, shape = 1, scale =1),3)
+
+Time_T = pmin(Time_1, fup_censureT)
+deltaT=as.numeric(fup_censureT==Time_T)
+
+Y_2_T=as.numeric(gener_binom(prob = prob_T)[,1] )-1
+Y_2_C=as.numeric(gener_binom(prob = prob_C)[,1] )-1
+
+Y_3_T= gener_continue(mean = mean_T, sd = sd_T)
+Y_3_C= gener_continue(mean = mean_C, sd = sd_C)
+
+stratum=sample(rep(c(1,3,5,8), each = 50))
+dataT=data.frame(Y_1 = Time_T[Z==1], Delta_1 = deltaT[Z==1], Y_2 = Y_2_T, Y_3 = Y_3_T, stratum = stratum)
+dataC=data.frame(Y_1 = Time_T[Z==0], Delta_1 = deltaT[Z==0], Y_2 = Y_2_C, Y_3 = Y_3_C, stratum = stratum)
+
+ 
+data1=rbind(dataT,dataC)
+
+summT = summary.data.frame(dataT)
+
+min_Y_1T = as.numeric(stringr::str_extract(summT[1,1], "\\d+\\.\\d+"))
+min_Y_3T = as.numeric(stringr::str_extract(summT[1,4], "\\d+\\.\\d+"))
+
+nb_0_C=sum(Y_2_C==0)
+nb_1_C=sum(Y_2_C==1)
+
+nb_0_T=sum(Y_2_T==0)
+nb_1_T=sum(Y_2_T==1)
+
+median_Y_1T = as.numeric(stringr::str_extract( summT[3,1], "\\d+\\.\\d+"))
+median_Y_3T = as.numeric(stringr::str_extract( summT[3,4], "\\d+\\.\\d+"))
+
+max_Y_1T =as.numeric(stringr::str_extract(summT[6,1], "\\d+\\.\\d+"))
+max_Y_3T =as.numeric(stringr::str_extract(summT[6,4], "\\d+\\.\\d+"))
+
+summC = summary.data.frame(dataC)
+
+min_Y_1C = as.numeric(stringr::str_extract(summC[1,1], "\\d+\\.\\d+"))
+min_Y_3C = as.numeric(stringr::str_extract(summC[1,4], "\\d+\\.\\d+"))
+
+
+median_Y_1C = as.numeric(stringr::str_extract( summC[3,1], "\\d+\\.\\d+"))
+median_Y_3C = as.numeric(stringr::str_extract( summC[3,4], "\\d+\\.\\d+"))
+
+max_Y_1C =as.numeric(stringr::str_extract(summC[6,1], "\\d+\\.\\d+"))
+max_Y_3C =as.numeric(stringr::str_extract(summC[6,4], "\\d+\\.\\d+"))
+
+censure_rateT=sum(dataT$Delta_1==0)/n 
+censure_rateC=sum(dataC$Delta_1==0)/n 
+
+data=data.frame(id=id, arm = arm, Y_1= data1[,1],Delta_1=data1[,2], Y_2 = data1[,3], Y_3 = data1[,4], stratum = data1[,5] )
+
+result =
+  win.stat(
+    data = data,
+    ep_type = c("tte", "binary", "continuous"),
+    stratum.weight = "equal",
+    tau = c(2,0,2),
+    arm.name = c("T", "C"),
+    alpha = 0.05,
+    digit = 3,
+    pvalue = "two-sided",
+    priority = c(1,2,3),
+    summary.print = FALSE
+  )
+
+win_edp1=sum(result$summary_ep$Trt_Endpoint1[,2])
+loose_edp1=sum(result$summary_ep$Con_Endpoint1[,2])
+tie_edp1=4*2500-sum(win_edp1+loose_edp1)
+
+win_edp2=sum(result$summary_ep$Trt_Endpoint2[,2])
+loose_edp2=sum(result$summary_ep$Con_Endpoint2[,2])
+tie_edp2=tie_edp1-(loose_edp2+win_edp2)
+
+win_edp3 = sum(result$summary_ep$Trt_Endpoint3[,2])
+loose_edp3 = sum(result$summary_ep$Con_Endpoint3[,2])
+tie_edp3 = tie_edp2-(win_edp3+loose_edp3)
+
+
+  count = count + 1
+  write.table(c(count), file="../output.txt", append = T, col.names = F)
+  
+  val_GPC = result$Win_statistic$Net_Benefit[1]
+  val_WR  = result$Win_statistic$Win_Ratio[1]
+  val_WO  = result$Win_statistic$Win_Odds[1]
+  
+  p_val_GPC = result$p_value[2]
+  p_val_WR  = result$p_value[1]
+  p_val_WO  = result$p_value[3]
+  
+   return(unname(c(val_GPC,val_WR,val_WO,win_edp1,loose_edp1,tie_edp1,win_edp2,loose_edp2,tie_edp2,win_edp3,loose_edp3,tie_edp3,min_Y_1C, min_Y_3C,max_Y_1C, max_Y_3C,median_Y_1C, median_Y_3C,min_Y_1T, min_Y_3T,max_Y_1T, max_Y_3T,median_Y_1T, median_Y_3T,nb_0_C,nb_1_C,nb_0_T,nb_1_T, censure_rateC, censure_rateT, p_val_GPC, p_val_WR, p_val_WO)))
+}
+stopCluster(cl)
+end_time = Sys.time()
+execution_time = end_time - start_time
+
+results_df = as.data.frame(results)
+
+
+min_Y_1C=mean(as.numeric(results_df[,13]))
+min_Y_3C=mean(as.numeric(results_df[,14]))
+
+max_Y_1C=mean(as.numeric(results_df[,15]))
+max_Y_3C=mean(as.numeric(results_df[,16]))
+
+median_Y_1C=mean(as.numeric(results_df[,17]))
+median_Y_3C=mean(as.numeric(results_df[,18]))
+
+min_Y_1T=mean(as.numeric(results_df[,19]))
+min_Y_3T=mean(as.numeric(results_df[,20]))
+
+max_Y_1T=mean(as.numeric(results_df[,21]))
+max_Y_3T=mean(as.numeric(results_df[,22]))
+
+median_Y_1T=mean(as.numeric(results_df[,23]))
+median_Y_3T=mean(as.numeric(results_df[,24]))
+
+nb_O_C = mean(as.numeric(results_df[,25]))
+nb_1_C = mean(as.numeric(results_df[,26]))
+
+nb_0_T= mean(as.numeric(results_df[,27]))
+nb_1_T = mean(as.numeric(results_df[,28]))
+
+censure_rateC= mean(as.numeric(results_df[,29]))
+censure_rateT= mean(as.numeric(results_df[,30]))
+
+dfC=data.frame(row.names = c("min", "median", "max"), c(min_Y_1C, median_Y_1C, max_Y_1C),c(min_Y_3C, median_Y_3C, max_Y_3C))
+colnames(dfC) = c("Y_1_C (tte)", "Y_3_C (continue)")
+dfT=data.frame(row.names = c("min", "median", "max"), c(min_Y_1T, median_Y_1T, max_Y_1T),c(min_Y_3T, median_Y_3T, max_Y_3T))
+colnames(dfT) = c("Y_1_T (tte)", "Y_3_T (Continue)")
+
+df2 = data.frame(row.name = c("0", "1"), c(nb_O_C,nb_0_T), c(nb_1_C,nb_1_T))
+
+p_valGPC = results_df[,31]
+p_valWR = results_df[,32]
+p_valWO = results_df[,33]
+
+nb_pval_GPC = sum(p_valGPC< 0.05)
+nb_pval_WR = sum(p_valWR< 0.05)
+nb_pval_WO = sum(p_valWO< 0.05)
+
+colnames(df2)=c(" ","C", "T")
+
+GPC=as.numeric(results_df[,1])
+WR= as.numeric(results_df[,2])
+WO= as.numeric(results_df[,3])
+
+
+quantileGPC_lwr=quantile(GPC, 0.025)
+quantileGPC_upr=quantile(GPC, 0.975)
+étendue_GPC= round(quantileGPC_upr - quantileGPC_lwr,4)
+
+quantileWR_lwr=quantile(WR, 0.025)
+quantileWR_upr=quantile(WR, 0.975)
+étendue_WR= round(quantileWR_upr - quantileWR_lwr,4)
+
+quantileWO_lwr=quantile(WO, 0.025)
+quantileWO_upr=quantile(WO, 0.975)
+étendue_WO= round(quantileWO_upr - quantileWO_lwr,4)
+
+
+
+Win   = round(c(mean(as.numeric(results_df[,4])), mean(as.numeric(results_df[,7])), mean(as.numeric(results_df[,10])), mean(as.numeric(results_df[,4])) + mean(as.numeric(results_df[,7])) +mean(as.numeric(results_df[,10])) ))
+
+Loose = round(c(mean(as.numeric(results_df[,5])), mean(as.numeric(results_df[,8])),mean(as.numeric(results_df[,11])), mean(as.numeric(results_df[,5]))+mean(as.numeric(results_df[,8])) +mean(as.numeric(results_df[,11])) ))
+
+Tie   = round(c(mean(as.numeric(results_df[,6])), mean(as.numeric(results_df[,9])), mean(as.numeric(results_df[,12])), mean(as.numeric(results_df[,12])) ))
+
+df3 = data.frame(
+  row.names = c("endpoint1", "endpoint2",  "endpoint3","overall"),
+  Win   = Win,
+  Loose = Loose,
+  Tie   = Tie,
+  WR = round(Win/Loose,5),
+  WO = round((Win+0.5*Tie)/(Loose+0.5*Tie),5),
+  GPC = round((Win-Loose)/(Win+Loose+Tie),5)
+)
+list(Count = df3, value_tte_cont_C = dfC, value_tte_cont_T = dfT, value_binary = df2, censure_rate_T = censure_rateT, censure_rate_C = censure_rateC, p_val_GPC = paste("probabilité d'avoir des p-valeur < 0.05 pour la GPC: ", nb_pval_GPC/n_sim), p_val_WR =  paste("probabilité d'avoir des p-valeur < 0.05 pour le WR: ", nb_pval_WR/n_sim), p_val_WO = paste("probabilité d'avoir des p-valeur < 0.05 pour le WO: ", nb_pval_WO/n_sim))
+
+vlines = data.frame(
+    method = c("GPC", "WR", "WO"),
+    intercept = c(0, 1, 1),
+    linetype_label = "Hypothèse H0")
+
+
+val = results_df[,1:3]
+colnames(val)=c("val_GPC","val_WR","val_WO")
+summ_val=summary(val)
+
+ values_long = val %>%
+   select(starts_with("val_")) %>%
+   pivot_longer(cols = everything(), names_to = "method", values_to = "value") %>%
+   mutate(method = recode(method,
+                          "val_GPC" = "GPC",
+                          "val_WR"  = "WR",
+                          "val_WO"  = "WO"))
+ values_long$value = unlist(values_long$value)
+ values_long <- values_long %>% filter(!is.infinite(value))
+
+
+ggplot(values_long, aes(x = value, fill = method)) +
+   geom_density(alpha = 0.6, color = "black") +
+   geom_vline(data = vlines, aes(xintercept = intercept, linetype = linetype_label),
+              color = "black", lwd = 1) +
+   theme_minimal() +
+   labs(title = "Distribution des statistiques de test",
+        x = "Valeur", y = "Densité") +
+   scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
+   scale_fill_manual(values = c("orange",  "purple", "cyan"))+
+  annotate("text", x = 7.5, y = 1.6, label = paste("Étendue GPC : ", étendue_GPC), color = "orange", hjust = 1) +
+  annotate("text", x = 7.5, y = 2.35, label = paste("Étendue WR : ", étendue_WR), color = "cyan", hjust = 1) +
+  annotate("text", x = 7.5, y = 3.1, label = paste("Étendue WO : ", étendue_WO), color = "purple", hjust = 1)
+
+
+```
+
+```{r, echo=FALSE}
+print(summ_val)
+```
+
+## tau = 2
+
+```{r, echo=FALSE, warning=FALSE}
+
+n_sim = 2000
+n=200
+
+
+nb_core = parallel::detectCores() - 2
+cl = makeCluster(nb_core)
+registerDoParallel(cl)
+count = 0
+start_time = Sys.time()
+
+results = foreach(s = 1:n_sim, .combine = rbind, .packages = c("dplyr", "survival", "parallel", "foreach", "doParallel", "WINS"), .export = c("win.stat")) %dopar% {
+  set.seed(s)
+  
+id=1:(2*n) 
+arm=rep(c("T","C"), each=200)
+  
+U = runif(2*n) 
+
+lambdaT = 0.01
+kT = 5
+
+
+Z = ifelse(arm == "T", 1, 0)
+beta = -10
+
+prob_T = 0.7
+prob_C = 0.3
+
+mean_T = 3
+mean_C = 1.3
+sd_T = 2
+sd_C = 1
+
+  
+Time_1 = round((-log(1 - U)) / (lambdaT * exp(beta * Z)^(1 / kT)),3)
+fup_censureT = round(rweibull(2*n, shape = 2, scale =1),3)
+
+Time_T = pmin(Time_1, fup_censureT)
+deltaT=as.numeric(fup_censureT==Time_T)
+
+Y_2_T=as.numeric(gener_binom(prob = prob_T)[,1] )-1
+Y_2_C=as.numeric(gener_binom(prob = prob_C)[,1] )-1
+
+Y_3_T= gener_continue(mean = mean_T, sd = sd_T)
+Y_3_C= gener_continue(mean = mean_C, sd = sd_C)
+
+stratum=sample(rep(c(1,3,5,8), each = 50))
+dataT=data.frame(Y_1 = Time_T[Z==1], Delta_1 = deltaT[Z==1], Y_2 = Y_2_T, Y_3 = Y_3_T, stratum = stratum)
+dataC=data.frame(Y_1 = Time_T[Z==0], Delta_1 = deltaT[Z==0], Y_2 = Y_2_C, Y_3 = Y_3_C, stratum = stratum)
+
+ 
+data1=rbind(dataT,dataC)
+
+summT = summary.data.frame(dataT)
+
+min_Y_1T = as.numeric(stringr::str_extract(summT[1,1], "\\d+\\.\\d+"))
+min_Y_3T = as.numeric(stringr::str_extract(summT[1,4], "\\d+\\.\\d+"))
+
+nb_0_C=sum(Y_2_C==0)
+nb_1_C=sum(Y_2_C==1)
+
+nb_0_T=sum(Y_2_T==0)
+nb_1_T=sum(Y_2_T==1)
+
+median_Y_1T = as.numeric(stringr::str_extract( summT[3,1], "\\d+\\.\\d+"))
+median_Y_3T = as.numeric(stringr::str_extract( summT[3,4], "\\d+\\.\\d+"))
+
+max_Y_1T =as.numeric(stringr::str_extract(summT[6,1], "\\d+\\.\\d+"))
+max_Y_3T =as.numeric(stringr::str_extract(summT[6,4], "\\d+\\.\\d+"))
+
+summC = summary.data.frame(dataC)
+
+min_Y_1C = as.numeric(stringr::str_extract(summC[1,1], "\\d+\\.\\d+"))
+min_Y_3C = as.numeric(stringr::str_extract(summC[1,4], "\\d+\\.\\d+"))
+
+
+median_Y_1C = as.numeric(stringr::str_extract( summC[3,1], "\\d+\\.\\d+"))
+median_Y_3C = as.numeric(stringr::str_extract( summC[3,4], "\\d+\\.\\d+"))
+
+max_Y_1C =as.numeric(stringr::str_extract(summC[6,1], "\\d+\\.\\d+"))
+max_Y_3C =as.numeric(stringr::str_extract(summC[6,4], "\\d+\\.\\d+"))
+
+censure_rateT=sum(dataT$Delta_1==0)/n 
+censure_rateC=sum(dataC$Delta_1==0)/n 
+
+data=data.frame(id=id, arm = arm, Y_1= data1[,1],Delta_1=data1[,2], Y_2 = data1[,3], Y_3 = data1[,4], stratum = data1[,5] )
+
+result =
+  win.stat(
+    data = data,
+    ep_type = c("tte", "binary", "continuous"),
+    stratum.weight = "equal",
+    tau = c(2,0,2),
+    arm.name = c("T", "C"),
+    alpha = 0.05,
+    digit = 3,
+    pvalue = "two-sided",
+    priority = c(1,2,3),
+    summary.print = FALSE
+  )
+
+win_edp1=sum(result$summary_ep$Trt_Endpoint1[,2])
+loose_edp1=sum(result$summary_ep$Con_Endpoint1[,2])
+tie_edp1=4*2500-sum(win_edp1+loose_edp1)
+
+win_edp2=sum(result$summary_ep$Trt_Endpoint2[,2])
+loose_edp2=sum(result$summary_ep$Con_Endpoint2[,2])
+tie_edp2=tie_edp1-(loose_edp2+win_edp2)
+
+win_edp3 = sum(result$summary_ep$Trt_Endpoint3[,2])
+loose_edp3 = sum(result$summary_ep$Con_Endpoint3[,2])
+tie_edp3 = tie_edp2-(win_edp3+loose_edp3)
+
+
+  count = count + 1
+  write.table(c(count), file="../output.txt", append = T, col.names = F)
+  
+  val_GPC = result$Win_statistic$Net_Benefit[1]
+  val_WR  = result$Win_statistic$Win_Ratio[1]
+  val_WO  = result$Win_statistic$Win_Odds[1]
+  
+  p_val_GPC = result$p_value[2]
+  p_val_WR  = result$p_value[1]
+  p_val_WO  = result$p_value[3]
+  
+    return(unname(c(val_GPC,val_WR,val_WO,win_edp1,loose_edp1,tie_edp1,win_edp2,loose_edp2,tie_edp2,win_edp3,loose_edp3,tie_edp3,min_Y_1C, min_Y_3C,max_Y_1C, max_Y_3C,median_Y_1C, median_Y_3C,min_Y_1T, min_Y_3T,max_Y_1T, max_Y_3T,median_Y_1T, median_Y_3T,nb_0_C,nb_1_C,nb_0_T,nb_1_T, censure_rateC, censure_rateT, p_val_GPC, p_val_WR, p_val_WO)))
+}
+stopCluster(cl)
+end_time = Sys.time()
+execution_time = end_time - start_time
+
+results_df = as.data.frame(results)
+
+
+min_Y_1C=mean(as.numeric(results_df[,13]))
+min_Y_3C=mean(as.numeric(results_df[,14]))
+
+max_Y_1C=mean(as.numeric(results_df[,15]))
+max_Y_3C=mean(as.numeric(results_df[,16]))
+
+median_Y_1C=mean(as.numeric(results_df[,17]))
+median_Y_3C=mean(as.numeric(results_df[,18]))
+
+min_Y_1T=mean(as.numeric(results_df[,19]))
+min_Y_3T=mean(as.numeric(results_df[,20]))
+
+max_Y_1T=mean(as.numeric(results_df[,21]))
+max_Y_3T=mean(as.numeric(results_df[,22]))
+
+median_Y_1T=mean(as.numeric(results_df[,23]))
+median_Y_3T=mean(as.numeric(results_df[,24]))
+
+nb_O_C = mean(as.numeric(results_df[,25]))
+nb_1_C = mean(as.numeric(results_df[,26]))
+
+nb_0_T= mean(as.numeric(results_df[,27]))
+nb_1_T = mean(as.numeric(results_df[,28]))
+
+censure_rateC= mean(as.numeric(results_df[,29]))
+censure_rateT= mean(as.numeric(results_df[,30]))
+
+dfC=data.frame(row.names = c("min", "median", "max"), c(min_Y_1C, median_Y_1C, max_Y_1C),c(min_Y_3C, median_Y_3C, max_Y_3C))
+colnames(dfC) = c("Y_1_C (tte)", "Y_3_C (continue)")
+dfT=data.frame(row.names = c("min", "median", "max"), c(min_Y_1T, median_Y_1T, max_Y_1T),c(min_Y_3T, median_Y_3T, max_Y_3T))
+colnames(dfT) = c("Y_1_T (tte)", "Y_3_T (Continue)")
+
+df2 = data.frame(row.name = c("0", "1"), c(nb_O_C,nb_0_T), c(nb_1_C,nb_1_T))
+
+p_valGPC = results_df[,31]
+p_valWR = results_df[,32]
+p_valWO = results_df[,33]
+
+nb_pval_GPC = sum(p_valGPC< 0.05)
+nb_pval_WR = sum(p_valWR< 0.05)
+nb_pval_WO = sum(p_valWO< 0.05)
+
+colnames(df2)=c(" ","C", "T")
+
+GPC=as.numeric(results_df[,1])
+WR= as.numeric(results_df[,2])
+WO= as.numeric(results_df[,3])
+
+
+quantileGPC_lwr=quantile(GPC, 0.025)
+quantileGPC_upr=quantile(GPC, 0.975)
+étendue_GPC= round(quantileGPC_upr - quantileGPC_lwr,4)
+
+quantileWR_lwr=quantile(WR, 0.025)
+quantileWR_upr=quantile(WR, 0.975)
+étendue_WR= round(quantileWR_upr - quantileWR_lwr,4)
+
+quantileWO_lwr=quantile(WO, 0.025)
+quantileWO_upr=quantile(WO, 0.975)
+étendue_WO= round(quantileWO_upr - quantileWO_lwr,4)
+
+
+
+Win   = round(c(mean(as.numeric(results_df[,4])), mean(as.numeric(results_df[,7])), mean(as.numeric(results_df[,10])), mean(as.numeric(results_df[,4])) + mean(as.numeric(results_df[,7])) +mean(as.numeric(results_df[,10])) ))
+
+Loose = round(c(mean(as.numeric(results_df[,5])), mean(as.numeric(results_df[,8])),mean(as.numeric(results_df[,11])), mean(as.numeric(results_df[,5]))+mean(as.numeric(results_df[,8])) +mean(as.numeric(results_df[,11])) ))
+
+Tie   = round(c(mean(as.numeric(results_df[,6])), mean(as.numeric(results_df[,9])), mean(as.numeric(results_df[,12])), mean(as.numeric(results_df[,12])) ))
+
+df3 = data.frame(
+  row.names = c("endpoint1", "endpoint2",  "endpoint3","overall"),
+  Win   = Win,
+  Loose = Loose,
+  Tie   = Tie,
+  WR = round(Win/Loose,5),
+  WO = round((Win+0.5*Tie)/(Loose+0.5*Tie),5),
+  GPC = round((Win-Loose)/(Win+Loose+Tie),5)
+)
+list(Count = df3, value_tte_cont_C = dfC, value_tte_cont_T = dfT, value_binary = df2, censure_rate_T = censure_rateT, censure_rate_C = censure_rateC, p_val_GPC = paste("probabilité d'avoir des p-valeur < 0.05 pour la GPC: ", nb_pval_GPC/n_sim), p_val_WR =  paste("probabilité d'avoir des p-valeur < 0.05 pour le WR: ", nb_pval_WR/n_sim), p_val_WO = paste("probabilité d'avoir des p-valeur < 0.05 pour le WO: ", nb_pval_WO/n_sim))
+
+vlines = data.frame(
+    method = c("GPC", "WR", "WO"),
+    intercept = c(0, 1, 1),
+    linetype_label = "Hypothèse H0")
+
+
+val = results_df[,1:3]
+colnames(val)=c("val_GPC","val_WR","val_WO")
+summ_val=summary(val)
+
+ values_long = val %>%
+   select(starts_with("val_")) %>%
+   pivot_longer(cols = everything(), names_to = "method", values_to = "value") %>%
+   mutate(method = recode(method,
+                          "val_GPC" = "GPC",
+                          "val_WR"  = "WR",
+                          "val_WO"  = "WO"))
+ values_long$value = unlist(values_long$value)
+ values_long <- values_long %>% filter(!is.infinite(value))
+
+
+ggplot(values_long, aes(x = value, fill = method)) +
+   geom_density(alpha = 0.6, color = "black") +
+   geom_vline(data = vlines, aes(xintercept = intercept, linetype = linetype_label),
+              color = "black", lwd = 1) +
+   theme_minimal() +
+   labs(title = "Distribution des statistiques de test",
+        x = "Valeur", y = "Densité") +
+   scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
+   scale_fill_manual(values = c("orange",  "purple", "cyan"))+
+  annotate("text", x = 9.5, y = 1.6, label = paste("Étendue GPC : ", étendue_GPC), color = "orange", hjust = 1) +
+  annotate("text", x = 9.5, y = 2.35, label = paste("Étendue WR : ", étendue_WR), color = "cyan", hjust = 1) +
+  annotate("text", x = 9.5, y = 3.1, label = paste("Étendue WO : ", étendue_WO), color = "purple", hjust = 1)
+
+
+
+```
+
+
+```{r, echo=FALSE}
+print(summ_val)
+```
+
+
+\newpage
+
+# Distribution avec des résultats différents suivant les outcomes 
+
+Dans cette partie, nous allons dans un premier temps choisir des distributions de façon à ce que le premier outcome soit en faveur de T et les 2 autres en faveur de C. 
+
+Dans un second temps nous ferons varier l'ordre des outcome pour voir s'il y a des différences significatives entre les statistiques en fonction de leur ordre.
+
+Dans tous ces cas, les distributions continues seront des lois normales dont les paramètres seront précisés. Les seuils $\tau$ seront toujours égaux à 2 pour les distributions continue et tte.
+
+## Différents scénario dans le même tableau de donnée
+
+### HR constant (modèle de Cox)
+
+Ici, l'outcome binaire sera en faveur du traitement, l'outcome continue en faveur du contrôle et l'outcome principal tte sera beaucoup censuré avec des distributions plus ou moins en faveur du traitement.
+
+Les distributions seront les suivantes : 
+
+- tte :
+
+  $\lambda = 1$, $k = 2$, $\beta = -2$, la censure sera une distribution $\mathcal{W}(1,3)$
+ 
+- Continue :
+
+  $\mathcal{N}_T(2,1)$ ; $\mathcal{N}_C(3,2)$
+  
+- Binaire :
+
+  $\mathcal{B}_T(0.65)$ ; $\mathcal{B}_C(0.3)$
+
+```{r, echo=FALSE}
+
+n_sim = 2000
+n=200
+
+
+nb_core = parallel::detectCores() - 2
+cl = makeCluster(nb_core)
+registerDoParallel(cl)
+count = 0
+start_time = Sys.time()
+
+results = foreach(s = 1:n_sim, .combine = rbind, .packages = c("dplyr", "survival", "parallel", "foreach", "doParallel", "WINS"), .export = c("win.stat")) %dopar% {
+  set.seed(s)
+  
+id=1:(2*n) 
+arm=rep(c("T","C"), each=200)
+  
+U = runif(2*n) 
+
+lambdaT = 1
+kT = 2
+
+
+Z = ifelse(arm == "T", 1, 0)
+beta = -2
+
+prob_T = 0.65
+prob_C = 0.3
+
+mean_T = 2
+mean_C = 3
+sd_T = 1
+sd_C = 2
+
+  
+Time_1 = round((-log(1 - U)) / (lambdaT * exp(beta * Z)^(1 / kT)),3)
+fup_censureT = round(rweibull(2*n, shape = 1, scale =3),3)
+
+Time_T = pmin(Time_1, fup_censureT)
+deltaT=as.numeric(fup_censureT==Time_T)
+
+Y_2_T=as.numeric(gener_binom(prob = prob_T)[,1] )-1
+Y_2_C=as.numeric(gener_binom(prob = prob_C)[,1] )-1
+
+Y_3_T= gener_continue(mean = mean_T, sd = sd_T)
+Y_3_C= gener_continue(mean = mean_C, sd = sd_C)
+
+stratum=sample(rep(c(1,3,5,8), each = 50))
+dataT=data.frame(Y_1 = Time_T[Z==1], Delta_1 = deltaT[Z==1], Y_2 = Y_2_T, Y_3 = Y_3_T, stratum = stratum)
+dataC=data.frame(Y_1 = Time_T[Z==0], Delta_1 = deltaT[Z==0], Y_2 = Y_2_C, Y_3 = Y_3_C, stratum = stratum)
+
+ 
+data1=rbind(dataT,dataC)
+
+summT = summary.data.frame(dataT)
+
+min_Y_1T = as.numeric(stringr::str_extract(summT[1,1], "\\d+\\.\\d+"))
+min_Y_3T = as.numeric(stringr::str_extract(summT[1,4], "\\d+\\.\\d+"))
+
+nb_0_C=sum(Y_2_C==0)
+nb_1_C=sum(Y_2_C==1)
+
+nb_0_T=sum(Y_2_T==0)
+nb_1_T=sum(Y_2_T==1)
+
+median_Y_1T = as.numeric(stringr::str_extract( summT[3,1], "\\d+\\.\\d+"))
+median_Y_3T = as.numeric(stringr::str_extract( summT[3,4], "\\d+\\.\\d+"))
+
+max_Y_1T =as.numeric(stringr::str_extract(summT[6,1], "\\d+\\.\\d+"))
+max_Y_3T =as.numeric(stringr::str_extract(summT[6,4], "\\d+\\.\\d+"))
+
+summC = summary.data.frame(dataC)
+
+min_Y_1C = as.numeric(stringr::str_extract(summC[1,1], "\\d+\\.\\d+"))
+min_Y_3C = as.numeric(stringr::str_extract(summC[1,4], "\\d+\\.\\d+"))
+
+
+median_Y_1C = as.numeric(stringr::str_extract( summC[3,1], "\\d+\\.\\d+"))
+median_Y_3C = as.numeric(stringr::str_extract( summC[3,4], "\\d+\\.\\d+"))
+
+max_Y_1C =as.numeric(stringr::str_extract(summC[6,1], "\\d+\\.\\d+"))
+max_Y_3C =as.numeric(stringr::str_extract(summC[6,4], "\\d+\\.\\d+"))
+
+censure_rateT=sum(dataT$Delta_1==0)/n 
+censure_rateC=sum(dataC$Delta_1==0)/n 
+
+data=data.frame(id=id, arm = arm, Y_1= data1[,1],Delta_1=data1[,2], Y_2 = data1[,3], Y_3 = data1[,4], stratum = data1[,5] )
+
+result =
+  win.stat(
+    data = data,
+    ep_type = c("tte", "binary", "continuous"),
+    stratum.weight = "equal",
+    tau = c(2,0,2),
+    arm.name = c("T", "C"),
+    alpha = 0.05,
+    digit = 3,
+    pvalue = "two-sided",
+    priority = c(1,2,3),
+    summary.print = FALSE
+  )
+
+win_edp1=sum(result$summary_ep$Trt_Endpoint1[,2])
+loose_edp1=sum(result$summary_ep$Con_Endpoint1[,2])
+tie_edp1=4*2500-sum(win_edp1+loose_edp1)
+
+win_edp2=sum(result$summary_ep$Trt_Endpoint2[,2])
+loose_edp2=sum(result$summary_ep$Con_Endpoint2[,2])
+tie_edp2=tie_edp1-(loose_edp2+win_edp2)
+
+win_edp3 = sum(result$summary_ep$Trt_Endpoint3[,2])
+loose_edp3 = sum(result$summary_ep$Con_Endpoint3[,2])
+tie_edp3 = tie_edp2-(win_edp3+loose_edp3)
+
+
+  count = count + 1
+  write.table(c(count), file="../output.txt", append = T, col.names = F)
+  
+  val_GPC = result$Win_statistic$Net_Benefit[1]
+  val_WR  = result$Win_statistic$Win_Ratio[1]
+  val_WO  = result$Win_statistic$Win_Odds[1]
+  
+  p_val_GPC = result$p_value[2]
+  p_val_WR  = result$p_value[1]
+  p_val_WO  = result$p_value[3]
+  
+  return(unname(c(val_GPC,val_WR,val_WO,win_edp1,loose_edp1,tie_edp1,win_edp2,loose_edp2,tie_edp2,win_edp3,loose_edp3,tie_edp3,min_Y_1C, min_Y_3C,max_Y_1C, max_Y_3C,median_Y_1C, median_Y_3C,min_Y_1T, min_Y_3T,max_Y_1T, max_Y_3T,median_Y_1T, median_Y_3T,nb_0_C,nb_1_C,nb_0_T,nb_1_T, censure_rateC, censure_rateT, p_val_GPC, p_val_WR, p_val_WO)))
+}
+stopCluster(cl)
+end_time = Sys.time()
+execution_time = end_time - start_time
+
+results_df = as.data.frame(results)
+
+
+min_Y_1C=mean(as.numeric(results_df[,13]))
+min_Y_3C=mean(as.numeric(results_df[,14]))
+
+max_Y_1C=mean(as.numeric(results_df[,15]))
+max_Y_3C=mean(as.numeric(results_df[,16]))
+
+median_Y_1C=mean(as.numeric(results_df[,17]))
+median_Y_3C=mean(as.numeric(results_df[,18]))
+
+min_Y_1T=mean(as.numeric(results_df[,19]))
+min_Y_3T=mean(as.numeric(results_df[,20]))
+
+max_Y_1T=mean(as.numeric(results_df[,21]))
+max_Y_3T=mean(as.numeric(results_df[,22]))
+
+median_Y_1T=mean(as.numeric(results_df[,23]))
+median_Y_3T=mean(as.numeric(results_df[,24]))
+
+nb_O_C = mean(as.numeric(results_df[,25]))
+nb_1_C = mean(as.numeric(results_df[,26]))
+
+nb_0_T= mean(as.numeric(results_df[,27]))
+nb_1_T = mean(as.numeric(results_df[,28]))
+
+censure_rateC= mean(as.numeric(results_df[,29]))
+censure_rateT= mean(as.numeric(results_df[,30]))
+
+dfC=data.frame(row.names = c("min", "median", "max"), c(min_Y_1C, median_Y_1C, max_Y_1C),c(min_Y_3C, median_Y_3C, max_Y_3C))
+colnames(dfC) = c("Y_1_C (tte)", "Y_3_C (continue)")
+dfT=data.frame(row.names = c("min", "median", "max"), c(min_Y_1T, median_Y_1T, max_Y_1T),c(min_Y_3T, median_Y_3T, max_Y_3T))
+colnames(dfT) = c("Y_1_T (tte)", "Y_3_T (Continue)")
+
+df2 = data.frame(row.name = c("0", "1"), c(nb_O_C,nb_0_T), c(nb_1_C,nb_1_T))
+
+p_valGPC = results_df[,31]
+p_valWR = results_df[,32]
+p_valWO = results_df[,33]
+
+nb_pval_GPC = sum(p_valGPC< 0.05)
+nb_pval_WR = sum(p_valWR< 0.05)
+nb_pval_WO = sum(p_valWO< 0.05)
+
+colnames(df2)=c(" ","C", "T")
+
+GPC=as.numeric(results_df[,1])
+WR= as.numeric(results_df[,2])
+WO= as.numeric(results_df[,3])
+
+
+quantileGPC_lwr=quantile(GPC, 0.025)
+quantileGPC_upr=quantile(GPC, 0.975)
+étendue_GPC= round(quantileGPC_upr - quantileGPC_lwr,4)
+
+quantileWR_lwr=quantile(WR, 0.025)
+quantileWR_upr=quantile(WR, 0.975)
+étendue_WR= round(quantileWR_upr - quantileWR_lwr,4)
+
+quantileWO_lwr=quantile(WO, 0.025)
+quantileWO_upr=quantile(WO, 0.975)
+étendue_WO= round(quantileWO_upr - quantileWO_lwr,4)
+
+
+
+Win   = round(c(mean(as.numeric(results_df[,4])), mean(as.numeric(results_df[,7])), mean(as.numeric(results_df[,10])), mean(as.numeric(results_df[,4])) + mean(as.numeric(results_df[,7])) +mean(as.numeric(results_df[,10])) ))
+
+Loose = round(c(mean(as.numeric(results_df[,5])), mean(as.numeric(results_df[,8])),mean(as.numeric(results_df[,11])), mean(as.numeric(results_df[,5]))+mean(as.numeric(results_df[,8])) +mean(as.numeric(results_df[,11])) ))
+
+Tie   = round(c(mean(as.numeric(results_df[,6])), mean(as.numeric(results_df[,9])), mean(as.numeric(results_df[,12])), mean(as.numeric(results_df[,12])) ))
+
+df3 = data.frame(
+  row.names = c("endpoint1", "endpoint2",  "endpoint3","overall"),
+  Win   = Win,
+  Loose = Loose,
+  Tie   = Tie,
+  WR = round(Win/Loose,5),
+  WO = round((Win+0.5*Tie)/(Loose+0.5*Tie),5),
+  GPC = round((Win-Loose)/(Win+Loose+Tie),5)
+)
+list(Count = df3, value_tte_cont_C = dfC, value_tte_cont_T = dfT, value_binary = df2, censure_rate_T = censure_rateT, censure_rate_C = censure_rateC, p_val_GPC = paste("probabilité d'avoir des p-valeur < 0.05 pour la GPC: ", nb_pval_GPC/n_sim), p_val_WR =  paste("probabilité d'avoir des p-valeur < 0.05 pour le WR: ", nb_pval_WR/n_sim), p_val_WO = paste("probabilité d'avoir des p-valeur < 0.05 pour le WO: ", nb_pval_WO/n_sim))
+
+vlines = data.frame(
+    method = c("GPC", "WR", "WO"),
+    intercept = c(0, 1, 1),
+    linetype_label = "Hypothèse H0")
+
+
+val = results_df[,1:3]
+colnames(val)=c("val_GPC","val_WR","val_WO")
+summ_val=summary(val)
+
+ values_long = val %>%
+   select(starts_with("val_")) %>%
+   pivot_longer(cols = everything(), names_to = "method", values_to = "value") %>%
+   mutate(method = recode(method,
+                          "val_GPC" = "GPC",
+                          "val_WR"  = "WR",
+                          "val_WO"  = "WO"))
+ values_long$value = unlist(values_long$value)
+ values_long <- values_long %>% filter(!is.infinite(value))
+
+
+ggplot(values_long, aes(x = value, fill = method)) +
+   geom_density(alpha = 0.6, color = "black") +
+   geom_vline(data = vlines, aes(xintercept = intercept, linetype = linetype_label),
+              color = "black", lwd = 1) +
+   theme_minimal() +
+   labs(title = "Distribution des statistiques de test",
+        x = "Valeur", y = "Densité") +
+   scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
+   scale_fill_manual(values = c("orange",  "purple", "cyan")) +
+  annotate("text", x = 4.5, y = 1.6, label = paste("Étendue GPC : ", étendue_GPC), color = "orange", hjust = 1) +
+  annotate("text", x = 4.5, y = 2.35, label = paste("Étendue WR : ", étendue_WR), color = "cyan", hjust = 1) +
+  annotate("text", x = 4.5, y = 3.1, label = paste("Étendue WO : ", étendue_WO), color = "purple", hjust = 1)
+
+
+```
+
+```{r, echo=FALSE}
+print(summ_val)
+```
+
+
+### HR non-constant (modèle AFT)
+
+Ici les paramètres $\lambda$ et $k$ voudront respectivement 0.1 et 0.5.
+
+```{r, echo=FALSE}
+
+n_sim = 2000
+n=200
+
+
+nb_core = parallel::detectCores() - 2
+cl = makeCluster(nb_core)
+registerDoParallel(cl)
+count = 0
+start_time = Sys.time()
+
+results = foreach(s = 1:n_sim, .combine = rbind, .packages = c("dplyr", "survival", "parallel", "foreach", "doParallel", "WINS"), .export = c("win.stat")) %dopar% {
+  set.seed(s)
+  
+id=1:(2*n) 
+arm=rep(c("T","C"), each=200)
+  
+U = runif(2*n) 
+lambdaT = 0.1
+kT = 0.5
+
+
+Z = ifelse(arm == "T", 1, 0)
+beta = 5
+
+
+prob_T = 0.65
+prob_C = 0.3
+
+mean_T = 2
+mean_C = 3
+sd_T = 1
+sd_C = 2
+
+
+Time_1 = round((((1/(1-U)-1)*(1/lambdaT))^(1/kT)*exp(Z*beta)), 3)
+fup_censureT = round(rweibull(2*n, shape = 1, scale =2),3)
+
+
+Time_T = pmin(Time_1, fup_censureT)
+
+deltaT=as.numeric(fup_censureT==Time_T)
+
+Y_2_T=as.numeric(gener_binom(prob = prob_T)[,1] )-1
+Y_2_C=as.numeric(gener_binom(prob = prob_C)[,1] )-1
+
+Y_3_T= gener_continue(mean = mean_T, sd = sd_T)
+Y_3_C= gener_continue(mean = mean_C, sd = sd_C)
+
+stratum=sample(rep(c(1,3,5,8), each = 50))
+dataT=data.frame(Y_1 = Time_T[Z==1], Delta_1 = deltaT[Z==1], Y_2 = Y_2_T, Y_3 = Y_3_T, stratum = stratum)
+dataC=data.frame(Y_1 = Time_T[Z==0], Delta_1 = deltaT[Z==0], Y_2 = Y_2_C, Y_3 = Y_3_C, stratum = stratum)
+
+ 
+data1=rbind(dataT,dataC)
+
+summT = summary.data.frame(dataT)
+
+min_Y_1T = as.numeric(stringr::str_extract(summT[1,1], "\\d+\\.\\d+"))
+min_Y_3T = as.numeric(stringr::str_extract(summT[1,4], "\\d+\\.\\d+"))
+
+nb_0_C=sum(Y_2_C==0)
+nb_1_C=sum(Y_2_C==1)
+
+nb_0_T=sum(Y_2_T==0)
+nb_1_T=sum(Y_2_T==1)
+
+median_Y_1T = as.numeric(stringr::str_extract( summT[3,1], "\\d+\\.\\d+"))
+median_Y_3T = as.numeric(stringr::str_extract( summT[3,4], "\\d+\\.\\d+"))
+
+max_Y_1T =as.numeric(stringr::str_extract(summT[6,1], "\\d+\\.\\d+"))
+max_Y_3T =as.numeric(stringr::str_extract(summT[6,4], "\\d+\\.\\d+"))
+
+summC = summary.data.frame(dataC)
+
+min_Y_1C = as.numeric(stringr::str_extract(summC[1,1], "\\d+\\.\\d+"))
+min_Y_3C = as.numeric(stringr::str_extract(summC[1,4], "\\d+\\.\\d+"))
+
+
+median_Y_1C = as.numeric(stringr::str_extract( summC[3,1], "\\d+\\.\\d+"))
+median_Y_3C = as.numeric(stringr::str_extract( summC[3,4], "\\d+\\.\\d+"))
+
+max_Y_1C =as.numeric(stringr::str_extract(summC[6,1], "\\d+\\.\\d+"))
+max_Y_3C =as.numeric(stringr::str_extract(summC[6,4], "\\d+\\.\\d+"))
+
+censure_rateT=sum(dataT$Delta_1==0)/n 
+censure_rateC=sum(dataC$Delta_1==0)/n 
+
+data=data.frame(id=id, arm = arm, Y_1= data1[,1],Delta_1=data1[,2], Y_2 = data1[,3], Y_3 = data1[,4], stratum = data1[,5] )
+
+result =
+  win.stat(
+    data = data,
+    ep_type = c("tte", "binary", "continuous"),
+    stratum.weight = "equal",
+    tau = c(2,0,2),
+    arm.name = c("T", "C"),
+    alpha = 0.05,
+    digit = 3,
+    pvalue = "two-sided",
+    priority = c(1,2,3),
+    summary.print = FALSE
+  )
+
+win_edp1=sum(result$summary_ep$Trt_Endpoint1[,2])
+loose_edp1=sum(result$summary_ep$Con_Endpoint1[,2])
+tie_edp1=4*2500-sum(win_edp1+loose_edp1)
+
+win_edp2=sum(result$summary_ep$Trt_Endpoint2[,2])
+loose_edp2=sum(result$summary_ep$Con_Endpoint2[,2])
+tie_edp2=tie_edp1-(loose_edp2+win_edp2)
+
+win_edp3 = sum(result$summary_ep$Trt_Endpoint3[,2])
+loose_edp3 = sum(result$summary_ep$Con_Endpoint3[,2])
+tie_edp3 = tie_edp2-(win_edp3+loose_edp3)
+
+
+  count = count + 1
+  write.table(c(count), file="../output.txt", append = T, col.names = F)
+  
+  val_GPC = result$Win_statistic$Net_Benefit[1]
+  val_WR  = result$Win_statistic$Win_Ratio[1]
+  val_WO  = result$Win_statistic$Win_Odds[1]
+  
+  p_val_GPC = result$p_value[2]
+  p_val_WR  = result$p_value[1]
+  p_val_WO  = result$p_value[3]
+  
+  return(unname(c(val_GPC,val_WR,val_WO,win_edp1,loose_edp1,tie_edp1,win_edp2,loose_edp2,tie_edp2,win_edp3,loose_edp3,tie_edp3,min_Y_1C, min_Y_3C,max_Y_1C, max_Y_3C,median_Y_1C, median_Y_3C,min_Y_1T, min_Y_3T,max_Y_1T, max_Y_3T,median_Y_1T, median_Y_3T,nb_0_C,nb_1_C,nb_0_T,nb_1_T, censure_rateC, censure_rateT, p_val_GPC, p_val_WR, p_val_WO)))
+}
+stopCluster(cl)
+end_time = Sys.time()
+execution_time = end_time - start_time
+
+results_df = as.data.frame(results)
+
+
+min_Y_1C=mean(as.numeric(results_df[,13]))
+min_Y_3C=mean(as.numeric(results_df[,14]))
+
+max_Y_1C=mean(as.numeric(results_df[,15]))
+max_Y_3C=mean(as.numeric(results_df[,16]))
+
+median_Y_1C=mean(as.numeric(results_df[,17]))
+median_Y_3C=mean(as.numeric(results_df[,18]))
+
+min_Y_1T=mean(as.numeric(results_df[,19]))
+min_Y_3T=mean(as.numeric(results_df[,20]))
+
+max_Y_1T=mean(as.numeric(results_df[,21]))
+max_Y_3T=mean(as.numeric(results_df[,22]))
+
+median_Y_1T=mean(as.numeric(results_df[,23]))
+median_Y_3T=mean(as.numeric(results_df[,24]))
+
+nb_O_C = mean(as.numeric(results_df[,25]))
+nb_1_C = mean(as.numeric(results_df[,26]))
+
+nb_0_T= mean(as.numeric(results_df[,27]))
+nb_1_T = mean(as.numeric(results_df[,28]))
+
+censure_rateC= mean(as.numeric(results_df[,29]))
+censure_rateT= mean(as.numeric(results_df[,30]))
+
+dfC=data.frame(row.names = c("min", "median", "max"), c(min_Y_1C, median_Y_1C, max_Y_1C),c(min_Y_3C, median_Y_3C, max_Y_3C))
+colnames(dfC) = c("Y_1_C (tte)", "Y_3_C (continue)")
+dfT=data.frame(row.names = c("min", "median", "max"), c(min_Y_1T, median_Y_1T, max_Y_1T),c(min_Y_3T, median_Y_3T, max_Y_3T))
+colnames(dfT) = c("Y_1_T (tte)", "Y_3_T (Continue)")
+
+df2 = data.frame(row.name = c("0", "1"), c(nb_O_C,nb_0_T), c(nb_1_C,nb_1_T))
+
+p_valGPC = results_df[,31]
+p_valWR = results_df[,32]
+p_valWO = results_df[,33]
+
+nb_pval_GPC = sum(p_valGPC< 0.05)
+nb_pval_WR = sum(p_valWR< 0.05)
+nb_pval_WO = sum(p_valWO< 0.05)
+
+colnames(df2)=c(" ","C", "T")
+
+GPC=as.numeric(results_df[,1])
+WR= as.numeric(results_df[,2])
+WO= as.numeric(results_df[,3])
+
+
+quantileGPC_lwr=quantile(GPC, 0.025)
+quantileGPC_upr=quantile(GPC, 0.975)
+étendue_GPC= round(quantileGPC_upr - quantileGPC_lwr,4)
+
+quantileWR_lwr=quantile(WR, 0.025)
+quantileWR_upr=quantile(WR, 0.975)
+étendue_WR= round(quantileWR_upr - quantileWR_lwr,4)
+
+quantileWO_lwr=quantile(WO, 0.025)
+quantileWO_upr=quantile(WO, 0.975)
+étendue_WO= round(quantileWO_upr - quantileWO_lwr,4)
+
+
+
+Win   = round(c(mean(as.numeric(results_df[,4])), mean(as.numeric(results_df[,7])), mean(as.numeric(results_df[,10])), mean(as.numeric(results_df[,4])) + mean(as.numeric(results_df[,7])) +mean(as.numeric(results_df[,10])) ))
+
+Loose = round(c(mean(as.numeric(results_df[,5])), mean(as.numeric(results_df[,8])),mean(as.numeric(results_df[,11])), mean(as.numeric(results_df[,5]))+mean(as.numeric(results_df[,8])) +mean(as.numeric(results_df[,11])) ))
+
+Tie   = round(c(mean(as.numeric(results_df[,6])), mean(as.numeric(results_df[,9])), mean(as.numeric(results_df[,12])), mean(as.numeric(results_df[,12])) ))
+
+df3 = data.frame(
+  row.names = c("endpoint1", "endpoint2",  "endpoint3","overall"),
+  Win   = Win,
+  Loose = Loose,
+  Tie   = Tie,
+  WR = round(Win/Loose,5),
+  WO = round((Win+0.5*Tie)/(Loose+0.5*Tie),5),
+  GPC = round((Win-Loose)/(Win+Loose+Tie),5)
+)
+list(Count = df3, value_tte_cont_C = dfC, value_tte_cont_T = dfT, value_binary = df2, censure_rate_T = censure_rateT, censure_rate_C = censure_rateC, p_val_GPC = paste("probabilité d'avoir des p-valeur < 0.05 pour la GPC: ", nb_pval_GPC/n_sim), p_val_WR =  paste("probabilité d'avoir des p-valeur < 0.05 pour le WR: ", nb_pval_WR/n_sim), p_val_WO = paste("probabilité d'avoir des p-valeur < 0.05 pour le WO: ", nb_pval_WO/n_sim))
+
+vlines = data.frame(
+    method = c("GPC", "WR", "WO"),
+    intercept = c(0, 1, 1),
+    linetype_label = "Hypothèse H0")
+
+
+val = results_df[,1:3]
+colnames(val)=c("val_GPC","val_WR","val_WO")
+summ_val=summary(val)
+
+ values_long = val %>%
+   select(starts_with("val_")) %>%
+   pivot_longer(cols = everything(), names_to = "method", values_to = "value") %>%
+   mutate(method = recode(method,
+                          "val_GPC" = "GPC",
+                          "val_WR"  = "WR",
+                          "val_WO"  = "WO"))
+ values_long$value = unlist(values_long$value)
+ values_long <- values_long %>% filter(!is.infinite(value))
+
+
+ggplot(values_long, aes(x = value, fill = method)) +
+   geom_density(alpha = 0.6, color = "black") +
+   geom_vline(data = vlines, aes(xintercept = intercept, linetype = linetype_label),
+              color = "black", lwd = 1) +
+   theme_minimal() +
+   labs(title = "Distribution des statistiques de test",
+        x = "Valeur", y = "Densité") +
+   scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
+   scale_fill_manual(values = c("orange",  "purple", "cyan")) +
+  annotate("text", x = 4.5, y = 1.6, label = paste("Étendue GPC : ", étendue_GPC), color = "orange", hjust = 1) +
+  annotate("text", x = 4.5, y = 2.35, label = paste("Étendue WR : ", étendue_WR), color = "cyan", hjust = 1) +
+  annotate("text", x = 4.5, y = 3.1, label = paste("Étendue WO : ", étendue_WO), color = "purple", hjust = 1)
+
+```
+
+```{r, echo=FALSE}
+print(summ_val)
+```
+
+
+## Variation des ordres 
+
+Dans un premier temps, nous avons vu des outcomes tte et binaire en outcome principaux, maintenant, nous allons voir l'outcome continue étant en faveur du contrôle comme outcome principal d'abord en simulant nos données tte suivant un modèle de Cox et ensuite avec un modèle AFT où les HR ne seront pas constant. 
+
+### HR constant 
+
+Les distributions seront les suivantes : 
+
+- tte :
+
+  $\lambda = 1$, $k = 2$, $\beta = -2$, la censure sera une distribution $\mathcal{W}(1,3)$
+ 
+- Continue :
+
+  $\mathcal{N}_T(2,2)$ ; $\mathcal{N}_C(3,2)$
+  
+- Binaire :
+
+  $\mathcal{B}_T(0.65)$ ; $\mathcal{B}_C(0.3)$
+
+```{r, echo = FALSE}
+
+n_sim = 2000
+n=200
+
+
+nb_core = parallel::detectCores() - 2
+cl = makeCluster(nb_core)
+registerDoParallel(cl)
+count = 0
+start_time = Sys.time()
+
+results = foreach(s = 1:n_sim, .combine = rbind, .packages = c("dplyr", "survival", "parallel", "foreach", "doParallel", "WINS"), .export = c("win.stat")) %dopar% {
+  set.seed(s)
+  
+id=1:(2*n) 
+arm=rep(c("T","C"), each=200)
+  
+U = runif(2*n) 
+
+lambdaT = 1
+kT = 2
+
+
+Z = ifelse(arm == "T", 1, 0)
+beta = -2
+
+prob_T = 0.65
+prob_C = 0.3
+
+mean_T = 2
+mean_C = 3
+sd_T = 2
+sd_C = 2
+
+  
+Time_1 = round((-log(1 - U)) / (lambdaT * exp(beta * Z)^(1 / kT)),3)
+fup_censureT = round(rweibull(2*n, shape = 1, scale =3),3)
+
+Time_T = pmin(Time_1, fup_censureT)
+deltaT=as.numeric(fup_censureT==Time_T)
+
+Y_2_T=as.numeric(gener_binom(prob = prob_T)[,1] )-1
+Y_2_C=as.numeric(gener_binom(prob = prob_C)[,1] )-1
+
+Y_3_T= gener_continue(mean = mean_T, sd = sd_T)
+Y_3_C= gener_continue(mean = mean_C, sd = sd_C)
+
+stratum=sample(rep(c(1,3,5,8), each = 50))
+dataT=data.frame(Y_1 = Time_T[Z==1], Delta_1 = deltaT[Z==1], Y_2 = Y_2_T, Y_3 = Y_3_T, stratum = stratum)
+dataC=data.frame(Y_1 = Time_T[Z==0], Delta_1 = deltaT[Z==0], Y_2 = Y_2_C, Y_3 = Y_3_C, stratum = stratum)
+
+ 
+data1=rbind(dataT,dataC)
+
+summT = summary.data.frame(dataT)
+
+min_Y_1T = as.numeric(stringr::str_extract(summT[1,1], "\\d+\\.\\d+"))
+min_Y_3T = as.numeric(stringr::str_extract(summT[1,4], "\\d+\\.\\d+"))
+
+nb_0_C=sum(Y_2_C==0)
+nb_1_C=sum(Y_2_C==1)
+
+nb_0_T=sum(Y_2_T==0)
+nb_1_T=sum(Y_2_T==1)
+
+median_Y_1T = as.numeric(stringr::str_extract( summT[3,1], "\\d+\\.\\d+"))
+median_Y_3T = as.numeric(stringr::str_extract( summT[3,4], "\\d+\\.\\d+"))
+
+max_Y_1T =as.numeric(stringr::str_extract(summT[6,1], "\\d+\\.\\d+"))
+max_Y_3T =as.numeric(stringr::str_extract(summT[6,4], "\\d+\\.\\d+"))
+
+summC = summary.data.frame(dataC)
+
+min_Y_1C = as.numeric(stringr::str_extract(summC[1,1], "\\d+\\.\\d+"))
+min_Y_3C = as.numeric(stringr::str_extract(summC[1,4], "\\d+\\.\\d+"))
+
+
+median_Y_1C = as.numeric(stringr::str_extract( summC[3,1], "\\d+\\.\\d+"))
+median_Y_3C = as.numeric(stringr::str_extract( summC[3,4], "\\d+\\.\\d+"))
+
+max_Y_1C =as.numeric(stringr::str_extract(summC[6,1], "\\d+\\.\\d+"))
+max_Y_3C =as.numeric(stringr::str_extract(summC[6,4], "\\d+\\.\\d+"))
+
+censure_rateT=sum(dataT$Delta_1==0)/n 
+censure_rateC=sum(dataC$Delta_1==0)/n 
+
+data=data.frame(id=id, arm = arm, Y_1= data1[,1],Delta_1=data1[,2], Y_2 = data1[,3], Y_3 = data1[,4], stratum = data1[,5] )
+
+result =
+  win.stat(
+    data = data,
+    ep_type = c("tte", "binary", "continuous"),
+    stratum.weight = "equal",
+    tau = c(2,0,2),
+    arm.name = c("T", "C"),
+    alpha = 0.05,
+    digit = 3,
+    pvalue = "two-sided",
+    priority = c(3,2,1),
+    summary.print = FALSE
+  )
+
+win_edp1=sum(result$summary_ep$Trt_Endpoint1[,2])
+loose_edp1=sum(result$summary_ep$Con_Endpoint1[,2])
+tie_edp1=4*2500-sum(win_edp1+loose_edp1)
+
+win_edp2=sum(result$summary_ep$Trt_Endpoint2[,2])
+loose_edp2=sum(result$summary_ep$Con_Endpoint2[,2])
+tie_edp2=tie_edp1-(loose_edp2+win_edp2)
+
+win_edp3 = sum(result$summary_ep$Trt_Endpoint3[,2])
+loose_edp3 = sum(result$summary_ep$Con_Endpoint3[,2])
+tie_edp3 = tie_edp2-(win_edp3+loose_edp3)
+
+
+  count = count + 1
+  write.table(c(count), file="../output.txt", append = T, col.names = F)
+  
+  val_GPC = result$Win_statistic$Net_Benefit[1]
+  val_WR  = result$Win_statistic$Win_Ratio[1]
+  val_WO  = result$Win_statistic$Win_Odds[1]
+  
+  p_val_GPC = result$p_value[2]
+  p_val_WR  = result$p_value[1]
+  p_val_WO  = result$p_value[3]
+  
+  return(unname(c(val_GPC,val_WR,val_WO,win_edp1,loose_edp1,tie_edp1,win_edp2,loose_edp2,tie_edp2,win_edp3,loose_edp3,tie_edp3,min_Y_1C, min_Y_3C,max_Y_1C, max_Y_3C,median_Y_1C, median_Y_3C,min_Y_1T, min_Y_3T,max_Y_1T, max_Y_3T,median_Y_1T, median_Y_3T,nb_0_C,nb_1_C,nb_0_T,nb_1_T, censure_rateC, censure_rateT, p_val_GPC, p_val_WR, p_val_WO)))
+}
+stopCluster(cl)
+end_time = Sys.time()
+execution_time = end_time - start_time
+
+results_df = as.data.frame(results)
+
+
+min_Y_1C=mean(as.numeric(results_df[,13]))
+min_Y_3C=mean(as.numeric(results_df[,14]))
+
+max_Y_1C=mean(as.numeric(results_df[,15]))
+max_Y_3C=mean(as.numeric(results_df[,16]))
+
+median_Y_1C=mean(as.numeric(results_df[,17]))
+median_Y_3C=mean(as.numeric(results_df[,18]))
+
+min_Y_1T=mean(as.numeric(results_df[,19]))
+min_Y_3T=mean(as.numeric(results_df[,20]))
+
+max_Y_1T=mean(as.numeric(results_df[,21]))
+max_Y_3T=mean(as.numeric(results_df[,22]))
+
+median_Y_1T=mean(as.numeric(results_df[,23]))
+median_Y_3T=mean(as.numeric(results_df[,24]))
+
+nb_O_C = mean(as.numeric(results_df[,25]))
+nb_1_C = mean(as.numeric(results_df[,26]))
+
+nb_0_T= mean(as.numeric(results_df[,27]))
+nb_1_T = mean(as.numeric(results_df[,28]))
+
+censure_rateC= mean(as.numeric(results_df[,29]))
+censure_rateT= mean(as.numeric(results_df[,30]))
+
+dfC=data.frame(row.names = c("min", "median", "max"), c(min_Y_1C, median_Y_1C, max_Y_1C),c(min_Y_3C, median_Y_3C, max_Y_3C))
+colnames(dfC) = c("Y_1_C (continue)", "Y_3_C (tte)")
+dfT=data.frame(row.names = c("min", "median", "max"), c(min_Y_1T, median_Y_1T, max_Y_1T),c(min_Y_3T, median_Y_3T, max_Y_3T))
+colnames(dfT) = c("Y_1_T (continue)", "Y_3_T (tte)")
+
+df2 = data.frame(row.name = c("0", "1"), c(nb_O_C,nb_0_T), c(nb_1_C,nb_1_T))
+
+p_valGPC = results_df[,31]
+p_valWR = results_df[,32]
+p_valWO = results_df[,33]
+
+nb_pval_GPC = sum(p_valGPC< 0.05)
+nb_pval_WR = sum(p_valWR< 0.05)
+nb_pval_WO = sum(p_valWO< 0.05)
+
+colnames(df2)=c(" ","C", "T")
+
+GPC=as.numeric(results_df[,1])
+WR= as.numeric(results_df[,2])
+WO= as.numeric(results_df[,3])
+
+
+quantileGPC_lwr=quantile(GPC, 0.025)
+quantileGPC_upr=quantile(GPC, 0.975)
+étendue_GPC= round(quantileGPC_upr - quantileGPC_lwr,4)
+
+quantileWR_lwr=quantile(WR, 0.025)
+quantileWR_upr=quantile(WR, 0.975)
+étendue_WR= round(quantileWR_upr - quantileWR_lwr,4)
+
+quantileWO_lwr=quantile(WO, 0.025)
+quantileWO_upr=quantile(WO, 0.975)
+étendue_WO= round(quantileWO_upr - quantileWO_lwr,4)
+
+
+
+Win   = round(c(mean(as.numeric(results_df[,4])), mean(as.numeric(results_df[,7])), mean(as.numeric(results_df[,10])), mean(as.numeric(results_df[,4])) + mean(as.numeric(results_df[,7])) +mean(as.numeric(results_df[,10])) ))
+
+Loose = round(c(mean(as.numeric(results_df[,5])), mean(as.numeric(results_df[,8])),mean(as.numeric(results_df[,11])), mean(as.numeric(results_df[,5]))+mean(as.numeric(results_df[,8])) +mean(as.numeric(results_df[,11])) ))
+
+Tie   = round(c(mean(as.numeric(results_df[,6])), mean(as.numeric(results_df[,9])), mean(as.numeric(results_df[,12])), mean(as.numeric(results_df[,12])) ))
+
+df3 = data.frame(
+  row.names = c("endpoint1", "endpoint2",  "endpoint3","overall"),
+  Win   = Win,
+  Loose = Loose,
+  Tie   = Tie,
+  WR = round(Win/Loose,5),
+  WO = round((Win+0.5*Tie)/(Loose+0.5*Tie),5),
+  GPC = round((Win-Loose)/(Win+Loose+Tie),5)
+)
+list(Count = df3, value_tte_cont_C = dfC, value_tte_cont_T = dfT, value_binary = df2, censure_rate_T = censure_rateT, censure_rate_C = censure_rateC, p_val_GPC = paste("probabilité d'avoir des p-valeur < 0.05 pour la GPC: ", nb_pval_GPC/n_sim), p_val_WR =  paste("probabilité d'avoir des p-valeur < 0.05 pour le WR: ", nb_pval_WR/n_sim), p_val_WO = paste("probabilité d'avoir des p-valeur < 0.05 pour le WO: ", nb_pval_WO/n_sim))
+
+vlines = data.frame(
+    method = c("GPC", "WR", "WO"),
+    intercept = c(0, 1, 1),
+    linetype_label = "Hypothèse H0")
+
+
+val = results_df[,1:3]
+colnames(val)=c("val_GPC","val_WR","val_WO")
+summ_val=summary(val)
+
+ values_long = val %>%
+   select(starts_with("val_")) %>%
+   pivot_longer(cols = everything(), names_to = "method", values_to = "value") %>%
+   mutate(method = recode(method,
+                          "val_GPC" = "GPC",
+                          "val_WR"  = "WR",
+                          "val_WO"  = "WO"))
+ values_long$value = unlist(values_long$value)
+ values_long <- values_long %>% filter(!is.infinite(value))
+
+
+ggplot(values_long, aes(x = value, fill = method)) +
+   geom_density(alpha = 0.6, color = "black") +
+   geom_vline(data = vlines, aes(xintercept = intercept, linetype = linetype_label),
+              color = "black", lwd = 1) +
+   theme_minimal() +
+   labs(title = "Distribution des statistiques de test",
+        x = "Valeur", y = "Densité") +
+   scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
+   scale_fill_manual(values = c("orange",  "purple", "cyan")) +
+  annotate("text", x = 4.5, y = 1.6, label = paste("Étendue GPC : ", étendue_GPC), color = "orange", hjust = 1) +
+  annotate("text", x = 4.5, y = 2.35, label = paste("Étendue WR : ", étendue_WR), color = "cyan", hjust = 1) +
+  annotate("text", x = 4.5, y = 3.1, label = paste("Étendue WO : ", étendue_WO), color = "purple", hjust = 1)
+
+
+```
+
+```{r, echo=FALSE}
+print(summ_val)
+```
+
+
+### HR non-constant (modèle AFT)
+
+Ici les paramètres $\lambda$ et $k$ voudront respectivement 0.1 et 0.5.
+
+```{r, echo=FALSE}
+
+n_sim = 2000
+n=200
+
+
+nb_core = parallel::detectCores() - 2
+cl = makeCluster(nb_core)
+registerDoParallel(cl)
+count = 0
+start_time = Sys.time()
+
+results = foreach(s = 1:n_sim, .combine = rbind, .packages = c("dplyr", "survival", "parallel", "foreach", "doParallel", "WINS"), .export = c("win.stat")) %dopar% {
+  set.seed(s)
+  
+id=1:(2*n) 
+arm=rep(c("T","C"), each=200)
+  
+U = runif(2*n) 
+lambdaT = 0.1
+kT = 0.5
+
+
+Z = ifelse(arm == "T", 1, 0)
+beta = 5
+
+
+prob_T = 0.65
+prob_C = 0.3
+
+mean_T = 2
+mean_C = 3
+sd_T = 2
+sd_C = 2
+
+
+Time_1 = round((((1/(1-U)-1)*(1/lambdaT))^(1/kT)*exp(Z*beta)), 3)
+fup_censureT = round(rweibull(2*n, shape = 1, scale =2),3)
+
+
+Time_T = pmin(Time_1, fup_censureT)
+
+deltaT=as.numeric(fup_censureT==Time_T)
+
+Y_2_T=as.numeric(gener_binom(prob = prob_T)[,1] )-1
+Y_2_C=as.numeric(gener_binom(prob = prob_C)[,1] )-1
+
+Y_3_T= gener_continue(mean = mean_T, sd = sd_T)
+Y_3_C= gener_continue(mean = mean_C, sd = sd_C)
+
+stratum=sample(rep(c(1,3,5,8), each = 50))
+dataT=data.frame(Y_1 = Time_T[Z==1], Delta_1 = deltaT[Z==1], Y_2 = Y_2_T, Y_3 = Y_3_T, stratum = stratum)
+dataC=data.frame(Y_1 = Time_T[Z==0], Delta_1 = deltaT[Z==0], Y_2 = Y_2_C, Y_3 = Y_3_C, stratum = stratum)
+
+ 
+data1=rbind(dataT,dataC)
+
+summT = summary.data.frame(dataT)
+
+min_Y_1T = as.numeric(stringr::str_extract(summT[1,1], "\\d+\\.\\d+"))
+min_Y_3T = as.numeric(stringr::str_extract(summT[1,4], "\\d+\\.\\d+"))
+
+nb_0_C=sum(Y_2_C==0)
+nb_1_C=sum(Y_2_C==1)
+
+nb_0_T=sum(Y_2_T==0)
+nb_1_T=sum(Y_2_T==1)
+
+median_Y_1T = as.numeric(stringr::str_extract( summT[3,1], "\\d+\\.\\d+"))
+median_Y_3T = as.numeric(stringr::str_extract( summT[3,4], "\\d+\\.\\d+"))
+
+max_Y_1T =as.numeric(stringr::str_extract(summT[6,1], "\\d+\\.\\d+"))
+max_Y_3T =as.numeric(stringr::str_extract(summT[6,4], "\\d+\\.\\d+"))
+
+summC = summary.data.frame(dataC)
+
+min_Y_1C = as.numeric(stringr::str_extract(summC[1,1], "\\d+\\.\\d+"))
+min_Y_3C = as.numeric(stringr::str_extract(summC[1,4], "\\d+\\.\\d+"))
+
+
+median_Y_1C = as.numeric(stringr::str_extract( summC[3,1], "\\d+\\.\\d+"))
+median_Y_3C = as.numeric(stringr::str_extract( summC[3,4], "\\d+\\.\\d+"))
+
+max_Y_1C =as.numeric(stringr::str_extract(summC[6,1], "\\d+\\.\\d+"))
+max_Y_3C =as.numeric(stringr::str_extract(summC[6,4], "\\d+\\.\\d+"))
+
+censure_rateT=sum(dataT$Delta_1==0)/n 
+censure_rateC=sum(dataC$Delta_1==0)/n 
+
+data=data.frame(id=id, arm = arm, Y_1= data1[,1],Delta_1=data1[,2], Y_2 = data1[,3], Y_3 = data1[,4], stratum = data1[,5] )
+
+result =
+  win.stat(
+    data = data,
+    ep_type = c("tte", "binary", "continuous"),
+    stratum.weight = "equal",
+    tau = c(2,0,2),
+    arm.name = c("T", "C"),
+    alpha = 0.05,
+    digit = 3,
+    pvalue = "two-sided",
+    priority = c(3,2,1),
+    summary.print = FALSE
+  )
+
+win_edp1=sum(result$summary_ep$Trt_Endpoint1[,2])
+loose_edp1=sum(result$summary_ep$Con_Endpoint1[,2])
+tie_edp1=4*2500-sum(win_edp1+loose_edp1)
+
+win_edp2=sum(result$summary_ep$Trt_Endpoint2[,2])
+loose_edp2=sum(result$summary_ep$Con_Endpoint2[,2])
+tie_edp2=tie_edp1-(loose_edp2+win_edp2)
+
+win_edp3 = sum(result$summary_ep$Trt_Endpoint3[,2])
+loose_edp3 = sum(result$summary_ep$Con_Endpoint3[,2])
+tie_edp3 = tie_edp2-(win_edp3+loose_edp3)
+
+
+  count = count + 1
+  write.table(c(count), file="../output.txt", append = T, col.names = F)
+  
+  val_GPC = result$Win_statistic$Net_Benefit[1]
+  val_WR  = result$Win_statistic$Win_Ratio[1]
+  val_WO  = result$Win_statistic$Win_Odds[1]
+  
+  p_val_GPC = result$p_value[2]
+  p_val_WR  = result$p_value[1]
+  p_val_WO  = result$p_value[3]
+  
+  return(unname(c(val_GPC,val_WR,val_WO,win_edp1,loose_edp1,tie_edp1,win_edp2,loose_edp2,tie_edp2,win_edp3,loose_edp3,tie_edp3,min_Y_1C, min_Y_3C,max_Y_1C, max_Y_3C,median_Y_1C, median_Y_3C,min_Y_1T, min_Y_3T,max_Y_1T, max_Y_3T,median_Y_1T, median_Y_3T,nb_0_C,nb_1_C,nb_0_T,nb_1_T, censure_rateC, censure_rateT, p_val_GPC, p_val_WR, p_val_WO)))
+}
+stopCluster(cl)
+end_time = Sys.time()
+execution_time = end_time - start_time
+
+results_df = as.data.frame(results)
+
+
+min_Y_1C=mean(as.numeric(results_df[,13]))
+min_Y_3C=mean(as.numeric(results_df[,14]))
+
+max_Y_1C=mean(as.numeric(results_df[,15]))
+max_Y_3C=mean(as.numeric(results_df[,16]))
+
+median_Y_1C=mean(as.numeric(results_df[,17]))
+median_Y_3C=mean(as.numeric(results_df[,18]))
+
+min_Y_1T=mean(as.numeric(results_df[,19]))
+min_Y_3T=mean(as.numeric(results_df[,20]))
+
+max_Y_1T=mean(as.numeric(results_df[,21]))
+max_Y_3T=mean(as.numeric(results_df[,22]))
+
+median_Y_1T=mean(as.numeric(results_df[,23]))
+median_Y_3T=mean(as.numeric(results_df[,24]))
+
+nb_O_C = mean(as.numeric(results_df[,25]))
+nb_1_C = mean(as.numeric(results_df[,26]))
+
+nb_0_T= mean(as.numeric(results_df[,27]))
+nb_1_T = mean(as.numeric(results_df[,28]))
+
+censure_rateC= mean(as.numeric(results_df[,29]))
+censure_rateT= mean(as.numeric(results_df[,30]))
+
+dfC=data.frame(row.names = c("min", "median", "max"), c(min_Y_1C, median_Y_1C, max_Y_1C),c(min_Y_3C, median_Y_3C, max_Y_3C))
+colnames(dfC) = c("Y_1_C (continue)", "Y_3_C (tte)")
+dfT=data.frame(row.names = c("min", "median", "max"), c(min_Y_1T, median_Y_1T, max_Y_1T),c(min_Y_3T, median_Y_3T, max_Y_3T))
+colnames(dfT) = c("Y_1_T (continue)", "Y_3_T (tte)")
+
+df2 = data.frame(row.name = c("0", "1"), c(nb_O_C,nb_0_T), c(nb_1_C,nb_1_T))
+
+p_valGPC = results_df[,31]
+p_valWR = results_df[,32]
+p_valWO = results_df[,33]
+
+nb_pval_GPC = sum(p_valGPC< 0.05)
+nb_pval_WR = sum(p_valWR< 0.05)
+nb_pval_WO = sum(p_valWO< 0.05)
+
+colnames(df2)=c(" ","C", "T")
+
+GPC=as.numeric(results_df[,1])
+WR= as.numeric(results_df[,2])
+WO= as.numeric(results_df[,3])
+
+
+quantileGPC_lwr=quantile(GPC, 0.025)
+quantileGPC_upr=quantile(GPC, 0.975)
+étendue_GPC= round(quantileGPC_upr - quantileGPC_lwr,4)
+
+quantileWR_lwr=quantile(WR, 0.025)
+quantileWR_upr=quantile(WR, 0.975)
+étendue_WR= round(quantileWR_upr - quantileWR_lwr,4)
+
+quantileWO_lwr=quantile(WO, 0.025)
+quantileWO_upr=quantile(WO, 0.975)
+étendue_WO= round(quantileWO_upr - quantileWO_lwr,4)
+
+
+
+Win   = round(c(mean(as.numeric(results_df[,4])), mean(as.numeric(results_df[,7])), mean(as.numeric(results_df[,10])), mean(as.numeric(results_df[,4])) + mean(as.numeric(results_df[,7])) +mean(as.numeric(results_df[,10])) ))
+
+Loose = round(c(mean(as.numeric(results_df[,5])), mean(as.numeric(results_df[,8])),mean(as.numeric(results_df[,11])), mean(as.numeric(results_df[,5]))+mean(as.numeric(results_df[,8])) +mean(as.numeric(results_df[,11])) ))
+
+Tie   = round(c(mean(as.numeric(results_df[,6])), mean(as.numeric(results_df[,9])), mean(as.numeric(results_df[,12])), mean(as.numeric(results_df[,12])) ))
+
+df3 = data.frame(
+  row.names = c("endpoint1", "endpoint2",  "endpoint3","overall"),
+  Win   = Win,
+  Loose = Loose,
+  Tie   = Tie,
+  WR = round(Win/Loose,5),
+  WO = round((Win+0.5*Tie)/(Loose+0.5*Tie),5),
+  GPC = round((Win-Loose)/(Win+Loose+Tie),5)
+)
+list(Count = df3, value_tte_cont_C = dfC, value_tte_cont_T = dfT, value_binary = df2, censure_rate_T = censure_rateT, censure_rate_C = censure_rateC, p_val_GPC = paste("probabilité d'avoir des p-valeur < 0.05 pour la GPC: ", nb_pval_GPC/n_sim), p_val_WR =  paste("probabilité d'avoir des p-valeur < 0.05 pour le WR: ", nb_pval_WR/n_sim), p_val_WO = paste("probabilité d'avoir des p-valeur < 0.05 pour le WO: ", nb_pval_WO/n_sim))
+
+vlines = data.frame(
+    method = c("GPC", "WR", "WO"),
+    intercept = c(0, 1, 1),
+    linetype_label = "Hypothèse H0")
+
+
+val = results_df[,1:3]
+colnames(val)=c("val_GPC","val_WR","val_WO")
+summ_val=summary(val)
+
+ values_long = val %>%
+   select(starts_with("val_")) %>%
+   pivot_longer(cols = everything(), names_to = "method", values_to = "value") %>%
+   mutate(method = recode(method,
+                          "val_GPC" = "GPC",
+                          "val_WR"  = "WR",
+                          "val_WO"  = "WO"))
+ values_long$value = unlist(values_long$value)
+ values_long <- values_long %>% filter(!is.infinite(value))
+
+
+ggplot(values_long, aes(x = value, fill = method)) +
+   geom_density(alpha = 0.6, color = "black") +
+   geom_vline(data = vlines, aes(xintercept = intercept, linetype = linetype_label),
+              color = "black", lwd = 1) +
+   theme_minimal() +
+   labs(title = "Distribution des statistiques de test",
+        x = "Valeur", y = "Densité") +
+   scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
+   scale_fill_manual(values = c("orange",  "purple", "cyan")) +
+  annotate("text", x = 4.5, y = 1.6, label = paste("Étendue GPC : ", étendue_GPC), color = "orange", hjust = 1) +
+  annotate("text", x = 4.5, y = 2.35, label = paste("Étendue WR : ", étendue_WR), color = "cyan", hjust = 1) +
+  annotate("text", x = 4.5, y = 3.1, label = paste("Étendue WO : ", étendue_WO), color = "purple", hjust = 1)
+
+```
+
+```{r, echo=FALSE}
+print(summ_val)
 ```
 
