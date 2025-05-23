@@ -279,9 +279,11 @@ vlines = data.frame(
 val1=unlist(results_df[,1:3]$V1)
 val2=unlist(results_df[,1:3]$V2)
 val3=unlist(results_df[,1:3]$V3)
-val=unname(cbind(val1,val2,val3))
+val=as.data.frame(unname(cbind(val1,val2,val3)))
 colnames(val)=c("val_GPC","val_WR","val_WO")
 summ_val=summary(val)
+
+
 
 
  values_long = val %>%
@@ -314,6 +316,7 @@ ggplot(values_long, aes(x = value, fill = method)) +
 ```{r, echo=FALSE}
 print(summ_val)
 ```
+
 
 ## tau = 2
 
@@ -543,7 +546,7 @@ vlines = data.frame(
 val1=unlist(results_df[,1:3]$V1)
 val2=unlist(results_df[,1:3]$V2)
 val3=unlist(results_df[,1:3]$V3)
-val=unname(cbind(val1,val2,val3))
+val=as.data.frame(unname(cbind(val1,val2,val3)))
 colnames(val)=c("val_GPC","val_WR","val_WO")
 summ_val=summary(val)
 
@@ -579,6 +582,8 @@ L'étendue est plus importante pour le **WR** que pour le **WO** même avec des 
 ```{r, echo=FALSE}
 print(summ_val)
 ```
+
+On ne remarque pas de grosse différence au niveau de la **GPC**. Le **WR** est plus étendu, on le voit par rapport  au min et au max mais les médianes sont proche. Le **WO** n'a pas beaucoup bougé non plus 
 
 ## Outcome continue de Poisson
 
@@ -721,22 +726,22 @@ results_df = as.data.frame(results)
 
 
 min_Y_1C=mean(as.numeric(results_df[,13]))
-min_Y_3C=mean(as.numeric(results_df[,14]))
+min_Y_3C=mean(as.numeric(results_df[,14]), na.rm = T)
 
 max_Y_1C=mean(as.numeric(results_df[,15]))
-max_Y_3C=mean(as.numeric(results_df[,16]))
+max_Y_3C=mean(as.numeric(results_df[,16]), na.rm = T)
 
 median_Y_1C=mean(as.numeric(results_df[,17]))
-median_Y_3C=mean(as.numeric(results_df[,18]))
+median_Y_3C=mean(as.numeric(results_df[,18]), na.rm = T)
 
 min_Y_1T=mean(as.numeric(results_df[,19]))
-min_Y_3T=mean(as.numeric(results_df[,20]))
+min_Y_3T=mean(as.numeric(results_df[,20]), na.rm = T)
 
 max_Y_1T=mean(as.numeric(results_df[,21]))
-max_Y_3T=mean(as.numeric(results_df[,22]))
+max_Y_3T=mean(as.numeric(results_df[,22]), na.rm = T)
 
 median_Y_1T=mean(as.numeric(results_df[,23]))
-median_Y_3T=mean(as.numeric(results_df[,24]))
+median_Y_3T=mean(as.numeric(results_df[,24]), na.rm = T)
 
 nb_O_C = mean(as.numeric(results_df[,25]))
 nb_1_C = mean(as.numeric(results_df[,26]))
@@ -809,7 +814,7 @@ vlines = data.frame(
 val1=unlist(results_df[,1:3]$V1)
 val2=unlist(results_df[,1:3]$V2)
 val3=unlist(results_df[,1:3]$V3)
-val=unname(cbind(val1,val2,val3))
+val=as.data.frame(unname(cbind(val1,val2,val3)))
 colnames(val)=c("val_GPC","val_WR","val_WO")
 summ_val=summary(val)
 
@@ -843,6 +848,8 @@ ggplot(values_long, aes(x = value, fill = method)) +
 ```{r, echo=FALSE}
 print(summ_val)
 ```
+
+Très peu de différence entre l'outcome continue normal et de poisson. 
 
 ## Outcome binaire en premier
 
@@ -1071,7 +1078,7 @@ vlines = data.frame(
 val1=unlist(results_df[,1:3]$V1)
 val2=unlist(results_df[,1:3]$V2)
 val3=unlist(results_df[,1:3]$V3)
-val=unname(cbind(val1,val2,val3))
+val=as.data.frame(unname(cbind(val1,val2,val3)))
 colnames(val)=c("val_GPC","val_WR","val_WO")
 summ_val=summary(val)
 
@@ -1102,13 +1109,14 @@ ggplot(values_long, aes(x = value, fill = method)) +
 
 ```
 
-Une petite différence est notable entre le moment où l'outcome principal est tte ou binaire
+Très peu de différence entre les étendues lorsque l'outcome tte est premier ou lorsque c'est l'outcome binaire. 
 
-|  | Outcome tte  | Outcome Binaire |
-|-----------|-----------|-----------|
-| WO | 0.4312  | 0.4393  |
-| WR  | 0.5958  | 0.61  |
-| GPC  | 0.2121  | 0.2156  |
+```{r, echo = FALSE,  }
+df= data.frame(row.names = c("WO", "WR", "GPC"), c(0.4312, 0.5958, 0.2121), c(0.4393, 0.61, 0.2156))
+colnames(df) = c( "Oucome tte", "Outcome binaire")
+kable(df, caption = "Comparaison de l'étendue entre les deux critères lorsque le seuil vaut 0")
+```
+
 
 ```{r, echo=FALSE}
 print(summ_val)
@@ -1358,7 +1366,7 @@ vlines = data.frame(
 val1=unlist(results_df[,1:3]$V1)
 val2=unlist(results_df[,1:3]$V2)
 val3=unlist(results_df[,1:3]$V3)
-val=unname(cbind(val1,val2,val3))
+val=as.data.frame(unname(cbind(val1,val2,val3)))
 colnames(val)=c("val_GPC","val_WR","val_WO")
 summ_val=summary(val)
 
@@ -1620,7 +1628,7 @@ vlines = data.frame(
 val1=unlist(results_df[,1:3]$V1)
 val2=unlist(results_df[,1:3]$V2)
 val3=unlist(results_df[,1:3]$V3)
-val=unname(cbind(val1,val2,val3))
+val=as.data.frame(unname(cbind(val1,val2,val3)))
 colnames(val)=c("val_GPC","val_WR","val_WO")
 summ_val=summary(val)
 
@@ -1655,11 +1663,11 @@ Grosse étendue pour le **WR** valant 2.33 alors qu'elle est aux alentours de 1.
 
 Une petite différence est notable entre le moment où l'outcome principal est tte ou binaire
 
-|  | Outcome tte  | Outcome Binaire |
-|-----------|-----------|-----------|
-| WO | 1.1513  | 1.2054  |
-| WR  | 2.3298  | 2.4251  |
-| GPC  | 0.178  | 0.1844  |
+```{r, echo = FALSE,  }
+df= data.frame(row.names = c("WO", "WR", "GPC"), c(1.1513, 2.3298, 0.178), c(1.2054, 2.4251, 0.1844))
+colnames(df) = c( "Oucome tte", "Outcome binaire")
+kable(df, caption = "Comparaison de l'étendue entre les deux critères lorsque le seuil vaut 2")
+```
 
 ```{r, echo=FALSE}
 print(summ_val)
@@ -1808,28 +1816,28 @@ results_df = as.data.frame(results)
 
 
 min_Y_1C=mean(as.numeric(results_df[,13]))
-min_Y_3C=mean(as.numeric(results_df[,14]))
+min_Y_3C=mean(as.numeric(results_df[,14]), na.rm = T)
 
 max_Y_1C=mean(as.numeric(results_df[,15]))
-max_Y_3C=mean(as.numeric(results_df[,16]))
+max_Y_3C=mean(as.numeric(results_df[,16]), na.rm = T)
 
 median_Y_1C=mean(as.numeric(results_df[,17]))
-median_Y_3C=mean(as.numeric(results_df[,18]))
+median_Y_3C=mean(as.numeric(results_df[,18]), na.rm = T)
 
 min_Y_1T=mean(as.numeric(results_df[,19]))
-min_Y_3T=mean(as.numeric(results_df[,20]))
+min_Y_3T=mean(as.numeric(results_df[,20]), na.rm = T)
 
 max_Y_1T=mean(as.numeric(results_df[,21]))
-max_Y_3T=mean(as.numeric(results_df[,22]))
+max_Y_3T=mean(as.numeric(results_df[,22]), na.rm = T)
 
 median_Y_1T=mean(as.numeric(results_df[,23]))
-median_Y_3T=mean(as.numeric(results_df[,24]))
+median_Y_3T=mean(as.numeric(results_df[,24]), na.rm = T)
 
 nb_O_C = mean(as.numeric(results_df[,25]))
-nb_1_C = mean(as.numeric(results_df[,26]))
+nb_1_C = mean(as.numeric(results_df[,26]), na.rm = T)
 
 nb_0_T= mean(as.numeric(results_df[,27]))
-nb_1_T = mean(as.numeric(results_df[,28]))
+nb_1_T = mean(as.numeric(results_df[,28]), na.rm = T)
 
 censure_rateC= mean(as.numeric(results_df[,29]))
 censure_rateT= mean(as.numeric(results_df[,30]))
@@ -1896,7 +1904,7 @@ vlines = data.frame(
 val1=unlist(results_df[,1:3]$V1)
 val2=unlist(results_df[,1:3]$V2)
 val3=unlist(results_df[,1:3]$V3)
-val=unname(cbind(val1,val2,val3))
+val=as.data.frame(unname(cbind(val1,val2,val3)))
 colnames(val)=c("val_GPC","val_WR","val_WO")
 summ_val=summary(val)
 
@@ -2158,7 +2166,7 @@ vlines = data.frame(
 val1=unlist(results_df[,1:3]$V1)
 val2=unlist(results_df[,1:3]$V2)
 val3=unlist(results_df[,1:3]$V3)
-val=unname(cbind(val1,val2,val3))
+val=as.data.frame(unname(cbind(val1,val2,val3)))
 colnames(val)=c("val_GPC","val_WR","val_WO")
 summ_val=summary(val)
 
@@ -2435,7 +2443,7 @@ vlines = data.frame(
 val1=unlist(results_df[,1:3]$V1)
 val2=unlist(results_df[,1:3]$V2)
 val3=unlist(results_df[,1:3]$V3)
-val=unname(cbind(val1,val2,val3))
+val=as.data.frame(unname(cbind(val1,val2,val3)))
 colnames(val)=c("val_GPC","val_WR","val_WO")
 summ_val=summary(val)
 
@@ -2466,7 +2474,7 @@ ggplot(values_long, aes(x = value, fill = method)) +
 
 ```
 
-On remarque, en comparant avec le scénario 2 où les distribution continue et binaire ont les même lois que dans cette section que le résultatest très différent. En effet, la probabilité d'avoir des p-valeur inférieur à 0.05 était de 1 alors qu'ici avec un modèle AFT, la probabilité est de 0.11 environ. Cela est dû à la construction du
+On remarque, en comparant avec le scénario 2 où les distribution continue et binaire ont les même lois que dans cette section que le résultat est similaire par rapport aux p-valeurs malgré le fait qu'ici le premier endpoint ne départage pas le groupe traité du groupe contrôle. 
 
 ```{r, echo=FALSE}
 print(summ_val)
@@ -2701,7 +2709,7 @@ vlines = data.frame(
 val1=unlist(results_df[,1:3]$V1)
 val2=unlist(results_df[,1:3]$V2)
 val3=unlist(results_df[,1:3]$V3)
-val=unname(cbind(val1,val2,val3))
+val=as.data.frame(unname(cbind(val1,val2,val3)))
 colnames(val)=c("val_GPC","val_WR","val_WO")
 summ_val=summary(val)
 
@@ -2762,12 +2770,12 @@ arm=rep(c("T","C"), each=200)
   
 U = runif(2*n) 
 
-lambdaT = 0.01
-kT = 5
+lambdaT = 1
+kT = 2
 
 
 Z = ifelse(arm == "T", 1, 0)
-beta = -10
+beta = -2
 
 prob_T = 0.7
 prob_C = 0.3
@@ -2779,7 +2787,7 @@ sd_C = 1
 
   
 Time_1 = round((-log(1 - U)) / (lambdaT * exp(beta * Z)^(1 / kT)),3)
-fup_censureT = round(rweibull(2*n, shape = 1, scale =1),3)
+fup_censureT = round(rweibull(2*n, shape = 1, scale =3),3)
 
 Time_T = pmin(Time_1, fup_censureT)
 deltaT=as.numeric(fup_censureT==Time_T)
@@ -2967,7 +2975,7 @@ vlines = data.frame(
 val1=unlist(results_df[,1:3]$V1)
 val2=unlist(results_df[,1:3]$V2)
 val3=unlist(results_df[,1:3]$V3)
-val=unname(cbind(val1,val2,val3))
+val=as.data.frame(unname(cbind(val1,val2,val3)))
 colnames(val)=c("val_GPC","val_WR","val_WO")
 summ_val=summary(val)
 
@@ -3229,7 +3237,7 @@ vlines = data.frame(
 val1=unlist(results_df[,1:3]$V1)
 val2=unlist(results_df[,1:3]$V2)
 val3=unlist(results_df[,1:3]$V3)
-val=unname(cbind(val1,val2,val3))
+val=as.data.frame(unname(cbind(val1,val2,val3)))
 colnames(val)=c("val_GPC","val_WR","val_WO")
 summ_val=summary(val)
 
@@ -3297,6 +3305,7 @@ Les distributions seront les suivantes :
 
   $\mathcal{B}_T(0.65)$ ; $\mathcal{B}_C(0.3)$
 
+
 ```{r, echo=FALSE}
 
 n_sim = 2000
@@ -3522,7 +3531,7 @@ vlines = data.frame(
 val1=unlist(results_df[,1:3]$V1)
 val2=unlist(results_df[,1:3]$V2)
 val3=unlist(results_df[,1:3]$V3)
-val=unname(cbind(val1,val2,val3))
+val=as.data.frame(unname(cbind(val1,val2,val3)))
 colnames(val)=c("val_GPC","val_WR","val_WO")
 summ_val=summary(val)
 
@@ -3557,6 +3566,12 @@ ggplot(values_long, aes(x = value, fill = method)) +
 print(summ_val)
 ```
 
+Ici, nous ferons la comparaison avec la section *Scénario 2 : $T \gg C$, 2- tau = 2* où la différence se fait sur la distribution continue. 
+On remarque directement une grosse différence de valeur entre T et C pour l'outcome continue. Ce que l'on peut noter c'est qu'il y a moins de variation sur les 3 statistiques ce qui est d'autant plus criant sur le WR qui passe d'une étendue de 2.3298 lorsque nous sommes dans le cas où tous les outcome sont en faveur de T mais baisse à 1.1962 ici. 
+
+Nous notons aussi que le max des **WR** ici est du 3.37 alors que cela corresponds à la médiane dans l'autre section et au max du **WO**.
+
+On remarque bien  un fort effet de l'outcome continue sur le résultat. Il faudrait voir ce que cela donne en mettant cet outcome comme étant de prioritaire.
 
 ### HR non-constant (modèle AFT)
 
@@ -3789,7 +3804,7 @@ vlines = data.frame(
 val1=unlist(results_df[,1:3]$V1)
 val2=unlist(results_df[,1:3]$V2)
 val3=unlist(results_df[,1:3]$V3)
-val=unname(cbind(val1,val2,val3))
+val=as.data.frame(unname(cbind(val1,val2,val3)))
 colnames(val)=c("val_GPC","val_WR","val_WO")
 summ_val=summary(val)
 
@@ -3823,6 +3838,7 @@ ggplot(values_long, aes(x = value, fill = method)) +
 print(summ_val)
 ```
 
+On remarque légèrement plus de variation dans le modèle AFT que dans le modèle de Cox.
 
 ## Variation des ordres 
 
@@ -3838,7 +3854,7 @@ Les distributions seront les suivantes :
  
 - Continue :
 
-  $\mathcal{N}_T(2,2)$ ; $\mathcal{N}_C(3,2)$
+  $\mathcal{N}_T(2,1)$ ; $\mathcal{N}_C(3,2)$
   
 - Binaire :
 
@@ -3876,7 +3892,7 @@ prob_C = 0.3
 
 mean_T = 2
 mean_C = 3
-sd_T = 2
+sd_T = 1
 sd_C = 2
 
   
@@ -4008,9 +4024,9 @@ censure_rateC= mean(as.numeric(results_df[,29]))
 censure_rateT= mean(as.numeric(results_df[,30]))
 
 dfC=data.frame(row.names = c("min", "median", "max"), c(min_Y_1C, median_Y_1C, max_Y_1C),c(min_Y_3C, median_Y_3C, max_Y_3C))
-colnames(dfC) = c("Y_1_C (continue)", "Y_3_C (tte)")
+colnames(dfC) = c("Y_3_C (tte)", "Y_1_C (continue)")
 dfT=data.frame(row.names = c("min", "median", "max"), c(min_Y_1T, median_Y_1T, max_Y_1T),c(min_Y_3T, median_Y_3T, max_Y_3T))
-colnames(dfT) = c("Y_1_T (continue)", "Y_3_T (tte)")
+colnames(dfT) = c("Y_3_T (tte)", "Y_1_T (continue)")
 
 df2 = data.frame(row.name = c("0", "1"), c(nb_O_C,nb_0_T), c(nb_1_C,nb_1_T))
 
@@ -4069,7 +4085,7 @@ vlines = data.frame(
 val1=unlist(results_df[,1:3]$V1)
 val2=unlist(results_df[,1:3]$V2)
 val3=unlist(results_df[,1:3]$V3)
-val=unname(cbind(val1,val2,val3))
+val=as.data.frame(unname(cbind(val1,val2,val3)))
 colnames(val)=c("val_GPC","val_WR","val_WO")
 summ_val=summary(val)
 
@@ -4104,6 +4120,7 @@ ggplot(values_long, aes(x = value, fill = method)) +
 print(summ_val)
 ```
 
+On remarque bien 
 
 ### HR non-constant (modèle AFT)
 
@@ -4128,8 +4145,8 @@ id=1:(2*n)
 arm=rep(c("T","C"), each=200)
   
 U = runif(2*n) 
-lambdaT = 0.1
-kT = 0.5
+lambdaT = 1
+kT = 2
 
 
 Z = ifelse(arm == "T", 1, 0)
@@ -4141,12 +4158,12 @@ prob_C = 0.3
 
 mean_T = 2
 mean_C = 3
-sd_T = 2
+sd_T = 1
 sd_C = 2
 
 
 Time_1 = round((((1/(1-U)-1)*(1/lambdaT))^(1/kT)*exp(Z*beta)), 3)
-fup_censureT = round(rweibull(2*n, shape = 1, scale =2),3)
+fup_censureT = round(rweibull(2*n, shape = 1, scale =3),3)
 
 
 Time_T = pmin(Time_1, fup_censureT)
@@ -4275,9 +4292,9 @@ censure_rateC= mean(as.numeric(results_df[,29]))
 censure_rateT= mean(as.numeric(results_df[,30]))
 
 dfC=data.frame(row.names = c("min", "median", "max"), c(min_Y_1C, median_Y_1C, max_Y_1C),c(min_Y_3C, median_Y_3C, max_Y_3C))
-colnames(dfC) = c("Y_1_C (continue)", "Y_3_C (tte)")
+colnames(dfC) = c("Y_3_C (tte)", "Y_1_C (continue)")
 dfT=data.frame(row.names = c("min", "median", "max"), c(min_Y_1T, median_Y_1T, max_Y_1T),c(min_Y_3T, median_Y_3T, max_Y_3T))
-colnames(dfT) = c("Y_1_T (continue)", "Y_3_T (tte)")
+colnames(dfT) = c("Y_3_T (tte)", "Y_1_T (continue)")
 
 df2 = data.frame(row.name = c("0", "1"), c(nb_O_C,nb_0_T), c(nb_1_C,nb_1_T))
 
@@ -4336,7 +4353,7 @@ vlines = data.frame(
 val1=unlist(results_df[,1:3]$V1)
 val2=unlist(results_df[,1:3]$V2)
 val3=unlist(results_df[,1:3]$V3)
-val=unname(cbind(val1,val2,val3))
+val=as.data.frame(unname(cbind(val1,val2,val3)))
 colnames(val)=c("val_GPC","val_WR","val_WO")
 summ_val=summary(val)
 
