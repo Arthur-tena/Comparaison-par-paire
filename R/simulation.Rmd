@@ -226,29 +226,37 @@ legend('topright', legend=c("T","C"), col=c("blue", "red"), lwd=c(2,2))
 ```
 
 
-```{r, exponentielle}
+```{r, poisson}
 
-lambda1 = 0.35
-lambda2 = 0.8
-# lambda3 = 0.5
-# lambda4= 1
+lambda1 = 1
+lambda2 = 4
+lambda3 = 5
+lambda4= 0.5
 
-x = seq(0, 10, length.out = 1000)
+x = 0:20
 
-y1 = rexp(1000, rate = lambda1)
- y2 = rexp(1000, rate = lambda2)
-# y3 = dexp(x, rate= lambda3)
-# y4 = dexp(x, rate= lambda4)
+y1 = dpois(x, lambda = lambda1)
+y2 = dpois(x, lambda = lambda2)
+y3 = dpois(x, lambda= lambda3)
+y4 = dpois(x, lambda= lambda4)
 
 
-plot(x, y1, type = "l", lwd = 2, col = "blue", 
-      main = "Densités des lois exponentielles Exp(1) et Exp(0.5)",
-      xlab = "x", ylab = "Densité")
+plot(x, y1, type = "h", lwd = 2, col = "blue", 
+     main = "Fonctions de masse des lois de Poisson",
+     xlab = "x (valeurs entières)", ylab = "Probabilité", ylim = c(0, max(y3)))
 
-lines(x, y2, lwd = 2, col = "darkblue")
-# lines(x, y3, lwd = 2, col = "green")
-# lines(x, y4, lwd=2, col="darkgreen")
-#legend('topright',legend=c("T","C") ,col=c('blue','green'), lwd=c(2,2))
+points(x, y1, col = "blue", pch = 16)
+lines(x, y2, type = "h", lwd = 2, col = "darkblue")
+points(x, y2, col = "darkblue", pch = 16)
+lines(x, y3, type = "h", lwd = 2, col = "green")
+points(x, y3, col = "green", pch = 16)
+lines(x, y4, type = "h", lwd = 2, col = "darkgreen")
+points(x, y4, col = "darkgreen", pch = 16)
+
+legend("topright", 
+       legend = c("lambda = 1", "lambda = 3", "lambda = 5", "lambda = 0.5"), 
+       col = c("blue", "darkblue", "green", "darkgreen"), 
+       lwd = 2, pch = 16)
 
 ```
 

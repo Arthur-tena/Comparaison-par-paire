@@ -276,10 +276,13 @@ vlines = data.frame(
     intercept = c(0, 1, 1),
     linetype_label = "Hypothèse H0")
 
-
-val = results_df[,1:3]
+val1=unlist(results_df[,1:3]$V1)
+val2=unlist(results_df[,1:3]$V2)
+val3=unlist(results_df[,1:3]$V3)
+val=unname(cbind(val1,val2,val3))
 colnames(val)=c("val_GPC","val_WR","val_WO")
 summ_val=summary(val)
+
 
  values_long = val %>%
    select(starts_with("val_")) %>%
@@ -304,6 +307,7 @@ ggplot(values_long, aes(x = value, fill = method)) +
   annotate("text", x = 4.5, y = 1.6, label = paste("Étendue GPC : ", étendue_GPC), color = "orange", hjust = 1) +
   annotate("text", x = 4.5, y = 2.35, label = paste("Étendue WR : ", étendue_WR), color = "cyan", hjust = 1) +
   annotate("text", x = 4.5, y = 3.1, label = paste("Étendue WO : ", étendue_WO), color = "purple", hjust = 1)
+
 
 ```
 
@@ -536,7 +540,10 @@ vlines = data.frame(
     linetype_label = "Hypothèse H0")
 
 
-val = results_df[,1:3]
+val1=unlist(results_df[,1:3]$V1)
+val2=unlist(results_df[,1:3]$V2)
+val3=unlist(results_df[,1:3]$V3)
+val=unname(cbind(val1,val2,val3))
 colnames(val)=c("val_GPC","val_WR","val_WO")
 summ_val=summary(val)
 
@@ -799,7 +806,10 @@ vlines = data.frame(
     linetype_label = "Hypothèse H0")
 
 
-val = results_df[,1:3]
+val1=unlist(results_df[,1:3]$V1)
+val2=unlist(results_df[,1:3]$V2)
+val3=unlist(results_df[,1:3]$V3)
+val=unname(cbind(val1,val2,val3))
 colnames(val)=c("val_GPC","val_WR","val_WO")
 summ_val=summary(val)
 
@@ -1058,7 +1068,10 @@ vlines = data.frame(
     linetype_label = "Hypothèse H0")
 
 
-val = results_df[,1:3]
+val1=unlist(results_df[,1:3]$V1)
+val2=unlist(results_df[,1:3]$V2)
+val3=unlist(results_df[,1:3]$V3)
+val=unname(cbind(val1,val2,val3))
 colnames(val)=c("val_GPC","val_WR","val_WO")
 summ_val=summary(val)
 
@@ -1342,7 +1355,10 @@ vlines = data.frame(
     linetype_label = "Hypothèse H0")
 
 
-val = results_df[,1:3]
+val1=unlist(results_df[,1:3]$V1)
+val2=unlist(results_df[,1:3]$V2)
+val3=unlist(results_df[,1:3]$V3)
+val=unname(cbind(val1,val2,val3))
 colnames(val)=c("val_GPC","val_WR","val_WO")
 summ_val=summary(val)
 
@@ -1601,7 +1617,10 @@ vlines = data.frame(
     linetype_label = "Hypothèse H0")
 
 
-val = results_df[,1:3]
+val1=unlist(results_df[,1:3]$V1)
+val2=unlist(results_df[,1:3]$V2)
+val3=unlist(results_df[,1:3]$V3)
+val=unname(cbind(val1,val2,val3))
 colnames(val)=c("val_GPC","val_WR","val_WO")
 summ_val=summary(val)
 
@@ -1874,7 +1893,10 @@ vlines = data.frame(
     linetype_label = "Hypothèse H0")
 
 
-val = results_df[,1:3]
+val1=unlist(results_df[,1:3]$V1)
+val2=unlist(results_df[,1:3]$V2)
+val3=unlist(results_df[,1:3]$V3)
+val=unname(cbind(val1,val2,val3))
 colnames(val)=c("val_GPC","val_WR","val_WO")
 summ_val=summary(val)
 
@@ -2133,7 +2155,10 @@ vlines = data.frame(
     linetype_label = "Hypothèse H0")
 
 
-val = results_df[,1:3]
+val1=unlist(results_df[,1:3]$V1)
+val2=unlist(results_df[,1:3]$V2)
+val3=unlist(results_df[,1:3]$V3)
+val=unname(cbind(val1,val2,val3))
 colnames(val)=c("val_GPC","val_WR","val_WO")
 summ_val=summary(val)
 
@@ -2407,7 +2432,10 @@ vlines = data.frame(
     linetype_label = "Hypothèse H0")
 
 
-val = results_df[,1:3]
+val1=unlist(results_df[,1:3]$V1)
+val2=unlist(results_df[,1:3]$V2)
+val3=unlist(results_df[,1:3]$V3)
+val=unname(cbind(val1,val2,val3))
 colnames(val)=c("val_GPC","val_WR","val_WO")
 summ_val=summary(val)
 
@@ -2670,7 +2698,10 @@ vlines = data.frame(
     linetype_label = "Hypothèse H0")
 
 
-val = results_df[,1:3]
+val1=unlist(results_df[,1:3]$V1)
+val2=unlist(results_df[,1:3]$V2)
+val3=unlist(results_df[,1:3]$V3)
+val=unname(cbind(val1,val2,val3))
 colnames(val)=c("val_GPC","val_WR","val_WO")
 summ_val=summary(val)
 
@@ -2933,7 +2964,10 @@ vlines = data.frame(
     linetype_label = "Hypothèse H0")
 
 
-val = results_df[,1:3]
+val1=unlist(results_df[,1:3]$V1)
+val2=unlist(results_df[,1:3]$V2)
+val3=unlist(results_df[,1:3]$V3)
+val=unname(cbind(val1,val2,val3))
 colnames(val)=c("val_GPC","val_WR","val_WO")
 summ_val=summary(val)
 
@@ -3192,7 +3226,10 @@ vlines = data.frame(
     linetype_label = "Hypothèse H0")
 
 
-val = results_df[,1:3]
+val1=unlist(results_df[,1:3]$V1)
+val2=unlist(results_df[,1:3]$V2)
+val3=unlist(results_df[,1:3]$V3)
+val=unname(cbind(val1,val2,val3))
 colnames(val)=c("val_GPC","val_WR","val_WO")
 summ_val=summary(val)
 
@@ -3482,7 +3519,10 @@ vlines = data.frame(
     linetype_label = "Hypothèse H0")
 
 
-val = results_df[,1:3]
+val1=unlist(results_df[,1:3]$V1)
+val2=unlist(results_df[,1:3]$V2)
+val3=unlist(results_df[,1:3]$V3)
+val=unname(cbind(val1,val2,val3))
 colnames(val)=c("val_GPC","val_WR","val_WO")
 summ_val=summary(val)
 
@@ -3746,7 +3786,10 @@ vlines = data.frame(
     linetype_label = "Hypothèse H0")
 
 
-val = results_df[,1:3]
+val1=unlist(results_df[,1:3]$V1)
+val2=unlist(results_df[,1:3]$V2)
+val3=unlist(results_df[,1:3]$V3)
+val=unname(cbind(val1,val2,val3))
 colnames(val)=c("val_GPC","val_WR","val_WO")
 summ_val=summary(val)
 
@@ -4023,7 +4066,10 @@ vlines = data.frame(
     linetype_label = "Hypothèse H0")
 
 
-val = results_df[,1:3]
+val1=unlist(results_df[,1:3]$V1)
+val2=unlist(results_df[,1:3]$V2)
+val3=unlist(results_df[,1:3]$V3)
+val=unname(cbind(val1,val2,val3))
 colnames(val)=c("val_GPC","val_WR","val_WO")
 summ_val=summary(val)
 
@@ -4287,7 +4333,10 @@ vlines = data.frame(
     linetype_label = "Hypothèse H0")
 
 
-val = results_df[,1:3]
+val1=unlist(results_df[,1:3]$V1)
+val2=unlist(results_df[,1:3]$V2)
+val3=unlist(results_df[,1:3]$V3)
+val=unname(cbind(val1,val2,val3))
 colnames(val)=c("val_GPC","val_WR","val_WO")
 summ_val=summary(val)
 
