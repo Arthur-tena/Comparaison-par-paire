@@ -21,6 +21,8 @@ library(survival)
 
 library(WINS)
 library(knitr)
+library(gridExtra)
+library(grid)
 
 
 library(doParallel)
@@ -281,7 +283,7 @@ val2=unlist(results_df[,1:3]$V2)
 val3=unlist(results_df[,1:3]$V3)
 val=as.data.frame(unname(cbind(val1,val2,val3)))
 colnames(val)=c("val_GPC","val_WR","val_WO")
-summ_val=summary(val)
+summ_val1_1=summary(val)
 
 
 
@@ -314,7 +316,18 @@ ggplot(values_long, aes(x = value, fill = method)) +
 ```
 
 ```{r, echo=FALSE}
-print(summ_val)
+summary_df1_1 <- summ_val1_1 %>% as.data.frame()
+summary_df1_1 <- summary_df1_1 %>%
+  mutate(
+    Stat = stringr::str_trim(stringr::str_extract(Freq, "^[^:]+")), 
+    Value = as.numeric(stringr::str_trim(stringr::str_extract(Freq, "(?<=:).*"))),
+    Var2 = as.character(Var2)
+  ) %>%
+  select(Stat, Var2, Value) %>%
+  pivot_wider(names_from = Var2, values_from = Value) %>%
+  filter(!is.na(Stat))
+
+summary_df1_1
 ```
 
 
@@ -548,7 +561,7 @@ val2=unlist(results_df[,1:3]$V2)
 val3=unlist(results_df[,1:3]$V3)
 val=as.data.frame(unname(cbind(val1,val2,val3)))
 colnames(val)=c("val_GPC","val_WR","val_WO")
-summ_val=summary(val)
+summ_val1_2=summary(val)
 
  values_long = val %>%
    select(starts_with("val_")) %>%
@@ -580,7 +593,18 @@ ggplot(values_long, aes(x = value, fill = method)) +
 L'étendue est plus importante pour le **WR** que pour le **WO** même avec des distributions similaire, il voudrait mieux prioriser le **WO** ou la **GPC** suivant les besoins.
 
 ```{r, echo=FALSE}
-print(summ_val)
+summary_df1_2 <- summ_val1_2 %>% as.data.frame()
+summary_df1_2 <- summary_df1_2 %>%
+  mutate(
+    Stat = stringr::str_trim(stringr::str_extract(Freq, "^[^:]+")), 
+    Value = as.numeric(stringr::str_trim(stringr::str_extract(Freq, "(?<=:).*"))),
+    Var2 = as.character(Var2)
+  ) %>%
+  select(Stat, Var2, Value) %>%
+  pivot_wider(names_from = Var2, values_from = Value) %>%
+  filter(!is.na(Stat))
+
+summary_df1_2
 ```
 
 On ne remarque pas de grosse différence au niveau de la **GPC**. Le **WR** est plus étendu, on le voit par rapport  au min et au max mais les médianes sont proche. Le **WO** n'a pas beaucoup bougé non plus 
@@ -816,7 +840,7 @@ val2=unlist(results_df[,1:3]$V2)
 val3=unlist(results_df[,1:3]$V3)
 val=as.data.frame(unname(cbind(val1,val2,val3)))
 colnames(val)=c("val_GPC","val_WR","val_WO")
-summ_val=summary(val)
+summ_val1_3=summary(val)
 
  values_long = val %>%
    select(starts_with("val_")) %>%
@@ -846,7 +870,19 @@ ggplot(values_long, aes(x = value, fill = method)) +
 ```
 
 ```{r, echo=FALSE}
-print(summ_val)
+summary_df1_3 <- summ_val1_3 %>% as.data.frame()
+summary_df1_3 <- summary_df1_3 %>%
+  mutate(
+    Stat = stringr::str_trim(stringr::str_extract(Freq, "^[^:]+")), 
+    Value = as.numeric(stringr::str_trim(stringr::str_extract(Freq, "(?<=:).*"))),
+    Var2 = as.character(Var2)
+  ) %>%
+  select(Stat, Var2, Value) %>%
+  pivot_wider(names_from = Var2, values_from = Value) %>%
+  filter(!is.na(Stat))
+
+summary_df1_3
+
 ```
 
 Très peu de différence entre l'outcome continue normal et de poisson. 
@@ -1080,7 +1116,7 @@ val2=unlist(results_df[,1:3]$V2)
 val3=unlist(results_df[,1:3]$V3)
 val=as.data.frame(unname(cbind(val1,val2,val3)))
 colnames(val)=c("val_GPC","val_WR","val_WO")
-summ_val=summary(val)
+summ_val1_4=summary(val)
 
  values_long = val %>%
    select(starts_with("val_")) %>%
@@ -1119,7 +1155,18 @@ kable(df, caption = "Comparaison de l'étendue entre les deux critères lorsque 
 
 
 ```{r, echo=FALSE}
-print(summ_val)
+summary_df1_4 <- summ_val1_4 %>% as.data.frame()
+summary_df1_4 <- summary_df1_4 %>%
+  mutate(
+    Stat = stringr::str_trim(stringr::str_extract(Freq, "^[^:]+")), 
+    Value = as.numeric(stringr::str_trim(stringr::str_extract(Freq, "(?<=:).*"))),
+    Var2 = as.character(Var2)
+  ) %>%
+  select(Stat, Var2, Value) %>%
+  pivot_wider(names_from = Var2, values_from = Value) %>%
+  filter(!is.na(Stat))
+
+summary_df1_4
 ```
 
 \newpage 
@@ -1368,7 +1415,7 @@ val2=unlist(results_df[,1:3]$V2)
 val3=unlist(results_df[,1:3]$V3)
 val=as.data.frame(unname(cbind(val1,val2,val3)))
 colnames(val)=c("val_GPC","val_WR","val_WO")
-summ_val=summary(val)
+summ_val2_1=summary(val)
 
  values_long = val %>%
    select(starts_with("val_")) %>%
@@ -1398,7 +1445,18 @@ ggplot(values_long, aes(x = value, fill = method)) +
 ```
 
 ```{r, echo=FALSE}
-print(summ_val)
+summary_df2_1 <- summ_val2_1 %>% as.data.frame()
+summary_df2_1 <- summary_df2_1 %>%
+  mutate(
+    Stat = stringr::str_trim(stringr::str_extract(Freq, "^[^:]+")), 
+    Value = as.numeric(stringr::str_trim(stringr::str_extract(Freq, "(?<=:).*"))),
+    Var2 = as.character(Var2)
+  ) %>%
+  select(Stat, Var2, Value) %>%
+  pivot_wider(names_from = Var2, values_from = Value) %>%
+  filter(!is.na(Stat))
+
+summary_df2_1
 ```
 
 ## tau = 2
@@ -1630,7 +1688,7 @@ val2=unlist(results_df[,1:3]$V2)
 val3=unlist(results_df[,1:3]$V3)
 val=as.data.frame(unname(cbind(val1,val2,val3)))
 colnames(val)=c("val_GPC","val_WR","val_WO")
-summ_val=summary(val)
+summ_val2_2=summary(val)
 
  values_long = val %>%
    select(starts_with("val_")) %>%
@@ -1670,14 +1728,25 @@ kable(df, caption = "Comparaison de l'étendue entre les deux critères lorsque 
 ```
 
 ```{r, echo=FALSE}
-print(summ_val)
+summary_df2_2 <- summ_val2_2 %>% as.data.frame()
+summary_df2_2 <- summary_df2_2 %>%
+  mutate(
+    Stat = stringr::str_trim(stringr::str_extract(Freq, "^[^:]+")), 
+    Value = as.numeric(stringr::str_trim(stringr::str_extract(Freq, "(?<=:).*"))),
+    Var2 = as.character(Var2)
+  ) %>%
+  select(Stat, Var2, Value) %>%
+  pivot_wider(names_from = Var2, values_from = Value) %>%
+  filter(!is.na(Stat))
+
+summary_df2_2
 ```
 
 ## Outcome continue de poisson
 
 Ici, on aura un seuil de 2 et les 2 distribution de poisson seront les suivantes :
 
-$$ \mathcal{P}_T(5) \quad ; \quad \mathcal{P}_C(1) $$
+$$ \mathcal{P}_T(3) \quad ; \quad \mathcal{P}_C(1) $$
 
 ```{r, echo=FALSE, warning=TRUE}
 
@@ -1709,7 +1778,7 @@ beta = -2
 prob_T = 0.65
 prob_C = 0.3
 
-lambda_T = 5
+lambda_T = 3
 lambda_C = 1
   
 Time_1 = round((-log(1 - U)) / (lambdaT * exp(beta * Z)^(1 / kT)),3)
@@ -1906,7 +1975,7 @@ val2=unlist(results_df[,1:3]$V2)
 val3=unlist(results_df[,1:3]$V3)
 val=as.data.frame(unname(cbind(val1,val2,val3)))
 colnames(val)=c("val_GPC","val_WR","val_WO")
-summ_val=summary(val)
+summ_val2_3=summary(val)
 
  values_long = val %>%
    select(starts_with("val_")) %>%
@@ -1936,7 +2005,31 @@ ggplot(values_long, aes(x = value, fill = method)) +
 ```
 
 ```{r, echo=FALSE}
-print(summ_val)
+summary_df2_3 <- summ_val2_3 %>% as.data.frame()
+summary_df2_3 <- summary_df2_3 %>%
+  mutate(
+    Stat = stringr::str_trim(stringr::str_extract(Freq, "^[^:]+")), 
+    Value = as.numeric(stringr::str_trim(stringr::str_extract(Freq, "(?<=:).*"))),
+    Var2 = as.character(Var2)
+  ) %>%
+  select(Stat, Var2, Value) %>%
+  pivot_wider(names_from = Var2, values_from = Value) %>%
+  filter(!is.na(Stat))
+
+g1 <- tableGrob(summary_df2_2)
+g2 <- tableGrob(summary_df2_3[,-1])
+
+# Ajoute les titres au-dessus des tableaux
+title1 <- textGrob("Résumé - T>>C tau=2", gp = gpar(fontsize = 12, fontface = "bold"))
+title2 <- textGrob("Résumé - T>>C otc de poisson, tau=2", gp = gpar(fontsize = 12, fontface = "bold"))
+
+# Combine titre + tableau pour chaque colonne
+g1_full <- arrangeGrob(title1, g1, ncol = 1, heights = c(0.2, 1))
+g2_full <- arrangeGrob(title2, g2, ncol = 1, heights = c(0.2, 1))
+
+# Affiche côte à côte
+space <- nullGrob()  # Affichage avec espace 
+grid.arrange(g1_full, space, g2_full, ncol = 3, widths = c(1, 0.2, 1))
 ```
 
 ## Outcome binaire en premier
@@ -2168,7 +2261,7 @@ val2=unlist(results_df[,1:3]$V2)
 val3=unlist(results_df[,1:3]$V3)
 val=as.data.frame(unname(cbind(val1,val2,val3)))
 colnames(val)=c("val_GPC","val_WR","val_WO")
-summ_val=summary(val)
+summ_val2_4=summary(val)
 
  values_long = val %>%
    select(starts_with("val_")) %>%
@@ -2198,7 +2291,18 @@ ggplot(values_long, aes(x = value, fill = method)) +
 ```
 
 ```{r, echo=FALSE}
-print(summ_val)
+summary_df2_4 <- summ_val2_4 %>% as.data.frame()
+summary_df2_4 <- summary_df2_4 %>%
+  mutate(
+    Stat = stringr::str_trim(stringr::str_extract(Freq, "^[^:]+")), 
+    Value = as.numeric(stringr::str_trim(stringr::str_extract(Freq, "(?<=:).*"))),
+    Var2 = as.character(Var2)
+  ) %>%
+  select(Stat, Var2, Value) %>%
+  pivot_wider(names_from = Var2, values_from = Value) %>%
+  filter(!is.na(Stat))
+
+summary_df2_4
 ```
 
 \newpage
@@ -2445,7 +2549,7 @@ val2=unlist(results_df[,1:3]$V2)
 val3=unlist(results_df[,1:3]$V3)
 val=as.data.frame(unname(cbind(val1,val2,val3)))
 colnames(val)=c("val_GPC","val_WR","val_WO")
-summ_val=summary(val)
+summ_val3_1=summary(val)
 
  values_long = val %>%
    select(starts_with("val_")) %>%
@@ -2477,7 +2581,32 @@ ggplot(values_long, aes(x = value, fill = method)) +
 On remarque, en comparant avec le scénario 2 où les distribution continue et binaire ont les même lois que dans cette section que le résultat est similaire par rapport aux p-valeurs malgré le fait qu'ici le premier endpoint ne départage pas le groupe traité du groupe contrôle. 
 
 ```{r, echo=FALSE}
-print(summ_val)
+summary_df3_1 <- summ_val3_1 %>% as.data.frame()
+summary_df3_1 <- summary_df3_1 %>%
+  mutate(
+    Stat = stringr::str_trim(stringr::str_extract(Freq, "^[^:]+")), 
+    Value = as.numeric(stringr::str_trim(stringr::str_extract(Freq, "(?<=:).*"))),
+    Var2 = as.character(Var2)
+  ) %>%
+  select(Stat, Var2, Value) %>%
+  pivot_wider(names_from = Var2, values_from = Value) %>%
+  filter(!is.na(Stat))
+
+g1 <- tableGrob(summary_df3_1)
+g2 <- tableGrob(summary_df2_1[,-1])
+
+# Ajoute les titres au-dessus des tableaux
+title1 <- textGrob("Résumé - AFT, tau=0", gp = gpar(fontsize = 12, fontface = "bold"))
+title2 <- textGrob("Résumé - Cox, tau=0", gp = gpar(fontsize = 12, fontface = "bold"))
+
+# Combine titre + tableau pour chaque colonne
+g1_full <- arrangeGrob(title1, g1, ncol = 1, heights = c(0.2, 1))
+g2_full <- arrangeGrob(title2, g2, ncol = 1, heights = c(0.2, 1))
+
+space <- nullGrob()
+
+# Affichage avec espace
+grid.arrange(g1_full, space, g2_full, ncol = 3, widths = c(1, 0.2, 1))
 ```
 
 ## tau = 2
@@ -2711,7 +2840,7 @@ val2=unlist(results_df[,1:3]$V2)
 val3=unlist(results_df[,1:3]$V3)
 val=as.data.frame(unname(cbind(val1,val2,val3)))
 colnames(val)=c("val_GPC","val_WR","val_WO")
-summ_val=summary(val)
+summ_val3_2=summary(val)
 
  values_long = val %>%
    select(starts_with("val_")) %>%
@@ -2741,7 +2870,31 @@ ggplot(values_long, aes(x = value, fill = method)) +
 ```
 
 ```{r, echo=FALSE}
-print(summ_val)
+summary_df3_2 <- summ_val3_2 %>% as.data.frame()
+summary_df3_2 <- summary_df3_2 %>%
+  mutate(
+    Stat = stringr::str_trim(stringr::str_extract(Freq, "^[^:]+")), 
+    Value = as.numeric(stringr::str_trim(stringr::str_extract(Freq, "(?<=:).*"))),
+    Var2 = as.character(Var2)
+  ) %>%
+  select(Stat, Var2, Value) %>%
+  pivot_wider(names_from = Var2, values_from = Value) %>%
+  filter(!is.na(Stat))
+
+g1 <- tableGrob(summary_df3_2)
+g2 <- tableGrob(summary_df2_2[,-1])
+
+# Ajoute les titres au-dessus des tableaux
+title1 <- textGrob("Résumé - AFT, tau=2", gp = gpar(fontsize = 12, fontface = "bold"))
+title2 <- textGrob("Résumé - Cox, tau=2", gp = gpar(fontsize = 12, fontface = "bold"))
+
+# Combine titre + tableau pour chaque colonne
+g1_full <- arrangeGrob(title1, g1, ncol = 1, heights = c(0.2, 1))
+g2_full <- arrangeGrob(title2, g2, ncol = 1, heights = c(0.2, 1))
+
+# Affiche côte à côte
+space <- nullGrob()  # Affichage avec espace 
+grid.arrange(g1_full, space, g2_full, ncol = 3, widths = c(1, 0.2, 1))
 ```
 
 \newpage
@@ -2977,7 +3130,7 @@ val2=unlist(results_df[,1:3]$V2)
 val3=unlist(results_df[,1:3]$V3)
 val=as.data.frame(unname(cbind(val1,val2,val3)))
 colnames(val)=c("val_GPC","val_WR","val_WO")
-summ_val=summary(val)
+summ_val4_1=summary(val)
 
  values_long = val %>%
    select(starts_with("val_")) %>%
@@ -3007,7 +3160,18 @@ ggplot(values_long, aes(x = value, fill = method)) +
 ```
 
 ```{r, echo=FALSE}
-print(summ_val)
+summary_df4_1 <- summ_val4_1 %>% as.data.frame()
+summary_df4_1 <- summary_df4_1 %>%
+  mutate(
+    Stat = stringr::str_trim(stringr::str_extract(Freq, "^[^:]+")), 
+    Value = as.numeric(stringr::str_trim(stringr::str_extract(Freq, "(?<=:).*"))),
+    Var2 = as.character(Var2)
+  ) %>%
+  select(Stat, Var2, Value) %>%
+  pivot_wider(names_from = Var2, values_from = Value) %>%
+  filter(!is.na(Stat))
+
+summary_df4_1
 ```
 
 ## tau = 2
@@ -3239,7 +3403,7 @@ val2=unlist(results_df[,1:3]$V2)
 val3=unlist(results_df[,1:3]$V3)
 val=as.data.frame(unname(cbind(val1,val2,val3)))
 colnames(val)=c("val_GPC","val_WR","val_WO")
-summ_val=summary(val)
+summ_val4_2=summary(val)
 
  values_long = val %>%
    select(starts_with("val_")) %>%
@@ -3271,7 +3435,18 @@ ggplot(values_long, aes(x = value, fill = method)) +
 
 
 ```{r, echo=FALSE}
-print(summ_val)
+summary_df4_2 <- summ_val4_2 %>% as.data.frame()
+summary_df4_2 <- summary_df4_2 %>%
+  mutate(
+    Stat = stringr::str_trim(stringr::str_extract(Freq, "^[^:]+")), 
+    Value = as.numeric(stringr::str_trim(stringr::str_extract(Freq, "(?<=:).*"))),
+    Var2 = as.character(Var2)
+  ) %>%
+  select(Stat, Var2, Value) %>%
+  pivot_wider(names_from = Var2, values_from = Value) %>%
+  filter(!is.na(Stat))
+
+summary_df4_2
 ```
 
 
@@ -3533,7 +3708,7 @@ val2=unlist(results_df[,1:3]$V2)
 val3=unlist(results_df[,1:3]$V3)
 val=as.data.frame(unname(cbind(val1,val2,val3)))
 colnames(val)=c("val_GPC","val_WR","val_WO")
-summ_val=summary(val)
+summ_val5_1_1=summary(val)
 
  values_long = val %>%
    select(starts_with("val_")) %>%
@@ -3563,7 +3738,31 @@ ggplot(values_long, aes(x = value, fill = method)) +
 ```
 
 ```{r, echo=FALSE}
-print(summ_val)
+summary_df5_1_1 <- summ_val5_1_1 %>% as.data.frame()
+summary_df5_1_1 <- summary_df5_1_1 %>%
+  mutate(
+    Stat = stringr::str_trim(stringr::str_extract(Freq, "^[^:]+")), 
+    Value = as.numeric(stringr::str_trim(stringr::str_extract(Freq, "(?<=:).*"))),
+    Var2 = as.character(Var2)
+  ) %>%
+  select(Stat, Var2, Value) %>%
+  pivot_wider(names_from = Var2, values_from = Value) %>%
+  filter(!is.na(Stat))
+
+g1 <- tableGrob(summary_df5_1_1)
+g2 <- tableGrob(summary_df2_2[,-1])
+
+# Ajoute les titres au-dessus des tableaux
+title1 <- textGrob("Résumé - Cox, outcome continue C>>T, tau=2", gp = gpar(fontsize = 12, fontface = "bold"))
+title2 <- textGrob("Résumé - Cox, tau=2", gp = gpar(fontsize = 12, fontface = "bold"))
+
+# Combine titre + tableau pour chaque colonne
+g1_full <- arrangeGrob(title1, g1, ncol = 1, heights = c(0.2, 1))
+g2_full <- arrangeGrob(title2, g2, ncol = 1, heights = c(0.2, 1))
+
+# Affiche côte à côte
+space <- nullGrob() 
+grid.arrange(g1_full, space, g2_full, ncol = 3, widths = c(1, 0.2, 1))
 ```
 
 Ici, nous ferons la comparaison avec la section *Scénario 2 : $T \gg C$, 2- tau = 2* où la différence se fait sur la distribution continue. 
@@ -3806,7 +4005,7 @@ val2=unlist(results_df[,1:3]$V2)
 val3=unlist(results_df[,1:3]$V3)
 val=as.data.frame(unname(cbind(val1,val2,val3)))
 colnames(val)=c("val_GPC","val_WR","val_WO")
-summ_val=summary(val)
+summ_val5_1_2=summary(val)
 
  values_long = val %>%
    select(starts_with("val_")) %>%
@@ -3835,7 +4034,31 @@ ggplot(values_long, aes(x = value, fill = method)) +
 ```
 
 ```{r, echo=FALSE}
-print(summ_val)
+summary_df5_1_2 <- summ_val5_1_2 %>% as.data.frame()
+summary_df5_1_2 <- summary_df5_1_2 %>%
+  mutate(
+    Stat = stringr::str_trim(stringr::str_extract(Freq, "^[^:]+")), 
+    Value = as.numeric(stringr::str_trim(stringr::str_extract(Freq, "(?<=:).*"))),
+    Var2 = as.character(Var2)
+  ) %>%
+  select(Stat, Var2, Value) %>%
+  pivot_wider(names_from = Var2, values_from = Value) %>%
+  filter(!is.na(Stat))
+
+g1 <- tableGrob(summary_df5_1_2)
+g2 <- tableGrob(summary_df3_2[,-1])
+
+# Ajoute les titres au-dessus des tableaux
+title1 <- textGrob("Résumé - AFT, tau=2, outcome continue C>>T", gp = gpar(fontsize = 12, fontface = "bold"))
+title2 <- textGrob("Résumé - AFT, tau=2", gp = gpar(fontsize = 12, fontface = "bold"))
+
+# Combine titre + tableau pour chaque colonne
+g1_full <- arrangeGrob(title1, g1, ncol = 1, heights = c(0.2, 1))
+g2_full <- arrangeGrob(title2, g2, ncol = 1, heights = c(0.2, 1))
+
+# Affiche côte à côte
+space <- nullGrob() 
+grid.arrange(g1_full, space, g2_full, ncol = 3, widths = c(1, 0.2, 1))
 ```
 
 On remarque légèrement plus de variation dans le modèle AFT que dans le modèle de Cox.
@@ -4087,7 +4310,7 @@ val2=unlist(results_df[,1:3]$V2)
 val3=unlist(results_df[,1:3]$V3)
 val=as.data.frame(unname(cbind(val1,val2,val3)))
 colnames(val)=c("val_GPC","val_WR","val_WO")
-summ_val=summary(val)
+summ_val5_2_1=summary(val)
 
  values_long = val %>%
    select(starts_with("val_")) %>%
@@ -4117,10 +4340,33 @@ ggplot(values_long, aes(x = value, fill = method)) +
 ```
 
 ```{r, echo=FALSE}
-print(summ_val)
+summary_df5_2_1 <- summ_val5_2_1 %>% as.data.frame()
+summary_df5_2_1 <- summary_df5_2_1 %>%
+  mutate(
+    Stat = stringr::str_trim(stringr::str_extract(Freq, "^[^:]+")), 
+    Value = as.numeric(stringr::str_trim(stringr::str_extract(Freq, "(?<=:).*"))),
+    Var2 = as.character(Var2)
+  ) %>%
+  select(Stat, Var2, Value) %>%
+  pivot_wider(names_from = Var2, values_from = Value) %>%
+  filter(!is.na(Stat))
+
+g1 <- tableGrob(summary_df5_2_1)
+g2 <- tableGrob(summary_df5_1_1[,-1])
+
+# Ajoute les titres au-dessus des tableaux
+title1 <- textGrob("Résumé - Cox, tau=2, outcome principal continue C>>T", gp = gpar(fontsize = 12, fontface = "bold"))
+title2 <- textGrob("Résumé - Cox, tau=2, outcome continue C>>T en 3ème", gp = gpar(fontsize = 12, fontface = "bold"))
+
+# Combine titre + tableau pour chaque colonne
+g1_full <- arrangeGrob(title1, g1, ncol = 1, heights = c(0.2, 1))
+g2_full <- arrangeGrob(title2, g2, ncol = 1, heights = c(0.2, 1))
+
+# Affiche côte à côte
+space <- nullGrob() 
+grid.arrange(g1_full, space, g2_full, ncol = 3, widths = c(1, 0.2, 1))
 ```
 
-On remarque bien 
 
 ### HR non-constant (modèle AFT)
 
@@ -4355,7 +4601,7 @@ val2=unlist(results_df[,1:3]$V2)
 val3=unlist(results_df[,1:3]$V3)
 val=as.data.frame(unname(cbind(val1,val2,val3)))
 colnames(val)=c("val_GPC","val_WR","val_WO")
-summ_val=summary(val)
+summ_val5_2_2=summary(val)
 
  values_long = val %>%
    select(starts_with("val_")) %>%
@@ -4384,6 +4630,30 @@ ggplot(values_long, aes(x = value, fill = method)) +
 ```
 
 ```{r, echo=FALSE}
-print(summ_val)
+summary_df5_2_2 <- summ_val5_2_2 %>% as.data.frame()
+summary_df5_2_2 <- summary_df5_2_2 %>%
+  mutate(
+    Stat = stringr::str_trim(stringr::str_extract(Freq, "^[^:]+")), 
+    Value = as.numeric(stringr::str_trim(stringr::str_extract(Freq, "(?<=:).*"))),
+    Var2 = as.character(Var2)
+  ) %>%
+  select(Stat, Var2, Value) %>%
+  pivot_wider(names_from = Var2, values_from = Value) %>%
+  filter(!is.na(Stat))
+
+g1 <- tableGrob(summary_df5_2_2)
+g2 <- tableGrob(summary_df5_1_2[,-1])
+
+# Ajoute les titres au-dessus des tableaux
+title1 <- textGrob("Résumé - AFT, tau=2, outcome principal continue C>>T", gp = gpar(fontsize = 12, fontface = "bold"))
+title2 <- textGrob("Résumé - AFT, tau=2, outcome continue C>>T en 3ème", gp = gpar(fontsize = 12, fontface = "bold"))
+
+# Combine titre + tableau pour chaque colonne
+g1_full <- arrangeGrob(title1, g1, ncol = 1, heights = c(0.2, 1))
+g2_full <- arrangeGrob(title2, g2, ncol = 1, heights = c(0.2, 1))
+
+# Affiche côte à côte
+space <- nullGrob()  
+grid.arrange(g1_full, space, g2_full, ncol = 3, widths = c(1, 0.2, 1))
 ```
 

@@ -83,12 +83,12 @@ Z <- ifelse(arm == "T", 1, 0)
 U <- runif(2*n)
 
 # Grilles de paramètres à tester
-beta_vec   <- c(5, 2, 1)
-lambda_vec <- c(0.1, 0.5, 1, 2)
-k_vec      <- c(0.1, 0.5, 1, 2)
+beta_vec   <- c(3, 5)
+lambda_vec <- c(1,2,0.1, 0.5, 0.05, 0.01 )
+k_vec      <- c( 0.5,0.01,1, 2, 3)
 
 # Temps de censure commun à tous
-fup_censureT <- round(rweibull(2*n, shape=1, scale=6), 3)
+fup_censureT <- round(rweibull(2*n, shape=2, scale=6), 3)
 
 # Boucle sur toutes les combinaisons
 for (beta in beta_vec) {
