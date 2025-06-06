@@ -10,7 +10,7 @@ output:
 ---
 
 ```{r setup, include=FALSE, echo = FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE)
 knitr::opts_knit$set(root.dir = "~/comparaison-par-paire/R", fig.subcap = c("Sous-figure 1", "Sous-figure 2"))
 library(dplyr)
 library(purrr)
@@ -52,7 +52,7 @@ Paramètres :
   
 - Binaire :
 
-  $\mathcal{B}_T(0.5)$ ; $\mathcal{B}_C(0.5)$
+  $\mathcal{B}_T(0.5)$ ; $\mathcal{B}_C(0.5)$ 
  
  
 ## tau = 0
@@ -312,6 +312,7 @@ ggplot(values_long, aes(x = value, fill = method)) +
   annotate("text", x = 4.5, y = 2.35, label = paste("Étendue WR : ", étendue_WR), color = "cyan", hjust = 1) +
   annotate("text", x = 4.5, y = 3.1, label = paste("Étendue WO : ", étendue_WO), color = "purple", hjust = 1)
 
+ggsave("TeqC_tau0.pdf", device = "pdf")
 
 ```
 
@@ -587,6 +588,7 @@ ggplot(values_long, aes(x = value, fill = method)) +
   annotate("text", x = 4.5, y = 2.35, label = paste("Étendue WR : ", étendue_WR), color = "cyan", hjust = 1) +
   annotate("text", x = 4.5, y = 3.1, label = paste("Étendue WO : ", étendue_WO), color = "purple", hjust = 1)
 
+ggsave("TeqC_tau2.pdf", device = "pdf")
 
 ```
 
@@ -609,9 +611,9 @@ summary_df1_2
 
 On ne remarque pas de grosse différence au niveau de la **GPC**. Le **WR** est plus étendu, on le voit par rapport  au min et au max mais les médianes sont proche. Le **WO** n'a pas beaucoup bougé non plus 
 
-## Outcome continue de Poisson
+## Outcome discrèt de Poisson
 
-La distribution de Poisson continue est de paramètre $\lambda = 3$, le seuil est de 2
+La distribution de Poisson est de paramètre $\lambda = 3$, le seuil est de 2. Les distributions des autres outcomes ne changent pas : $\mathcal{B}_T(0.5)$ ; $\mathcal{B}_C(0.5)$ $\mathcal{N}_T(3,2)$ ; $\mathcal{N}_C(3,2)$.
 
 ```{r, echo=FALSE, warning=TRUE}
 
@@ -627,6 +629,7 @@ start_time = Sys.time()
 
 results = foreach(s = 1:n_sim, .combine = rbind, .packages = c("dplyr", "survival", "parallel", "foreach", "doParallel", "WINS"), .export = c("win.stat")) %dopar% {
   set.seed(s)
+  
   
 id=1:(2*n) 
 arm=rep(c("T","C"), each=n)
@@ -722,11 +725,11 @@ tie_edp1=4*2500-sum(win_edp1+loose_edp1)
 
 win_edp2=sum(result$summary_ep$Trt_Endpoint2[,2])
 loose_edp2=sum(result$summary_ep$Con_Endpoint2[,2])
-tie_edp2=4*2500-(win_edp2+loose_edp2)
+tie_edp2=tie_edp1-(win_edp2+loose_edp2)
 
 win_edp3 = sum(result$summary_ep$Trt_Endpoint3[,2])
 loose_edp3 = sum(result$summary_ep$Con_Endpoint3[,2])
-tie_edp3 = 4*2500-(win_edp3+loose_edp3)
+tie_edp3 = tie_edp2-(win_edp3+loose_edp3)
 
 
   count = count + 1
@@ -992,17 +995,19 @@ result =
     summary.print = FALSE
   )
 
-win_edp1=sum(result$summary_ep$Trt_Endpoint1[,2])
-loose_edp1=sum(result$summary_ep$Con_Endpoint1[,2])
-tie_edp1=4*2500-sum(win_edp1+loose_edp1)
+
 
 win_edp2=sum(result$summary_ep$Trt_Endpoint2[,2])
 loose_edp2=sum(result$summary_ep$Con_Endpoint2[,2])
-tie_edp2=tie_edp1-(loose_edp2+win_edp2)
+tie_edp2=4*2500-(loose_edp2+win_edp2)
+
+win_edp1=sum(result$summary_ep$Trt_Endpoint1[,2])
+loose_edp1=sum(result$summary_ep$Con_Endpoint1[,2])
+tie_edp1=tie_edp2-sum(win_edp1+loose_edp1)
 
 win_edp3 = sum(result$summary_ep$Trt_Endpoint3[,2])
 loose_edp3 = sum(result$summary_ep$Con_Endpoint3[,2])
-tie_edp3 = tie_edp2-(win_edp3+loose_edp3)
+tie_edp3 = tie_edp1-(win_edp3+loose_edp3)
 
 
   count = count + 1
@@ -1088,11 +1093,11 @@ quantileWO_upr=quantile(WO, 0.975)
 
 
 
-Win   = round(c(mean(as.numeric(results_df[,4])), mean(as.numeric(results_df[,7])), mean(as.numeric(results_df[,10])), mean(as.numeric(results_df[,4])) + mean(as.numeric(results_df[,7])) +mean(as.numeric(results_df[,10])) ))
+Win   = round(c(mean(as.numeric(results_df[,7])), mean(as.numeric(results_df[,4])), mean(as.numeric(results_df[,10])), mean(as.numeric(results_df[,4])) + mean(as.numeric(results_df[,7])) +mean(as.numeric(results_df[,10])) ))
 
-Loose = round(c(mean(as.numeric(results_df[,5])), mean(as.numeric(results_df[,8])),mean(as.numeric(results_df[,11])), mean(as.numeric(results_df[,5]))+mean(as.numeric(results_df[,8])) +mean(as.numeric(results_df[,11])) ))
+Loose = round(c(mean(as.numeric(results_df[,8])), mean(as.numeric(results_df[,5])),mean(as.numeric(results_df[,11])), mean(as.numeric(results_df[,5]))+mean(as.numeric(results_df[,8])) +mean(as.numeric(results_df[,11])) ))
 
-Tie   = round(c(mean(as.numeric(results_df[,6])), mean(as.numeric(results_df[,9])), mean(as.numeric(results_df[,12])), mean(as.numeric(results_df[,12])) ))
+Tie   = round(c(mean(as.numeric(results_df[,9])), mean(as.numeric(results_df[,6])), mean(as.numeric(results_df[,12])), mean(as.numeric(results_df[,12])) ))
 
 df3 = data.frame(
   row.names = c("endpoint1", "endpoint2",  "endpoint3","overall"),
@@ -1142,6 +1147,7 @@ ggplot(values_long, aes(x = value, fill = method)) +
   annotate("text", x = 4.5, y = 2.35, label = paste("Étendue WR : ", étendue_WR), color = "cyan", hjust = 1) +
   annotate("text", x = 4.5, y = 3.1, label = paste("Étendue WO : ", étendue_WO), color = "purple", hjust = 1)
 
+ggsave("TeqC_tau2_binaire.pdf", device = "pdf")
 
 ```
 
@@ -1459,6 +1465,7 @@ summary_df2_1 <- summary_df2_1 %>%
 summary_df2_1
 ```
 
+
 ## tau = 2
 
 ```{r, echo=FALSE, warning=FALSE}
@@ -1714,6 +1721,7 @@ ggplot(values_long, aes(x = value, fill = method)) +
   annotate("text", x = 4.5, y = 2.35, label = paste("Étendue WR : ", étendue_WR), color = "cyan", hjust = 1) +
   annotate("text", x = 4.5, y = 3.1, label = paste("Étendue WO : ", étendue_WO), color = "purple", hjust = 1)
 
+ggsave("TsupC_tau2.pdf", device = "pdf")
 
 ```
 
@@ -1742,11 +1750,16 @@ summary_df2_2 <- summary_df2_2 %>%
 summary_df2_2
 ```
 
-## Outcome continue de poisson
+
+## Outcome discret de poisson
 
 Ici, on aura un seuil de 2 et les 2 distribution de poisson seront les suivantes :
 
 $$ \mathcal{P}_T(3) \quad ; \quad \mathcal{P}_C(1) $$
+
+Les autres distributions seront identiques : 
+
+$\mathcal{B}_T(0.65)$ ; $\mathcal{B}_C(0.3)$ ; $\mathcal{N}_T(3,2)$ ; $\mathcal{N}_C(2,2)$
 
 ```{r, echo=FALSE, warning=TRUE}
 
@@ -2016,21 +2029,9 @@ summary_df2_3 <- summary_df2_3 %>%
   pivot_wider(names_from = Var2, values_from = Value) %>%
   filter(!is.na(Stat))
 
-g1 <- tableGrob(summary_df2_2)
-g2 <- tableGrob(summary_df2_3[,-1])
-
-# Ajoute les titres au-dessus des tableaux
-title1 <- textGrob("Résumé - T>>C tau=2", gp = gpar(fontsize = 12, fontface = "bold"))
-title2 <- textGrob("Résumé - T>>C otc de poisson, tau=2", gp = gpar(fontsize = 12, fontface = "bold"))
-
-# Combine titre + tableau pour chaque colonne
-g1_full <- arrangeGrob(title1, g1, ncol = 1, heights = c(0.2, 1))
-g2_full <- arrangeGrob(title2, g2, ncol = 1, heights = c(0.2, 1))
-
-# Affiche côte à côte
-space <- nullGrob()  # Affichage avec espace 
-grid.arrange(g1_full, space, g2_full, ncol = 3, widths = c(1, 0.2, 1))
+summary_df2_3
 ```
+
 
 ## Outcome binaire en premier
 
@@ -2137,17 +2138,19 @@ result =
     summary.print = FALSE
   )
 
-win_edp1=sum(result$summary_ep$Trt_Endpoint1[,2])
-loose_edp1=sum(result$summary_ep$Con_Endpoint1[,2])
-tie_edp1=4*2500-sum(win_edp1+loose_edp1)
+
 
 win_edp2=sum(result$summary_ep$Trt_Endpoint2[,2])
 loose_edp2=sum(result$summary_ep$Con_Endpoint2[,2])
-tie_edp2=tie_edp1-(loose_edp2+win_edp2)
+tie_edp2=4*2500-(loose_edp2+win_edp2)
+
+win_edp1=sum(result$summary_ep$Trt_Endpoint1[,2])
+loose_edp1=sum(result$summary_ep$Con_Endpoint1[,2])
+tie_edp1=tie_edp2-sum(win_edp1+loose_edp1)
 
 win_edp3 = sum(result$summary_ep$Trt_Endpoint3[,2])
 loose_edp3 = sum(result$summary_ep$Con_Endpoint3[,2])
-tie_edp3 = tie_edp2-(win_edp3+loose_edp3)
+tie_edp3 = tie_edp1-(win_edp3+loose_edp3)
 
 
   count = count + 1
@@ -2287,6 +2290,7 @@ ggplot(values_long, aes(x = value, fill = method)) +
   annotate("text", x = 4.5, y = 2.35, label = paste("Étendue WR : ", étendue_WR), color = "cyan", hjust = 1) +
   annotate("text", x = 4.5, y = 3.1, label = paste("Étendue WO : ", étendue_WO), color = "purple", hjust = 1)
 
+ggsave("TsupC_tau2_binaire.pdf", device = "pdf")
 
 ```
 
@@ -2307,13 +2311,15 @@ summary_df2_4
 
 \newpage
 
+
+
 # Modèle avec les HR non-constant
 
 On travaille avec un modèle AFT où les HR ne sont pas constant. Le seuil $\tau$ vaut 2 pour les outcomes 1 (tte) et 3 (continue). La formule pour de simulation pour le modèle AFt est la suivante : 
 
 $$(\frac{1}{1-U}-1) \times \lambda^{-1/k} \times e^{Z \beta} $$
 
-Où $U \sim \mathcal{U}([0,1])$, Z la covariable valant 1 si le patient suit le traitement et 0 s'il suit le contrôle. Les paramètres $\lambda$ et $k$ vaudront respectivement 0.1 et 0.5.
+Où $U \sim \mathcal{U}([0,1])$, Z la covariable valant 1 si le patient suit le traitement et 0 s'il suit le contrôle. Les paramètres $\lambda$ et $k$ vaudront respectivement 0.12 et 0.9, et $\beta = 2.5$.
 
 Les distributions des outcomes binaire et continue sont les suivantes : 
 
@@ -2339,14 +2345,6 @@ results = foreach(s = 1:n_sim, .combine = rbind, .packages = c("dplyr", "surviva
 id=1:(2*n) 
 arm=rep(c("T","C"), each=200)
 
-U = runif(2*n) 
-
-lambdaT = 1
-kT = 0.5
-
-
-Z = ifelse(arm == "T", 1, 0)
-beta = 2
 
 prob_T = 0.65
 prob_C = 0.3
@@ -2356,9 +2354,17 @@ mean_C = 2
 sd_T = 2
 sd_C = 2
 
+U = runif(2*n) 
+lambdaT = 0.12
+kT = 0.9
+
+
+Z = ifelse(arm == "T", 1, 0)
+beta = 2.5
+
 
 Time_1 = round((((1/(1-U)-1)*(1/lambdaT))^(1/kT)*exp(Z*beta)), 3)
-fup_censureT = round(rweibull(2*n, shape = 1, scale =2),3)
+fup_censureT = round(rweibull(2*n, shape = 1.5, scale =5.5),3)
 
 Time_T = pmin(Time_1, fup_censureT)
 
@@ -2609,6 +2615,7 @@ space <- nullGrob()
 grid.arrange(g1_full, space, g2_full, ncol = 3, widths = c(1, 0.2, 1))
 ```
 
+
 ## tau = 2
 
 ```{r, echo=FALSE, warning=FALSE}
@@ -2629,14 +2636,6 @@ results = foreach(s = 1:n_sim, .combine = rbind, .packages = c("dplyr", "surviva
 id=1:(2*n) 
 arm=rep(c("T","C"), each=200)
   
-U = runif(2*n) 
-lambdaT = 1
-kT = 0.5
-
-
-Z = ifelse(arm == "T", 1, 0)
-beta = 2
-
 
 prob_T = 0.65
 prob_C = 0.3
@@ -2647,8 +2646,17 @@ sd_T = 2
 sd_C = 2
 
 
+U = runif(2*n) 
+lambdaT = 0.12
+kT = 0.9
+
+
+Z = ifelse(arm == "T", 1, 0)
+beta = 2.5
+
+
 Time_1 = round((((1/(1-U)-1)*(1/lambdaT))^(1/kT)*exp(Z*beta)), 3)
-fup_censureT = round(rweibull(2*n, shape = 1, scale =2),3)
+fup_censureT = round(rweibull(2*n, shape = 1.5, scale =5.5),3)
 
 
 Time_T = pmin(Time_1, fup_censureT)
@@ -2898,6 +2906,9 @@ grid.arrange(g1_full, space, g2_full, ncol = 3, widths = c(1, 0.2, 1))
 ```
 
 \newpage
+
+
+
 
 # Distribution très différente 
 
@@ -3173,6 +3184,7 @@ summary_df4_1 <- summary_df4_1 %>%
 
 summary_df4_1
 ```
+
 
 ## tau = 2
 
@@ -3452,9 +3464,11 @@ summary_df4_2
 
 \newpage
 
+
+
 # Distribution avec des résultats différents suivant les outcomes 
 
-Dans cette partie, nous allons dans un premier temps choisir des distributions de façon à ce que le premier outcome soit en faveur de T et les 2 autres en faveur de C. 
+Dans cette partie, nous allons dans un premier temps choisir des distributions de façon à ce que l'outcome principal soit en faveur de T et les 2 autres en faveur de C. 
 
 Dans un second temps nous ferons varier l'ordre des outcome pour voir s'il y a des différences significatives entre les statistiques en fonction de leur ordre.
 
@@ -3462,23 +3476,22 @@ Dans tous ces cas, les distributions continues seront des lois normales dont les
 
 ## Différents scénario dans le même tableau de donnée
 
-### HR constant (modèle de Cox)
+Les paramètres des distributions tte changeront et seront précisées mais les paramètres des 2 autres lois ne changeront pas et seront :
 
-Ici, l'outcome binaire sera en faveur du traitement, l'outcome continue en faveur du contrôle et l'outcome principal tte sera beaucoup censuré avec des distributions plus ou moins en faveur du traitement.
-
-Les distributions seront les suivantes : 
-
-- tte :
-
-  $\lambda = 1$, $k = 2$, $\beta = -2$, la censure sera une distribution $\mathcal{W}(1,3)$
- 
 - Continue :
 
-  $\mathcal{N}_T(2,1)$ ; $\mathcal{N}_C(3,2)$
+  $\mathcal{N}_T(2,1)$ ; $\mathcal{N}_C(4,2)$
   
 - Binaire :
 
   $\mathcal{B}_T(0.65)$ ; $\mathcal{B}_C(0.3)$
+
+### HR constant (modèle de Cox)
+
+Ici, l'outcome binaire sera en faveur du traitement, l'outcome continue en faveur du contrôle et l'outcome principal tte sera beaucoup censuré avec des distributions plus ou moins en faveur du traitement.
+
+La distribution tte sera de paramètre  :  $\lambda = 1$, $k = 2$, $\beta = -2$, la censure sera une distribution $\mathcal{W}(1,3)$
+
 
 
 ```{r, echo=FALSE}
@@ -3501,24 +3514,24 @@ arm=rep(c("T","C"), each=200)
   
 U = runif(2*n) 
 
-lambdaT = 1
-kT = 2
+lambdaT = 0.05
+kT = 1
 
 
 Z = ifelse(arm == "T", 1, 0)
-beta = -2
+beta = -1.5
 
 prob_T = 0.65
 prob_C = 0.3
 
 mean_T = 2
-mean_C = 3
+mean_C = 4
 sd_T = 1
 sd_C = 2
 
   
 Time_1 = round((-log(1 - U)) / (lambdaT * exp(beta * Z)^(1 / kT)),3)
-fup_censureT = round(rweibull(2*n, shape = 1, scale =3),3)
+fup_censureT = round(rweibull(2*n, shape = 2.5, scale =20),3)
 
 Time_T = pmin(Time_1, fup_censureT)
 deltaT=as.numeric(fup_censureT==Time_T)
@@ -3774,7 +3787,7 @@ On remarque bien  un fort effet de l'outcome continue sur le résultat. Il faudr
 
 ### HR non-constant (modèle AFT)
 
-Ici les paramètres $\lambda$ et $k$ voudront respectivement 0.1 et 0.5.
+Ici les paramètres $\lambda$ et $k$ voudront respectivement 0.12 et 0.9, la loi de la censure sera une $\mathcal{W}(1.5,5.5)$.
 
 ```{r, echo=FALSE}
 
@@ -3793,27 +3806,28 @@ results = foreach(s = 1:n_sim, .combine = rbind, .packages = c("dplyr", "surviva
   
 id=1:(2*n) 
 arm=rep(c("T","C"), each=200)
-  
-U = runif(2*n) 
-lambdaT = 0.1
-kT = 0.5
-
-
-Z = ifelse(arm == "T", 1, 0)
-beta = 5
 
 
 prob_T = 0.65
 prob_C = 0.3
 
 mean_T = 2
-mean_C = 3
+mean_C = 4
 sd_T = 1
 sd_C = 2
 
 
+U = runif(2*n) 
+lambdaT = 0.12
+kT = 0.9
+
+
+Z = ifelse(arm == "T", 1, 0)
+beta = 2.5
+
+
 Time_1 = round((((1/(1-U)-1)*(1/lambdaT))^(1/kT)*exp(Z*beta)), 3)
-fup_censureT = round(rweibull(2*n, shape = 1, scale =2),3)
+fup_censureT = round(rweibull(2*n, shape = 1.5, scale =5.5),3)
 
 
 Time_T = pmin(Time_1, fup_censureT)
@@ -4065,7 +4079,7 @@ On remarque légèrement plus de variation dans le modèle AFT que dans le modè
 
 ### Très extrême 
 
-Ici nous avons un endpoint principal en faveur du groupe traité, dont les distributions sont $\mathcal{B}_T(0.65)$ ; $\mathcal{B}_C(0.3)$ alors que les 2 autres endpoint sont en faveur du groupe contrôle, les distributions sont les mêmes que précédemment mais avec $\beta=2$ pour favorisé le groupe C.
+Ici nous avons un endpoint principal en faveur du groupe traité, dont les distributions sont $\mathcal{B}_T(0.65)$ ; $\mathcal{B}_C(0.3)$ alors que les 2 autres endpoint sont en faveur du groupe contrôle, la distribution tte est la même que précédemment mais avec $\beta=2$ pour favorisé le groupe C alors que la distribution continue est bien en faveur du contrôle : $\mathcal{N}_T(3,1) \quad ; \quad \mathcal{N}_C(4,2)$ .
 
 ```{r, echo=FALSE}
 
@@ -4096,8 +4110,8 @@ beta = 2
 prob_T = 0.65
 prob_C = 0.3
 
-mean_T = 1
-mean_C = 3
+mean_T = 2
+mean_C = 4
 sd_T = 1
 sd_C = 2
 
@@ -4171,17 +4185,17 @@ result =
     summary.print = FALSE
   )
 
-win_edp1=sum(result$summary_ep$Trt_Endpoint2[,2])
-loose_edp1=sum(result$summary_ep$Con_Endpoint2[,2])
-tie_edp1=4*2500-sum(win_edp1+loose_edp1)
+win_edp2=sum(result$summary_ep$Trt_Endpoint2[,2])
+loose_edp2=sum(result$summary_ep$Con_Endpoint2[,2])
+tie_edp2=4*2500-(loose_edp2+win_edp2)
 
-win_edp2=sum(result$summary_ep$Trt_Endpoint1[,2])
-loose_edp2=sum(result$summary_ep$Con_Endpoint1[,2])
-tie_edp2=tie_edp1-(loose_edp2+win_edp2)
+win_edp1=sum(result$summary_ep$Trt_Endpoint1[,2])
+loose_edp1=sum(result$summary_ep$Con_Endpoint1[,2])
+tie_edp1=tie_edp2-sum(win_edp1+loose_edp1)
 
 win_edp3 = sum(result$summary_ep$Trt_Endpoint3[,2])
 loose_edp3 = sum(result$summary_ep$Con_Endpoint3[,2])
-tie_edp3 = tie_edp2-(win_edp3+loose_edp3)
+tie_edp3 = tie_edp1-(win_edp3+loose_edp3)
 
 
   count = count + 1
@@ -4475,17 +4489,17 @@ result =
     summary.print = FALSE
   )
 
-win_edp1=sum(result$summary_ep$Trt_Endpoint3[,2])
-loose_edp1=sum(result$summary_ep$Con_Endpoint3[,2])
-tie_edp1=4*2500-sum(win_edp1+loose_edp1)
+win_edp3 = sum(result$summary_ep$Trt_Endpoint1[,2])
+loose_edp3 = sum(result$summary_ep$Con_Endpoint1[,2])
+tie_edp3 = 4*2500-(win_edp3+loose_edp3)
 
 win_edp2=sum(result$summary_ep$Trt_Endpoint2[,2])
 loose_edp2=sum(result$summary_ep$Con_Endpoint2[,2])
-tie_edp2=tie_edp1-(loose_edp2+win_edp2)
+tie_edp2=tie_edp3-(loose_edp2+win_edp2)
 
-win_edp3 = sum(result$summary_ep$Trt_Endpoint1[,2])
-loose_edp3 = sum(result$summary_ep$Con_Endpoint1[,2])
-tie_edp3 = tie_edp2-(win_edp3+loose_edp3)
+win_edp1=sum(result$summary_ep$Trt_Endpoint3[,2])
+loose_edp1=sum(result$summary_ep$Con_Endpoint3[,2])
+tie_edp1=tie_edp2-sum(win_edp1+loose_edp1)
 
 
   count = count + 1
@@ -4659,7 +4673,7 @@ grid.arrange(g1_full, space, g2_full, ncol = 3, widths = c(1, 0.2, 1))
 
 ### HR non-constant (modèle AFT)
 
-Ici les paramètres $\lambda$ et $k$ voudront respectivement 0.1 et 0.5.
+Ici les paramètres $\lambda$ et $k$ voudront respectivement 0.12 et 0.9, et $\beta = 2.5$.
 
 ```{r, echo=FALSE}
 
@@ -4679,13 +4693,6 @@ results = foreach(s = 1:n_sim, .combine = rbind, .packages = c("dplyr", "surviva
 id=1:(2*n) 
 arm=rep(c("T","C"), each=200)
   
-U = runif(2*n) 
-lambdaT = 1
-kT = 2
-
-
-Z = ifelse(arm == "T", 1, 0)
-beta = 5
 
 
 prob_T = 0.65
@@ -4697,8 +4704,17 @@ sd_T = 1
 sd_C = 2
 
 
+U = runif(2*n) 
+lambdaT = 0.12
+kT = 0.9
+
+
+Z = ifelse(arm == "T", 1, 0)
+beta = 2.5
+
+
 Time_1 = round((((1/(1-U)-1)*(1/lambdaT))^(1/kT)*exp(Z*beta)), 3)
-fup_censureT = round(rweibull(2*n, shape = 1, scale =3),3)
+fup_censureT = round(rweibull(2*n, shape = 1.5, scale =5.5),3)
 
 
 Time_T = pmin(Time_1, fup_censureT)
@@ -4766,17 +4782,17 @@ result =
     summary.print = FALSE
   )
 
-win_edp1=sum(result$summary_ep$Trt_Endpoint3[,2])
-loose_edp1=sum(result$summary_ep$Con_Endpoint3[,2])
-tie_edp1=4*2500-sum(win_edp1+loose_edp1)
+win_edp3 = sum(result$summary_ep$Trt_Endpoint1[,2])
+loose_edp3 = sum(result$summary_ep$Con_Endpoint1[,2])
+tie_edp3 = 4*2500-(win_edp3+loose_edp3)
 
 win_edp2=sum(result$summary_ep$Trt_Endpoint2[,2])
 loose_edp2=sum(result$summary_ep$Con_Endpoint2[,2])
-tie_edp2=tie_edp1-(loose_edp2+win_edp2)
+tie_edp2=tie_edp3-(loose_edp2+win_edp2)
 
-win_edp3 = sum(result$summary_ep$Trt_Endpoint1[,2])
-loose_edp3 = sum(result$summary_ep$Con_Endpoint1[,2])
-tie_edp3 = tie_edp2-(win_edp3+loose_edp3)
+win_edp1=sum(result$summary_ep$Trt_Endpoint3[,2])
+loose_edp1=sum(result$summary_ep$Con_Endpoint3[,2])
+tie_edp1=tie_edp2-sum(win_edp1+loose_edp1)
 
 
   count = count + 1

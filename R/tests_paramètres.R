@@ -1,14 +1,13 @@
 #============================================================================
 #---------------------------Modèle de Cox--------------------------
 #============================================================================
-set.seed(123)
 n <- 200
 arm <- sample(rep(c("T","C"), each=n))
 Z <- ifelse(arm == "T", 1, 0)
 U <- runif(2*n)
 
 # Grilles de paramètres à tester
-beta_vec   <- c(-5, -2, -1)
+beta_vec   <- c(5, 4, 3, 2)
 lambda_vec <- c(0.1, 0.5, 1, 2)
 k_vec      <- c(0.1, 0.5, 1, 2)
 
@@ -29,7 +28,7 @@ for (beta in beta_vec) {
         event_times <- (-log(1-U) / (lambdaT * exp(beta * Z)))^(1/kT)
         
         # 2. Simuler les temps de censure avec shape variable
-        fup_censureT <- round(rweibull(2*n,1 , scale=3), 3)
+        fup_censureT <- round(rweibull(2*n,1 , scale=5), 3)
         
         # 3. Temps observé et statut
         obs_times <- pmin(event_times, fup_censureT)
@@ -83,7 +82,7 @@ Z <- ifelse(arm == "T", 1, 0)
 U <- runif(2*n)
 
 # Grilles de paramètres à tester
-beta_vec   <- c(3, 5)
+beta_vec   <- c(2,3)
 lambda_vec <- c(1,2,0.1, 0.5, 0.05, 0.01 )
 k_vec      <- c( 0.5,0.01,1, 2, 3)
 
@@ -100,15 +99,15 @@ for (beta in beta_vec) {
       deltaT <- as.numeric(fup_censureT == Time_T)
       
       # Résumés par groupe
-      summary_T <- summary(Time_T[Z==1])
-      summary_C <- summary(Time_T[Z==0])
-      censor_T <- sum(deltaT[Z==1]==0)/n
-      censor_C <- sum(deltaT[Z==0]==0)/n
+      summary_T <- summary(Time_1_AFT[Z==1])
+      summary_C <- summary(Time_1_AFT[Z==0])
+      #censor_T <- sum(deltaT[Z==1]==0)/n
+      #censor_C <- sum(deltaT[Z==0]==0)/n
       
       cat("\n==========================\n")
       cat("beta =", beta, "| lambda =", lambdaT, "| k =", kT, "\n")
-      cat("Taux de censure groupe T :", round(censor_T,3), "\n")
-      cat("Taux de censure groupe C :", round(censor_C,3), "\n")
+      #cat("Taux de censure groupe T :", round(censor_T,3), "\n")
+      #cat("Taux de censure groupe C :", round(censor_C,3), "\n")
       cat("Summary groupe T:\n")
       print(summary_T)
       cat("Summary groupe C:\n")
