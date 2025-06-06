@@ -44,7 +44,7 @@ Paramètres :
 
 - tte :
 
-  $\lambda = 0.5$, $k = 0.5$, $\beta = 0$, la censure sera une distribution $\mathcal{W}(1,2)$
+  $\lambda = 1$, $k = 0.5$, $\beta = 0$, la censure sera une distribution $\mathcal{W}(1,2)$
  
 - Continue :
 
@@ -308,9 +308,9 @@ ggplot(values_long, aes(x = value, fill = method)) +
         x = "Valeur", y = "Densité") +
    scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
    scale_fill_manual(values = c("orange",  "purple", "cyan")) +
-  annotate("text", x = 4.5, y = 1.6, label = paste("Étendue GPC : ", étendue_GPC), color = "orange", hjust = 1) +
-  annotate("text", x = 4.5, y = 2.35, label = paste("Étendue WR : ", étendue_WR), color = "cyan", hjust = 1) +
-  annotate("text", x = 4.5, y = 3.1, label = paste("Étendue WO : ", étendue_WO), color = "purple", hjust = 1)
+  annotate("text", x = 2, y = 1.6, label = paste("Étendue GPC : ", étendue_GPC), color = "orange", hjust = 1) +
+  annotate("text", x = 2, y = 2.35, label = paste("Étendue WR : ", étendue_WR), color = "cyan", hjust = 1) +
+  annotate("text", x = 2, y = 3.1, label = paste("Étendue WO : ", étendue_WO), color = "purple", hjust = 1)
 
 ggsave("TeqC_tau0.pdf", device = "pdf")
 
@@ -584,9 +584,9 @@ ggplot(values_long, aes(x = value, fill = method)) +
         x = "Valeur", y = "Densité") +
    scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
    scale_fill_manual(values = c("orange",  "purple", "cyan")) +
-  annotate("text", x = 4.5, y = 1.6, label = paste("Étendue GPC : ", étendue_GPC), color = "orange", hjust = 1) +
-  annotate("text", x = 4.5, y = 2.35, label = paste("Étendue WR : ", étendue_WR), color = "cyan", hjust = 1) +
-  annotate("text", x = 4.5, y = 3.1, label = paste("Étendue WO : ", étendue_WO), color = "purple", hjust = 1)
+  annotate("text", x = 2, y = 1.6, label = paste("Étendue GPC : ", étendue_GPC), color = "orange", hjust = 1) +
+  annotate("text", x = 2, y = 2.35, label = paste("Étendue WR : ", étendue_WR), color = "cyan", hjust = 1) +
+  annotate("text", x = 2, y = 3.1, label = paste("Étendue WO : ", étendue_WO), color = "purple", hjust = 1)
 
 ggsave("TeqC_tau2.pdf", device = "pdf")
 
@@ -613,7 +613,7 @@ On ne remarque pas de grosse différence au niveau de la **GPC**. Le **WR** est 
 
 ## Outcome discrèt de Poisson
 
-La distribution de Poisson est de paramètre $\lambda = 3$, le seuil est de 2. Les distributions des autres outcomes ne changent pas : $\mathcal{B}_T(0.5)$ ; $\mathcal{B}_C(0.5)$ $\mathcal{N}_T(3,2)$ ; $\mathcal{N}_C(3,2)$.
+La distribution de Poisson est de paramètre $\lambda = 3$, le seuil est de 2. Les distributions des autres outcomes ne changent pas : $\mathcal{B}_T(0.5)$ ; $\mathcal{B}_C(0.5)$ .
 
 ```{r, echo=FALSE, warning=TRUE}
 
@@ -865,9 +865,11 @@ ggplot(values_long, aes(x = value, fill = method)) +
         x = "Valeur", y = "Densité") +
    scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
    scale_fill_manual(values = c("orange",  "purple", "cyan")) +
-  annotate("text", x = 4.5, y = 1.6, label = paste("Étendue GPC : ", étendue_GPC), color = "orange", hjust = 1) +
-  annotate("text", x = 4.5, y = 2.35, label = paste("Étendue WR : ", étendue_WR), color = "cyan", hjust = 1) +
-  annotate("text", x = 4.5, y = 3.1, label = paste("Étendue WO : ", étendue_WO), color = "purple", hjust = 1)
+  annotate("text", x = 2, y = 1.6, label = paste("Étendue GPC : ", étendue_GPC), color = "orange", hjust = 1) +
+  annotate("text", x = 2, y = 2.35, label = paste("Étendue WR : ", étendue_WR), color = "cyan", hjust = 1) +
+  annotate("text", x = 2, y = 3.1, label = paste("Étendue WO : ", étendue_WO), color = "purple", hjust = 1)
+
+ggsave("TeqC_poisson.pdf", device = "pdf")
 
 
 ```
@@ -1143,9 +1145,9 @@ ggplot(values_long, aes(x = value, fill = method)) +
         x = "Valeur", y = "Densité") +
    scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
    scale_fill_manual(values = c("orange",  "purple", "cyan")) +
-  annotate("text", x = 4.5, y = 1.6, label = paste("Étendue GPC : ", étendue_GPC), color = "orange", hjust = 1) +
-  annotate("text", x = 4.5, y = 2.35, label = paste("Étendue WR : ", étendue_WR), color = "cyan", hjust = 1) +
-  annotate("text", x = 4.5, y = 3.1, label = paste("Étendue WO : ", étendue_WO), color = "purple", hjust = 1)
+  annotate("text", x = 2, y = 1.6, label = paste("Étendue GPC : ", étendue_GPC), color = "orange", hjust = 1) +
+  annotate("text", x = 2, y = 2.35, label = paste("Étendue WR : ", étendue_WR), color = "cyan", hjust = 1) +
+  annotate("text", x = 2, y = 3.1, label = paste("Étendue WO : ", étendue_WO), color = "purple", hjust = 1)
 
 ggsave("TeqC_tau2_binaire.pdf", device = "pdf")
 
@@ -2236,11 +2238,11 @@ quantileWO_upr=quantile(WO, 0.975)
 
 
 
-Win   = round(c(mean(as.numeric(results_df[,4])), mean(as.numeric(results_df[,7])), mean(as.numeric(results_df[,10])), mean(as.numeric(results_df[,4])) + mean(as.numeric(results_df[,7])) +mean(as.numeric(results_df[,10])) ))
+Win   = round(c(mean(as.numeric(results_df[,7])), mean(as.numeric(results_df[,4])), mean(as.numeric(results_df[,10])), mean(as.numeric(results_df[,4])) + mean(as.numeric(results_df[,7])) +mean(as.numeric(results_df[,10])) ))
 
-Loose = round(c(mean(as.numeric(results_df[,5])), mean(as.numeric(results_df[,8])),mean(as.numeric(results_df[,11])), mean(as.numeric(results_df[,5]))+mean(as.numeric(results_df[,8])) +mean(as.numeric(results_df[,11])) ))
+Loose = round(c(mean(as.numeric(results_df[,5])), mean(as.numeric(results_df[,5])),mean(as.numeric(results_df[,11])), mean(as.numeric(results_df[,5]))+mean(as.numeric(results_df[,5])) +mean(as.numeric(results_df[,11])) ))
 
-Tie   = round(c(mean(as.numeric(results_df[,6])), mean(as.numeric(results_df[,9])), mean(as.numeric(results_df[,12])), mean(as.numeric(results_df[,12])) ))
+Tie   = round(c(mean(as.numeric(results_df[,9])), mean(as.numeric(results_df[,6])), mean(as.numeric(results_df[,12])), mean(as.numeric(results_df[,12])) ))
 
 df3 = data.frame(
   row.names = c("endpoint1", "endpoint2",  "endpoint3","overall"),
@@ -2306,7 +2308,20 @@ summary_df2_4 <- summary_df2_4 %>%
   pivot_wider(names_from = Var2, values_from = Value) %>%
   filter(!is.na(Stat))
 
-summary_df2_4
+g1 <- tableGrob(summary_df2_4)
+g2 <- tableGrob(summary_df2_2[,-1])
+
+# Ajoute les titres au-dessus des tableaux
+title1 <- textGrob("Résumé - Cox, tau=2", gp = gpar(fontsize = 12, fontface = "bold"))
+title2 <- textGrob("Résumé - Cox, binaire", gp = gpar(fontsize = 12, fontface = "bold"))
+
+# Combine titre + tableau pour chaque colonne
+g1_full <- arrangeGrob(title1, g1, ncol = 1, heights = c(0.2, 1))
+g2_full <- arrangeGrob(title2, g2, ncol = 1, heights = c(0.2, 1))
+
+# Affiche côte à côte
+space <- nullGrob()  # Affichage avec espace 
+grid.arrange(g1_full, space, g2_full, ncol = 3, widths = c(1, 0.2, 1))
 ```
 
 \newpage
@@ -2874,6 +2889,7 @@ ggplot(values_long, aes(x = value, fill = method)) +
   annotate("text", x = 4.5, y = 2.35, label = paste("Étendue WR : ", étendue_WR), color = "cyan", hjust = 1) +
   annotate("text", x = 4.5, y = 3.1, label = paste("Étendue WO : ", étendue_WO), color = "purple", hjust = 1)
 
+ggsave("AFT_tau2.pdf", device = "pdf")
 
 ```
 
@@ -3441,7 +3457,7 @@ ggplot(values_long, aes(x = value, fill = method)) +
   annotate("text", x = 9.5, y = 2.35, label = paste("Étendue WR : ", étendue_WR), color = "cyan", hjust = 1) +
   annotate("text", x = 9.5, y = 3.1, label = paste("Étendue WO : ", étendue_WO), color = "purple", hjust = 1)
 
-
+ggsave("distrib_diff_tau2.pdf", device = "pdf")
 
 ```
 
@@ -3514,8 +3530,8 @@ arm=rep(c("T","C"), each=200)
   
 U = runif(2*n) 
 
-lambdaT = 0.05
-kT = 1
+lambdaT = 0.2
+kT = 0.7
 
 
 Z = ifelse(arm == "T", 1, 0)
