@@ -2330,7 +2330,7 @@ grid.arrange(g1_full, space, g2_full, ncol = 3, widths = c(1, 0.2, 1))
 
 # Modèle avec les HR non-constant
 
-On travaille avec un modèle AFT où les HR ne sont pas constant. Le seuil $\tau$ vaut 2 pour les outcomes 1 (tte) et 3 (continue). La formule pour de simulation pour le modèle AFt est la suivante : 
+On travaille avec un modèle AFT où les HR ne sont pas constant. Le seuil $\tau$ vaut 2 pour les outcomes 1 (tte) et 3 (continue). La formule pour de simulation pour le modèle AFT est la suivante : 
 
 $$(\frac{1}{1-U}-1) \times \lambda^{-1/k} \times e^{Z \beta} $$
 
@@ -3530,12 +3530,13 @@ arm=rep(c("T","C"), each=200)
   
 U = runif(2*n) 
 
-lambdaT = 0.2
-kT = 0.7
+lambdaT = 0.05
+kT = 4
+
 
 
 Z = ifelse(arm == "T", 1, 0)
-beta = -1.5
+beta = -3
 
 prob_T = 0.65
 prob_C = 0.3
@@ -3547,7 +3548,7 @@ sd_C = 2
 
   
 Time_1 = round((-log(1 - U)) / (lambdaT * exp(beta * Z)^(1 / kT)),3)
-fup_censureT = round(rweibull(2*n, shape = 2.5, scale =20),3)
+fup_censureT = round(rweibull(2*n, shape = 3, scale =10),3)
 
 Time_T = pmin(Time_1, fup_censureT)
 deltaT=as.numeric(fup_censureT==Time_T)
@@ -3604,7 +3605,7 @@ result =
     data = data,
     ep_type = c("tte", "binary", "continuous"),
     stratum.weight = "equal",
-    tau = c(2,0,2),
+    tau = c(1,0,2),
     arm.name = c("T", "C"),
     alpha = 0.05,
     digit = 3,
@@ -3688,6 +3689,7 @@ nb_pval_GPC = sum(p_valGPC< 0.05)
 nb_pval_WR = sum(p_valWR< 0.05)
 nb_pval_WO = sum(p_valWO< 0.05)
 
+
 colnames(df2)=c(" ","C", "T")
 
 GPC=as.numeric(results_df[,1])
@@ -3763,6 +3765,7 @@ ggplot(values_long, aes(x = value, fill = method)) +
   annotate("text", x = 4.5, y = 2.35, label = paste("Étendue WR : ", étendue_WR), color = "cyan", hjust = 1) +
   annotate("text", x = 4.5, y = 3.1, label = paste("Étendue WO : ", étendue_WO), color = "purple", hjust = 1)
 
+ggsave("Distrib_cont_C.pdf", device = "pdf", path = "C:/Users/MASTERS TEMA Arthur/Documents/Comparaison-par-paire/plots" )
 
 ```
 
@@ -4116,12 +4119,12 @@ id=1:(2*n)
 arm=rep(c("T","C"), each=200)
   
 U = runif(2*n) 
-lambdaT = 0.1
-kT = 0.5
-
+lambdaT = 0.05
+kT = 4
+fup_censureT = round(rweibull(2*n, shape = 3, scale =8),3)
 
 Z = ifelse(arm == "T", 1, 0)
-beta = 2
+beta = 4
 
 prob_T = 0.65
 prob_C = 0.3
@@ -4133,7 +4136,8 @@ sd_C = 2
 
   
 Time_1 = round((-log(1 - U)) / (lambdaT * exp(beta * Z)^(1 / kT)),3)
-fup_censureT = round(rweibull(2*n, shape = 1, scale =3),3)
+fup_censureT = round(rweibull(2*n, shape = 3, scale =10),3)
+
 
 
 Time_T = pmin(Time_1, fup_censureT)
@@ -4192,7 +4196,7 @@ result =
     data = data,
     ep_type = c("tte", "binary", "continuous"),
     stratum.weight = "equal",
-    tau = c(2,0,2),
+    tau = c(1,0,2),
     arm.name = c("T", "C"),
     alpha = 0.05,
     digit = 3,
@@ -4297,11 +4301,11 @@ quantileWO_upr=quantile(WO, 0.975)
 
 
 
-Win   = round(c(mean(as.numeric(results_df[,4])), mean(as.numeric(results_df[,7])), mean(as.numeric(results_df[,10])), mean(as.numeric(results_df[,4])) + mean(as.numeric(results_df[,7])) +mean(as.numeric(results_df[,10])) ))
+Win   = round(c(mean(as.numeric(results_df[,7])), mean(as.numeric(results_df[,4])), mean(as.numeric(results_df[,10])), mean(as.numeric(results_df[,4])) + mean(as.numeric(results_df[,7])) +mean(as.numeric(results_df[,10])) ))
 
-Loose = round(c(mean(as.numeric(results_df[,5])), mean(as.numeric(results_df[,8])),mean(as.numeric(results_df[,11])), mean(as.numeric(results_df[,5]))+mean(as.numeric(results_df[,8])) +mean(as.numeric(results_df[,11])) ))
+Loose = round(c(mean(as.numeric(results_df[,8])), mean(as.numeric(results_df[,5])),mean(as.numeric(results_df[,11])), mean(as.numeric(results_df[,5]))+mean(as.numeric(results_df[,8])) +mean(as.numeric(results_df[,11])) ))
 
-Tie   = round(c(mean(as.numeric(results_df[,6])), mean(as.numeric(results_df[,9])), mean(as.numeric(results_df[,12])), mean(as.numeric(results_df[,12])) ))
+Tie   = round(c(mean(as.numeric(results_df[,9])), mean(as.numeric(results_df[,6])), mean(as.numeric(results_df[,12])), mean(as.numeric(results_df[,12])) ))
 
 df3 = data.frame(
   row.names = c("endpoint1", "endpoint2",  "endpoint3","overall"),
@@ -4350,6 +4354,8 @@ ggplot(values_long, aes(x = value, fill = method)) +
   annotate("text", x = 4.5, y = 1.6, label = paste("Étendue GPC : ", étendue_GPC), color = "orange", hjust = 1) +
   annotate("text", x = 4.5, y = 2.35, label = paste("Étendue WR : ", étendue_WR), color = "cyan", hjust = 1) +
   annotate("text", x = 4.5, y = 3.1, label = paste("Étendue WO : ", étendue_WO), color = "purple", hjust = 1)
+
+ggsave("Distrib_CsuupT.pdf", device = "pdf", path = "C:/Users/MASTERS TEMA Arthur/Documents/Comparaison-par-paire/plots" )
 
 ```
 
