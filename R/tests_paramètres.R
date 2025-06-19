@@ -7,9 +7,9 @@ Z <- ifelse(arm == "T", 1, 0)
 U <- runif(2*n)
 
 # Grilles de paramètres à tester
-beta_vec   <- c(5, 4, 3, 2)
-lambda_vec <- c(0.1, 0.5, 1, 2)
-k_vec      <- c(0.1, 0.5, 1, 2)
+beta_vec   <- c(-0.5, -0.9)
+lambda_vec <- c(0.1, 0.15, 0.17, 0.2)
+k_vec      <- c(1, 1.2, 1.5, 1.7)
 
 
 prob_T <- 0.7
@@ -28,7 +28,7 @@ for (beta in beta_vec) {
         event_times <- (-log(1-U) / (lambdaT * exp(beta * Z)))^(1/kT)
         
         # 2. Simuler les temps de censure avec shape variable
-        fup_censureT <- round(rweibull(2*n,1 , scale=5), 3)
+        fup_censureT <- round(rweibull(2*n,2.5 , scale=20), 3)
         
         # 3. Temps observé et statut
         obs_times <- pmin(event_times, fup_censureT)
@@ -42,14 +42,14 @@ for (beta in beta_vec) {
         
         # 5. Dataframes par groupe
         dataT <- data.frame(
-          Y_1 = obs_times[Z==1],
+          Y_1 = event_times[Z==1],
           Delta_1 = status[Z==1],
           Y_2 = Y_2_T,
           Y_3 = Y_3_T,
           stratum = stratum
         )
         dataC <- data.frame(
-          Y_1 = obs_times[Z==0],
+          Y_1 = event_times[Z==0],
           Delta_1 = status[Z==0],
           Y_2 = Y_2_C,
           Y_3 = Y_3_C,
@@ -82,32 +82,32 @@ Z <- ifelse(arm == "T", 1, 0)
 U <- runif(2*n)
 
 # Grilles de paramètres à tester
-beta_vec   <- c(2,3)
-lambda_vec <- c(1,2,0.1, 0.5, 0.05, 0.01 )
-k_vec      <- c( 0.5,0.01,1, 2, 3)
+beta_vec   <- 0.5
+lambda_vec <- c(0.05, 0.09, 0.1, 1.2 )
+k_vec      <- c( 0.5,1, 1.2, 1.5)
 
 # Temps de censure commun à tous
-fup_censureT <- round(rweibull(2*n, shape=2, scale=6), 3)
+censure_vec<- c(3, 5, 7, 9)
 
 # Boucle sur toutes les combinaisons
-for (beta in beta_vec) {
+for (censure in censure_vec) {
   for (lambdaT in lambda_vec) {
     for (kT in k_vec) {
       # Simulation des temps à l'événement (modèle AFT Weibull)
       Time_1_AFT <- round((((1/(1-U)-1)*(1/lambdaT))^(1/kT)*exp(Z*beta)), 3)
-      Time_T <- pmin(Time_1_AFT, fup_censureT)
-      deltaT <- as.numeric(fup_censureT == Time_T)
+      Time_T <- pmin(Time_1_AFT, censure)
+      deltaT <- as.numeric(censure  == Time_T)
       
       # Résumés par groupe
-      summary_T <- summary(Time_1_AFT[Z==1])
-      summary_C <- summary(Time_1_AFT[Z==0])
-      #censor_T <- sum(deltaT[Z==1]==0)/n
-      #censor_C <- sum(deltaT[Z==0]==0)/n
+      summary_T <- summary(Time_1_AFT)
+      summary_C <- summary(Time_1_AFT)
+      censor_T <- sum(deltaT[Z==1]==0)/n
+      censor_C <- sum(deltaT[Z==0]==0)/n
       
       cat("\n==========================\n")
-      cat("beta =", beta, "| lambda =", lambdaT, "| k =", kT, "\n")
-      #cat("Taux de censure groupe T :", round(censor_T,3), "\n")
-      #cat("Taux de censure groupe C :", round(censor_C,3), "\n")
+      cat("censure =", censure, "| lambda =", lambdaT, "| k =", kT, "\n")
+      cat("Taux de censure groupe T :", round(censor_T,3), "\n")
+      cat("Taux de censure groupe C :", round(censor_C,3), "\n")
       cat("Summary groupe T:\n")
       print(summary_T)
       cat("Summary groupe C:\n")
@@ -116,6 +116,5 @@ for (beta in beta_vec) {
     }
   }
 }
-
 
 
