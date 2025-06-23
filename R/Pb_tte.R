@@ -36,8 +36,8 @@ results = foreach(s = 1:n_sim, .combine = rbind, .packages = c("dplyr", "surviva
   Time_1 = pmin(Time1,  fup_censure1)
   
   
-  delta1=as.numeric(fup_censure1==Time_1)
-  sum(delta1==1)
+  delta1=ifelse(fup_censure1==Time_1,0,1)
+  sum(delta1==0)
   
   
   Time2 = round((-log(1 - U2)) / (lambda2 * exp(beta * Z)^(1 / k2)),3)
@@ -80,11 +80,11 @@ results = foreach(s = 1:n_sim, .combine = rbind, .packages = c("dplyr", "surviva
   max_Y_1C =as.numeric(stringr::str_extract(summC[6,1], "\\d+\\.\\d+"))
   max_Y_2C =as.numeric(stringr::str_extract(summC[6,3], "\\d+\\.\\d+"))
   
-  censure_rateT1=sum(dataT$Delta_1==1)/n 
-  censure_rateC1=sum(dataC$Delta_1==1)/n 
+  censure_rateT1=sum(dataT$Delta_1==0)/n 
+  censure_rateC1=sum(dataC$Delta_1==0)/n 
   
-  censure_rateT2=sum(dataT$Delta_2==1)/n 
-  censure_rateC2=sum(dataC$Delta_2==1)/n 
+  censure_rateT2=sum(dataT$Delta_2==0)/n 
+  censure_rateC2=sum(dataC$Delta_2==0)/n 
   
   data=data.frame(id=id, arm = arm, Y_1= data1[,1],Delta_1=data1[,2], Y_2 = data1[,3], Delta_2 = data1[,4], stratum = data1[,5] )
   

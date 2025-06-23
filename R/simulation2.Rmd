@@ -304,7 +304,7 @@ ggplot(values_long, aes(x = value, fill = method)) +
    geom_vline(data = vlines, aes(xintercept = intercept, linetype = linetype_label),
               color = "black", lwd = 1) +
    theme_minimal() +
-   labs(title = "Distribution des statistiques de test",
+   labs(title = "Distribution des statistiques",
         x = "Valeur", y = "Densité") +
    scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
    scale_fill_manual(values = c("orange",  "purple", "cyan")) +
@@ -580,7 +580,7 @@ ggplot(values_long, aes(x = value, fill = method)) +
    geom_vline(data = vlines, aes(xintercept = intercept, linetype = linetype_label),
               color = "black", lwd = 1) +
    theme_minimal() +
-   labs(title = "Distribution des statistiques de test",
+   labs(title = "Distribution des statistiques",
         x = "Valeur", y = "Densité") +
    scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
     scale_fill_manual(values = c("orange",  "purple", "cyan")) +
@@ -861,7 +861,7 @@ ggplot(values_long, aes(x = value, fill = method)) +
    geom_vline(data = vlines, aes(xintercept = intercept, linetype = linetype_label),
               color = "black", lwd = 1) +
    theme_minimal() +
-   labs(title = "Distribution des statistiques de test",
+   labs(title = "Distribution des statistiques",
         x = "Valeur", y = "Densité") +
    scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
    scale_fill_manual(values = c("orange",  "purple", "cyan")) +
@@ -1141,7 +1141,7 @@ ggplot(values_long, aes(x = value, fill = method)) +
    geom_vline(data = vlines, aes(xintercept = intercept, linetype = linetype_label),
               color = "black", lwd = 1) +
    theme_minimal() +
-   labs(title = "Distribution des statistiques de test",
+   labs(title = "Distribution des statistiques",
         x = "Valeur", y = "Densité") +
    scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
    scale_fill_manual(values = c("orange",  "purple", "cyan")) +
@@ -1443,7 +1443,7 @@ ggplot(values_long, aes(x = value, fill = method)) +
    geom_vline(data = vlines, aes(xintercept = intercept, linetype = linetype_label),
               color = "black", lwd = 1) +
    theme_minimal() +
-   labs(title = "Distribution des statistiques de test",
+   labs(title = "Distribution des statistiques",
         x = "Valeur", y = "Densité") +
    scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
    scale_fill_manual(values = c("orange",  "purple", "cyan")) +
@@ -1718,7 +1718,7 @@ ggplot(values_long, aes(x = value, fill = method)) +
    geom_vline(data = vlines, aes(xintercept = intercept, linetype = linetype_label),
               color = "black", lwd = 1) +
    theme_minimal() +
-   labs(title = "Distribution des statistiques de test",
+   labs(title = "Distribution des statistiques",
         x = "Valeur", y = "Densité") +
    scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
    scale_fill_manual(values = c("orange",  "purple", "cyan")) +
@@ -2012,7 +2012,7 @@ ggplot(values_long, aes(x = value, fill = method)) +
    geom_vline(data = vlines, aes(xintercept = intercept, linetype = linetype_label),
               color = "black", lwd = 1) +
    theme_minimal() +
-   labs(title = "Distribution des statistiques de test",
+   labs(title = "Distribution des statistiques",
         x = "Valeur", y = "Densité") +
    scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
    scale_fill_manual(values = c("orange",  "purple", "cyan")) +
@@ -2289,7 +2289,7 @@ ggplot(values_long, aes(x = value, fill = method)) +
    geom_vline(data = vlines, aes(xintercept = intercept, linetype = linetype_label),
               color = "black", lwd = 1) +
    theme_minimal() +
-   labs(title = "Distribution des statistiques de test",
+   labs(title = "Distribution des statistiques",
         x = "Valeur", y = "Densité") +
    scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
    scale_fill_manual(values = c("orange",  "purple", "cyan")) +
@@ -2597,7 +2597,7 @@ ggplot(values_long, aes(x = value, fill = method)) +
    geom_vline(data = vlines, aes(xintercept = intercept, linetype = linetype_label),
               color = "black", lwd = 1) +
    theme_minimal() +
-   labs(title = "Distribution des statistiques de test",
+   labs(title = "Distribution des statistiques",
         x = "Valeur", y = "Densité") +
    scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
    scale_fill_manual(values = c("orange",  "purple", "cyan")) +
@@ -2877,7 +2877,7 @@ ggplot(values_long, aes(x = value, fill = method)) +
    geom_vline(data = vlines, aes(xintercept = intercept, linetype = linetype_label),
               color = "black", lwd = 1) +
    theme_minimal() +
-   labs(title = "Distribution des statistiques de test",
+   labs(title = "Distribution des statistiques",
         x = "Valeur", y = "Densité") +
    scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
    scale_fill_manual(values = c("orange",  "purple", "cyan")) +
@@ -3167,7 +3167,7 @@ ggplot(values_long, aes(x = value, fill = method)) +
    geom_vline(data = vlines, aes(xintercept = intercept, linetype = linetype_label),
               color = "black", lwd = 1) +
    theme_minimal() +
-   labs(title = "Distribution des statistiques de test",
+   labs(title = "Distribution des statistiques",
         x = "Valeur", y = "Densité") +
    scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
    scale_fill_manual(values = c("orange",  "purple", "cyan")) +
@@ -3444,7 +3444,7 @@ ggplot(values_long, aes(x = value, fill = method)) +
    geom_vline(data = vlines, aes(xintercept = intercept, linetype = linetype_label),
               color = "black", lwd = 1) +
    theme_minimal() +
-   labs(title = "Distribution des statistiques de test",
+   labs(title = "Distribution des statistiques",
         x = "Valeur", y = "Densité") +
    scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
    scale_fill_manual(values = c("orange",  "purple", "cyan"))+
@@ -3752,7 +3752,7 @@ ggplot(values_long, aes(x = value, fill = method)) +
    geom_vline(data = vlines, aes(xintercept = intercept, linetype = linetype_label),
               color = "black", lwd = 1) +
    theme_minimal() +
-   labs(title = "Distribution des statistiques de test",
+   labs(title = "Distribution des statistiques",
         x = "Valeur", y = "Densité") +
    scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
    scale_fill_manual(values = c("orange",  "purple", "cyan")) +
@@ -4051,7 +4051,7 @@ ggplot(values_long, aes(x = value, fill = method)) +
    geom_vline(data = vlines, aes(xintercept = intercept, linetype = linetype_label),
               color = "black", lwd = 1) +
    theme_minimal() +
-   labs(title = "Distribution des statistiques de test",
+   labs(title = "Distribution des statistiques",
         x = "Valeur", y = "Densité") +
    scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
    scale_fill_manual(values = c("orange",  "purple", "cyan")) +
@@ -4348,7 +4348,7 @@ ggplot(values_long, aes(x = value, fill = method)) +
    geom_vline(data = vlines, aes(xintercept = intercept, linetype = linetype_label),
               color = "black", lwd = 1) +
    theme_minimal() +
-   labs(title = "Distribution des statistiques de test",
+   labs(title = "Distribution des statistiques",
         x = "Valeur", y = "Densité") +
    scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
    scale_fill_manual(values = c("orange",  "purple", "cyan")) +
@@ -4658,7 +4658,7 @@ ggplot(values_long, aes(x = value, fill = method)) +
    geom_vline(data = vlines, aes(xintercept = intercept, linetype = linetype_label),
               color = "black", lwd = 1) +
    theme_minimal() +
-   labs(title = "Distribution des statistiques de test",
+   labs(title = "Distribution des statistiques",
         x = "Valeur", y = "Densité") +
    scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
    scale_fill_manual(values = c("orange",  "purple", "cyan")) +
@@ -4951,7 +4951,7 @@ ggplot(values_long, aes(x = value, fill = method)) +
    geom_vline(data = vlines, aes(xintercept = intercept, linetype = linetype_label),
               color = "black", lwd = 1) +
    theme_minimal() +
-   labs(title = "Distribution des statistiques de test",
+   labs(title = "Distribution des statistiques",
         x = "Valeur", y = "Densité") +
    scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
    scale_fill_manual(values = c("orange",  "purple", "cyan")) +

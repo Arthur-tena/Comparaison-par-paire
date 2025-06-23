@@ -36,7 +36,7 @@ $\beta$ = -0.9
 
 t_censure = c(1,3,6)
 
-$\tau$ = c(0.5,1)
+$\tau$ = c(0,0)
 
 ```{r, echo=FALSE, warning=FALSE}
 
@@ -59,50 +59,50 @@ arm=rep(c("T","C"), each=200)
 U1 = runif(2*n) 
 U2 = runif(2*n) 
 
-t_censure = c(5,9,15)
+t_censure = c(9,14,19)
 resultats=list()
 for (t in t_censure){
 
 lambda1 = 0.1; k1 = 2
 lambda2 = 0.12; k2 = 1.7
 
-fup_censure1=round(rweibull(2*n, shape = 2, scale =20),3)
-fup_censure2=round(rweibull(2*n, shape = 2, scale =20),3)
+fup_censure1=round(rweibull(2*n, shape = 1, scale =20),3)
+summary(fup_censure1)
+fup_censure2=round(rweibull(2*n, shape = 1, scale =20),3)
 
 Z = ifelse(arm == "T", 1, 0)
-beta = -1
+beta = -3
 
 Time1 = round((-log(1 - U1)) / (lambda1 * exp(beta * Z)^(1 / k1)),3)
 summary(Time1)
 summary(Time1[Z==1])
 summary(Time1[Z==0])
-sum(Time1[Z==0]<1)
 
-Time_1 = pmin(Time1, t, fup_censure1)
-# summary(Time_1)
-# summary(Time_1[Z==1])
-#  summary(Time_1[Z==0])
 
-delta1=as.numeric(t==Time_1)
+Time_1 = pmin(Time1,  fup_censure1)
+delta1 = as.numeric(Time_1==fup_censure1)
 
+Time_12 = pmin(Time_1, t)
+delta12 <- ifelse(Time_1 == Time_12, delta1,
+                  ifelse(Time_12 == t, 0, 1))
+
+
+print(Time_12[Z==0])
+print(delta1)
 
 Time2 = round((-log(1 - U2)) / (lambda2 * exp(beta * Z)^(1 / k2)),3)
 
- # summary(Time2)
- # summary(Time2[Z==1])
- # summary(Time2[Z==0])
+Time_2 = pmin(Time2,  fup_censure2)
+delta2 = as.numeric(Time_2==fup_censure2)
 
-Time_2 = pmin(Time2, t, fup_censure2)
-# summary(Time_2)
-# summary(Time_2[Z==1])
-#  summary(Time_2[Z==0])
-
-delta2=as.numeric(t==Time_2)
+Time_22 = pmin(Time_2, t)
+delta22 <- ifelse(Time_2 == Time_22, delta2,
+                  ifelse(Time_22 == t, 0, 1))
 
 
 stratum=sample(rep(c(1,3,5,8), each = 1))
-dataT=data.frame(Y_1 = Time_1[Z==1], Delta_1 = delta1[Z==1], Y_2 = Time_2[Z==1], Delta_2  = delta2[Z==1], stratum = stratum)
-dataC=data.frame(Y_1 = Time_1[Z==0], Delta_1 = delta1[Z==0], Y_2 = Time_2[Z==0], Delta_2 = delta2[Z==0], stratum = stratum)
+dataT=data.frame(Y_1 = Time_12[Z==1], Delta_1 = delta12[Z==1], Y_2 = Time_22[Z==1], Delta_2  = delta22[Z==1], stratum = stratum)
+dataC=data.frame(Y_1 = Time_12[Z==0], Delta_1 = delta12[Z==0], Y_2 = Time_22[Z==0], Delta_2 = delta22[Z==0], stratum = stratum)
 
  
 data1=rbind(dataT,dataC)
@@ -130,13 +130,13 @@ median_Y_2C = as.numeric(stringr::str_extract( summC[3,3], "\\d+\\.\\d+"))
 max_Y_1C =as.numeric(stringr::str_extract(summC[6,1], "\\d+\\.\\d+"))
 max_Y_2C =as.numeric(stringr::str_extract(summC[6,3], "\\d+\\.\\d+"))
 
-censure_rateT1=sum(dataT$Delta_1==1)/n 
-censure_rateC1=sum(dataC$Delta_1==1)/n 
+censure_rateT1=sum(dataT$Delta_1==0)/n 
+censure_rateC1=sum(dataC$Delta_1==0)/n 
 
-censure_rateT2=sum(dataT$Delta_2==1)/n 
-censure_rateC2=sum(dataC$Delta_2==1)/n 
+censure_rateT2=sum(dataT$Delta_2==0)/n 
+censure_rateC2=sum(dataC$Delta_2==0)/n 
 
-data=data.frame(id=id, arm = arm, Y_1= data1[,1],Delta_1=data1[,2], Y_2 = data1[,3], Y_3 = data1[,4], stratum = data1[,5] )
+data=data.frame(id=id, arm = arm, Y_1= data1[,1],Delta_1=data1[,2], Y_2 = data1[,3], Delta_2 = data1[,4], stratum = data1[,5] )
 
 result =
   win.stat(
@@ -178,9 +178,9 @@ end_time = Sys.time()
 
 execution_time = end_time - start_time
 
-df_1=results[,5]
-df_2=results[,9]
-df_3=results[,15]
+df_1=results[,9]
+df_2=results[,14]
+df_3=results[,19]
 
 col_names = c("val_GPC", "val_WR", "val_WO",
                "win_edp1", "loose_edp1", "tie_edp1",
@@ -200,6 +200,8 @@ colnames(results_df2) = col_names
 colnames(results_df3) = col_names
 
 ```
+
+
 
 ```{r}
 GPC=as.numeric(results_df1[,1])
@@ -316,7 +318,7 @@ ggplot(values_long, aes(x = value, fill = method)) +
    geom_vline(data = vlines, aes(xintercept = intercept, linetype = linetype_label),
               color = "black", lwd = 1) +
    theme_minimal() +
-   labs(title = "Distribution des statistiques de test",
+   labs(title = "Distribution des statistiques",
         x = "Valeur", y = "Densité") +
    scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
    scale_fill_manual(values = c("orange",  "purple", "cyan")) +
@@ -440,7 +442,7 @@ ggplot(values_long, aes(x = value, fill = method)) +
    geom_vline(data = vlines, aes(xintercept = intercept, linetype = linetype_label),
               color = "black", lwd = 1) +
    theme_minimal() +
-   labs(title = "Distribution des statistiques de test",
+   labs(title = "Distribution des statistiques",
         x = "Valeur", y = "Densité") +
    scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
    scale_fill_manual(values = c("orange",  "purple", "cyan")) +
@@ -563,7 +565,7 @@ ggplot(values_long, aes(x = value, fill = method)) +
    geom_vline(data = vlines, aes(xintercept = intercept, linetype = linetype_label),
               color = "black", lwd = 1) +
    theme_minimal() +
-   labs(title = "Distribution des statistiques de test",
+   labs(title = "Distribution des statistiques",
         x = "Valeur", y = "Densité") +
    scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
    scale_fill_manual(values = c("orange",  "purple", "cyan")) +
@@ -604,36 +606,50 @@ arm=rep(c("T","C"), each=200)
 U1 = runif(2*n) 
 U2 = runif(2*n) 
 
-t_censure = c(2,6,11)
+t_censure = c(9,14,19)
 resultats=list()
 for (t in t_censure){
   
 
-lambda1 = 0.09; k1 = 1.5
-lambda2 = 0.1; k2 = 1.5
+lambda1 = 0.05; k1 = 1.1
+lambda2 = 0.09; k2 = 1.05
 
 
 Z = ifelse(arm == "T", 1, 0)
 beta = 0.9
 
+fup_censure1=round(rweibull(2*n, shape = 1, scale =15),3)
+summary(fup_censure1)
+fup_censure2=round(rweibull(2*n, shape = 1, scale =15),3)
+
+
 Time1 = round((((1/(1-U1)-1)*(1/lambda1))^(1/k1)*exp(Z*beta)), 3)
 summary(Time1)
+summary(Time1[Z==1])
+summary(Time1[Z==0])
 
-Time_1 = pmin(Time1, t)
 
-delta1=as.numeric(t==Time_1)
+Time_1 = pmin(Time1,  fup_censure1)
+delta1 = as.numeric(Time_1==fup_censure1)
+
+Time_12 = pmin(Time_1, t)
+delta12 = ifelse(Time_1 == Time_12, delta1,
+                  ifelse(Time_12 == t, 0, 1))
+
 
 
 Time2 = round((((1/(1-U2)-1)*(1/lambda2))^(1/k2)*exp(Z*beta)), 3)
-summary(Time2)
-Time_2 = pmin(Time2, t)
+Time_2 = pmin(Time2,  fup_censure2)
+delta2 = as.numeric(Time_2==fup_censure2)
 
-delta2=as.numeric(t==Time_2)
+Time_22 = pmin(Time_2, t)
+delta22 = ifelse(Time_2 == Time_22, delta2,
+                  ifelse(Time_22 == t, 0, 1))
 
 
 stratum=sample(rep(c(1,3,5,8), each = 1))
-dataT=data.frame(Y_1 = Time_1[Z==1], Delta_1 = delta1[Z==1], Y_2 = Time_2[Z==1], Delta_2  = delta2[Z==1], stratum = stratum)
-dataC=data.frame(Y_1 = Time_1[Z==0], Delta_1 = delta1[Z==0], Y_2 = Time_2[Z==0], Delta_2 = delta2[Z==0], stratum = stratum)
+dataT=data.frame(Y_1 = Time_12[Z==1], Delta_1 = delta12[Z==1], Y_2 = Time_22[Z==1], Delta_2  = delta22[Z==1], stratum = stratum)
+dataC=data.frame(Y_1 = Time_12[Z==0], Delta_1 = delta12[Z==0], Y_2 = Time_22[Z==0], Delta_2 = delta22[Z==0], stratum = stratum)
 
  
 data1=rbind(dataT,dataC)
@@ -674,7 +690,7 @@ result =
     data = data,
     ep_type = c("tte", "tte"),
     stratum.weight = "equal",
-    tau = c(0.5,0.7),
+    tau = c(0,0),
     arm.name = c("T", "C"),
     alpha = 0.05,
     digit = 3,
@@ -709,9 +725,9 @@ end_time = Sys.time()
 
 execution_time = end_time - start_time
 
-df_1=results[,2]
-df_2=results[,6]
-df_3=results[,11]
+df_1=results[,9]
+df_2=results[,14]
+df_3=results[,19]
 
 col_names = c("val_GPC", "val_WR", "val_WO",
                "win_edp1", "loose_edp1", "tie_edp1",
@@ -846,7 +862,7 @@ ggplot(values_long, aes(x = value, fill = method)) +
    geom_vline(data = vlines, aes(xintercept = intercept, linetype = linetype_label),
               color = "black", lwd = 1) +
    theme_minimal() +
-   labs(title = "Distribution des statistiques de test",
+   labs(title = "Distribution des statistiques",
         x = "Valeur", y = "Densité") +
    scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
    scale_fill_manual(values = c("orange",  "purple", "cyan")) +
@@ -970,7 +986,7 @@ ggplot(values_long, aes(x = value, fill = method)) +
    geom_vline(data = vlines, aes(xintercept = intercept, linetype = linetype_label),
               color = "black", lwd = 1) +
    theme_minimal() +
-   labs(title = "Distribution des statistiques de test",
+   labs(title = "Distribution des statistiques",
         x = "Valeur", y = "Densité") +
    scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
    scale_fill_manual(values = c("orange",  "purple", "cyan")) +
@@ -1092,7 +1108,7 @@ ggplot(values_long, aes(x = value, fill = method)) +
    geom_vline(data = vlines, aes(xintercept = intercept, linetype = linetype_label),
               color = "black", lwd = 1) +
    theme_minimal() +
-   labs(title = "Distribution des statistiques de test",
+   labs(title = "Distribution des statistiques",
         x = "Valeur", y = "Densité") +
    scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
    scale_fill_manual(values = c("orange",  "purple", "cyan")) +
@@ -1102,3 +1118,117 @@ ggplot(values_long, aes(x = value, fill = method)) +
 
 ```
 
+# Plots packages
+
+## Cox
+
+```{r}
+id=1:(2*n) 
+arm=rep(c("T","C"), each=200)
+
+U1 = runif(2*n) 
+U2 = runif(2*n) 
+
+lambda1 = 0.1; k1 = 2
+lambda2 = 0.12; k2 = 1.7
+
+fup_censure1=round(rweibull(2*n, shape = 1, scale =20),3)
+summary(fup_censure1)
+fup_censure2=round(rweibull(2*n, shape = 1, scale =20),3)
+
+Z = ifelse(arm == "T", 1, 0)
+beta = -3
+
+Time1 = round((-log(1 - U1)) / (lambda1 * exp(beta * Z)^(1 / k1)),3)
+
+
+
+Time_1 = pmin(Time1,  fup_censure1)
+delta1 = as.numeric(Time_1==fup_censure1)
+
+
+Time2 = round((-log(1 - U2)) / (lambda2 * exp(beta * Z)^(1 / k2)),3)
+
+Time_2 = pmin(Time2,  fup_censure2)
+delta2 = as.numeric(Time_2==fup_censure2)
+
+
+
+stratum=sample(rep(c(1,3,5,8), each = 1))
+dataT=data.frame(Y_1 = Time_1[Z==1], Delta_1 = delta1[Z==1], Y_2 = Time_2[Z==1], Delta_2  = delta2[Z==1], stratum = stratum)
+dataC=data.frame(Y_1 = Time_1[Z==0], Delta_1 = delta1[Z==0], Y_2 = Time_2[Z==0], Delta_2 = delta2[Z==0], stratum = stratum)
+
+ 
+data1=rbind(dataT,dataC)
+
+
+censure_rateT1=sum(dataT$Delta_1==0)/n 
+censure_rateC1=sum(dataC$Delta_1==0)/n 
+
+censure_rateT2=sum(dataT$Delta_2==0)/n 
+censure_rateC2=sum(dataC$Delta_2==0)/n 
+
+data=data.frame(id=id, arm = arm, Y_1= data1[,1],Delta_1=data1[,2], Y_2 = data1[,3], Delta_2 = data1[,4], stratum = data1[,5] )
+
+partition_t.plot(data = data, Ctime = 1:20, arm.name = c("T", "C"), priority = c(1,2),tau = c(0,0))
+
+stat_t.plot(data = data, Ctime = 1:20, arm.name = c("T", "C"), priority = c(1,2),tau = c(0,0), statistic = "WR", stratum.weight = "equal", plot_CI = TRUE, plotTimeUnit = "months")
+stat_t.plot(data = data, Ctime = 1:20, arm.name = c("T", "C"), priority = c(1,2),tau = c(0,0), statistic = "WO", stratum.weight = "equal", plot_CI = TRUE, plotTimeUnit = "months")
+stat_t.plot(data = data, Ctime = 1:20, arm.name = c("T", "C"), priority = c(1,2),tau = c(0,0), statistic = "NB", stratum.weight = "equal", plot_CI = TRUE, plotTimeUnit = "months")
+```
+
+## AFT
+
+```{r}
+id=1:(2*n) 
+arm=rep(c("T","C"), each=200)
+
+U1 = runif(2*n) 
+U2 = runif(2*n) 
+
+lambda1 = 0.05; k1 = 1.1
+lambda2 = 0.09; k2 = 1.05
+
+fup_censure1=round(rweibull(2*n, shape = 1, scale =20),3)
+summary(fup_censure1)
+fup_censure2=round(rweibull(2*n, shape = 1, scale =20),3)
+
+Z = ifelse(arm == "T", 1, 0)
+beta = 0.9
+
+Time1 = round((((1/(1-U1)-1)*(1/lambda1))^(1/k1)*exp(Z*beta)), 3)
+
+
+
+Time_1 = pmin(Time1,  fup_censure1)
+delta1 = as.numeric(Time_1==fup_censure1)
+
+
+Time2 = round((((1/(1-U2)-1)*(1/lambda1))^(1/k2)*exp(Z*beta)), 3)
+Time_2 = pmin(Time2,  fup_censure2)
+delta2 = as.numeric(Time_2==fup_censure2)
+
+
+
+stratum=sample(rep(c(1,3,5,8), each = 1))
+dataT=data.frame(Y_1 = Time_1[Z==1], Delta_1 = delta1[Z==1], Y_2 = Time_2[Z==1], Delta_2  = delta2[Z==1], stratum = stratum)
+dataC=data.frame(Y_1 = Time_1[Z==0], Delta_1 = delta1[Z==0], Y_2 = Time_2[Z==0], Delta_2 = delta2[Z==0], stratum = stratum)
+
+ 
+data1=rbind(dataT,dataC)
+
+
+censure_rateT1=sum(dataT$Delta_1==0)/n 
+censure_rateC1=sum(dataC$Delta_1==0)/n 
+
+censure_rateT2=sum(dataT$Delta_2==0)/n 
+censure_rateC2=sum(dataC$Delta_2==0)/n 
+
+data=data.frame(id=id, arm = arm, Y_1= data1[,1],Delta_1=data1[,2], Y_2 = data1[,3], Delta_2 = data1[,4], stratum = data1[,5] )
+
+partition_t.plot(data = data, Ctime = 1:20, arm.name = c("T", "C"), priority = c(1,2),tau = c(0,0))
+
+stat_t.plot(data = data, Ctime = 1:20, arm.name = c("T", "C"), priority = c(1,2),tau = c(0,0), statistic = "WR", stratum.weight = "equal", plot_CI = TRUE, plotTimeUnit = "months")
+stat_t.plot(data = data, Ctime = 1:20, arm.name = c("T", "C"), priority = c(1,2),tau = c(0,0), statistic = "WO", stratum.weight = "equal", plot_CI = TRUE, plotTimeUnit = "months")
+stat_t.plot(data = data, Ctime = 1:20, arm.name = c("T", "C"), priority = c(1,2),tau = c(0,0), statistic = "NB", stratum.weight = "equal", plot_CI = TRUE, plotTimeUnit = "months")
+```
