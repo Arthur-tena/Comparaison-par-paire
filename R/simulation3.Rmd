@@ -62,7 +62,7 @@ U2 = runif(2*n)
 t_censure = c(9,14,19)
 resultats=list()
 for (t in t_censure){
-
+t=9
 lambda1 = 0.1; k1 = 2
 lambda2 = 0.12; k2 = 1.7
 
@@ -106,6 +106,7 @@ dataC=data.frame(Y_1 = Time_12[Z==0], Delta_1 = delta12[Z==0], Y_2 = Time_22[Z==
 
  
 data1=rbind(dataT,dataC)
+str(data1)
 
 summT = summary.data.frame(dataT)
 
@@ -137,7 +138,7 @@ censure_rateT2=sum(dataT$Delta_2==0)/n
 censure_rateC2=sum(dataC$Delta_2==0)/n 
 
 data=data.frame(id=id, arm = arm, Y_1= data1[,1],Delta_1=data1[,2], Y_2 = data1[,3], Delta_2 = data1[,4], stratum = data1[,5] )
-
+str(data)
 result =
   win.stat(
     data = data,
