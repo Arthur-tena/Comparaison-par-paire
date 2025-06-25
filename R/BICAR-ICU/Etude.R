@@ -1,4 +1,4 @@
-setwd("C:/Users/MASTERS TEMA Arthur/Documents/Comparaison-par-paire/R/BICAR-ICU")
+setwd("~/Comparaison-par-paire/R/BICAR-ICU")
 library(WINS)
 data=readxl::read_xlsx("Export-20250617.xlsx")
 

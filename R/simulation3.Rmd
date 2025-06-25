@@ -62,13 +62,12 @@ U2 = runif(2*n)
 t_censure = c(9,14,19)
 resultats=list()
 for (t in t_censure){
-t=9
 lambda1 = 0.1; k1 = 2
 lambda2 = 0.12; k2 = 1.7
 
-fup_censure1=round(rweibull(2*n, shape = 1, scale =20),3)
+fup_censure1=round(rexp(2*n, rate = 0.03),3)
 summary(fup_censure1)
-fup_censure2=round(rweibull(2*n, shape = 1, scale =20),3)
+fup_censure2=round(rexp(2*n, rate = 0.03),3)
 
 Z = ifelse(arm == "T", 1, 0)
 beta = -3
@@ -80,7 +79,7 @@ summary(Time1[Z==0])
 
 
 Time_1 = pmin(Time1,  fup_censure1)
-delta1 = as.numeric(Time_1==fup_censure1)
+delta1 = as.numeric(Time_1==Time1)
 
 Time_12 = pmin(Time_1, t)
 delta12 <- ifelse(Time_1 == Time_12, delta1,
@@ -93,7 +92,7 @@ print(delta1)
 Time2 = round((-log(1 - U2)) / (lambda2 * exp(beta * Z)^(1 / k2)),3)
 
 Time_2 = pmin(Time2,  fup_censure2)
-delta2 = as.numeric(Time_2==fup_censure2)
+delta2 = as.numeric(Time_2==Time2)
 
 Time_22 = pmin(Time_2, t)
 delta22 <- ifelse(Time_2 == Time_22, delta2,
@@ -250,7 +249,7 @@ colnames(dfT) = c("Y_1_T (tte)", "Y_2_T (tte)")
 
 
 p_valGPC = results_df1[,26]
-p_valWR = results_df1[,25]
+p_valWR = results_df1[,27]
 p_valWO = results_df1[,28]
 
 nb_pval_GPC = sum(p_valGPC< 0.05)
@@ -376,7 +375,7 @@ colnames(dfT) = c("Y_1_T (tte)", "Y_2_T (tte)")
 
 
 p_valGPC = results_df2[,26]
-p_valWR = results_df2[,25]
+p_valWR = results_df2[,27]
 p_valWO = results_df2[,28]
 
 nb_pval_GPC = sum(p_valGPC< 0.05)
@@ -499,7 +498,7 @@ colnames(dfT) = c("Y_1_T (tte)", "Y_2_T (tte)")
 
 
 p_valGPC = results_df3[,26]
-p_valWR = results_df3[,25]
+p_valWR = results_df3[,27]
 p_valWO = results_df3[,28]
 
 nb_pval_GPC = sum(p_valGPC< 0.05)
@@ -612,17 +611,17 @@ resultats=list()
 for (t in t_censure){
   
 
-lambda1 = 0.05; k1 = 1.1
-lambda2 = 0.09; k2 = 1.05
-
 
 Z = ifelse(arm == "T", 1, 0)
-beta = 0.9
+beta = 1
 
-fup_censure1=round(rweibull(2*n, shape = 1, scale =15),3)
+fup_censure1=round(rexp(2*n, rate = 0.03),3)
 summary(fup_censure1)
-fup_censure2=round(rweibull(2*n, shape = 1, scale =15),3)
+fup_censure2=round(rexp(2*n, rate = 0.03),3)
 
+
+lambda1 = 0.1; k1 = 1.1
+lambda2 = 0.09; k2 = 1.05
 
 Time1 = round((((1/(1-U1)-1)*(1/lambda1))^(1/k1)*exp(Z*beta)), 3)
 summary(Time1)
@@ -631,7 +630,7 @@ summary(Time1[Z==0])
 
 
 Time_1 = pmin(Time1,  fup_censure1)
-delta1 = as.numeric(Time_1==fup_censure1)
+delta1 = as.numeric(Time_1==Time1)
 
 Time_12 = pmin(Time_1, t)
 delta12 = ifelse(Time_1 == Time_12, delta1,
@@ -641,7 +640,7 @@ delta12 = ifelse(Time_1 == Time_12, delta1,
 
 Time2 = round((((1/(1-U2)-1)*(1/lambda2))^(1/k2)*exp(Z*beta)), 3)
 Time_2 = pmin(Time2,  fup_censure2)
-delta2 = as.numeric(Time_2==fup_censure2)
+delta2 = as.numeric(Time_2==Time2)
 
 Time_22 = pmin(Time_2, t)
 delta22 = ifelse(Time_2 == Time_22, delta2,
@@ -794,7 +793,7 @@ colnames(dfT) = c("Y_1_T (tte)", "Y_2_T (tte)")
 
 
 p_valGPC = results_df1[,26]
-p_valWR = results_df1[,25]
+p_valWR = results_df1[,27]
 p_valWO = results_df1[,28]
 
 nb_pval_GPC = sum(p_valGPC< 0.05)
@@ -920,7 +919,7 @@ colnames(dfT) = c("Y_1_T (tte)", "Y_2_T (tte)")
 
 
 p_valGPC = results_df2[,26]
-p_valWR = results_df2[,25]
+p_valWR = results_df2[,27]
 p_valWO = results_df2[,28]
 
 nb_pval_GPC = sum(p_valGPC< 0.05)
@@ -1043,7 +1042,7 @@ colnames(dfT) = c("Y_1_T (tte)", "Y_2_T (tte)")
 
 
 p_valGPC = results_df3[,26]
-p_valWR = results_df3[,25]
+p_valWR = results_df3[,27]
 p_valWO = results_df3[,28]
 
 nb_pval_GPC = sum(p_valGPC< 0.05)
@@ -1133,9 +1132,9 @@ U2 = runif(2*n)
 lambda1 = 0.1; k1 = 2
 lambda2 = 0.12; k2 = 1.7
 
-fup_censure1=round(rweibull(2*n, shape = 1, scale =20),3)
+fup_censure1=round(rexp(2*n, rate = 0.03),3)
 summary(fup_censure1)
-fup_censure2=round(rweibull(2*n, shape = 1, scale =20),3)
+fup_censure2=round(rexp(2*n, rate = 0.03),3)
 
 Z = ifelse(arm == "T", 1, 0)
 beta = -3
@@ -1145,13 +1144,13 @@ Time1 = round((-log(1 - U1)) / (lambda1 * exp(beta * Z)^(1 / k1)),3)
 
 
 Time_1 = pmin(Time1,  fup_censure1)
-delta1 = as.numeric(Time_1==fup_censure1)
+delta1 = as.numeric(Time_1==Time1)
 
 
 Time2 = round((-log(1 - U2)) / (lambda2 * exp(beta * Z)^(1 / k2)),3)
 
 Time_2 = pmin(Time2,  fup_censure2)
-delta2 = as.numeric(Time_2==fup_censure2)
+delta2 = as.numeric(Time_2==Time2)
 
 
 
@@ -1187,27 +1186,27 @@ arm=rep(c("T","C"), each=200)
 U1 = runif(2*n) 
 U2 = runif(2*n) 
 
-lambda1 = 0.05; k1 = 1.1
+lambda1 = 0.1; k1 = 1.1
 lambda2 = 0.09; k2 = 1.05
 
-fup_censure1=round(rweibull(2*n, shape = 1, scale =20),3)
+fup_censure1=round(rexp(2*n, rate = 0.03),3)
 summary(fup_censure1)
-fup_censure2=round(rweibull(2*n, shape = 1, scale =20),3)
+fup_censure2=round(rexp(2*n, rate = 0.03),3)
 
 Z = ifelse(arm == "T", 1, 0)
-beta = 0.9
+beta = 1
 
 Time1 = round((((1/(1-U1)-1)*(1/lambda1))^(1/k1)*exp(Z*beta)), 3)
 
 
 
 Time_1 = pmin(Time1,  fup_censure1)
-delta1 = as.numeric(Time_1==fup_censure1)
+delta1 = as.numeric(Time_1==Time1)
 
 
 Time2 = round((((1/(1-U2)-1)*(1/lambda1))^(1/k2)*exp(Z*beta)), 3)
 Time_2 = pmin(Time2,  fup_censure2)
-delta2 = as.numeric(Time_2==fup_censure2)
+delta2 = as.numeric(Time_2==Time2)
 
 
 
