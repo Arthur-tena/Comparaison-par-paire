@@ -14,12 +14,30 @@ knitr::opts_knit$set(root.dir = "~/comparaison-par-paire/R/BICAR-ICU")
 
 ```{r}
 library(WINS)
+library(ggplot2)
 data=readxl::read_xlsx("Export-20250617.xlsx")
 
 data_epur=data[,c(1, 3, 6, 7,8, 62, 69, 76, 78)]
 colnames(data_epur)=c("id","arm", "SEPSIS_ON", "AGE_RANDO", "AKIN", "Décès", "Dialyse", "Vaso_free_day", "Ventil_free_day")
-data_epur = data_epur[-is.na(data_epur), ]
+data_epur = data_epur[-which(is.na(data_epur$Vaso_free_day)), ]
+data_epur
+
 ```
+
+# Analyse descriptive 
+
+```{r}
+data_epur$Décès= ifelse(data_epur$Décès == "Non", 0, 1)
+data_epur$Dialyse = ifelse(data_epur$Dialyse == "Non", 0, 1)
+data_epur$id = 1:nrow(data_epur)
+summary(data_epur)
+sum(data_epur$arm == "BRAS B")
+sum(data_epur$AKIN[data_epur$arm == "BRAS B"] == "2-3")
+sum(data_epur$AKIN[data_epur$arm == "BRAS A"] == "2-3")
+
+ggplot(data = data_epur, aes(Vaso_free_day))
+```
+
 
 # Analyse non stratifiée
 
@@ -34,7 +52,6 @@ New_data = data.frame(
 )
 
 
-New_data = New_data[!is.na(New_data$vaso_free_day), ]
 New_data$id=1:nrow(New_data)
 colnames(New_data)=c("id", "arm", "Y_1", "Y_2", "Y_3", "Y_4")
 
@@ -415,7 +432,7 @@ data_septis_oui = data.frame(
   ventil_free_day = data_epur$Ventil_free_day[data_epur$SEPSIS_ON=="Oui"],
   vaso_free_day = data_epur$Vaso_free_day[data_epur$SEPSIS_ON=="Oui"]
 )
-
+nrow(data_septis_oui)
 
 
 data_septis_oui$id=1:nrow(data_septis_oui)
@@ -500,7 +517,7 @@ data_septis_non = data.frame(
   ventil_free_day = data_epur$Ventil_free_day[data_epur$SEPSIS_ON=="Non"],
   vaso_free_day = data_epur$Vaso_free_day[data_epur$SEPSIS_ON=="Non"]
 )
-
+nrow(data_septis_non)
 
 data_septis_non = data_septis_non[!is.na(data_septis_non$vaso_free_day), ]
 data_septis_non$id=1:nrow(data_septis_non)
@@ -646,7 +663,7 @@ data_akin_01 = data.frame(
   vaso_free_day = data_epur$Vaso_free_day[data_epur$AKIN=="0-1"]
 )
 
-
+nrow(data_akin_01)
 data_akin_01 = data_akin_01[!is.na(data_akin_01$vaso_free_day), ]
 data_akin_01$id=1:nrow(data_akin_01)
 colnames(data_akin_01)=c("id", "arm", "Y_1", "Y_2", "Y_3", "Y_4")
@@ -731,7 +748,7 @@ data_akin_23 = data.frame(
   vaso_free_day = data_epur$Vaso_free_day[data_epur$AKIN=="2-3"]
 )
 
-
+nrow(data_akin_23)
 data_akin_23 = data_akin_23[!is.na(data_akin_23$vaso_free_day), ]
 data_akin_23$id=1:nrow(data_akin_23)
 colnames(data_akin_23)=c("id", "arm", "Y_1", "Y_2", "Y_3", "Y_4")
