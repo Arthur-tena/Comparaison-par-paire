@@ -1161,8 +1161,8 @@ beta = 1
 U1 = runif(2*n) 
 U2 = runif(2*n) 
 
-fup_censure1=round(rexp(2*n, rate = 0.15),3)
-fup_censure2=round(rexp(2*n, rate = 0.15),3)
+fup_censure1=round(rexp(2*n, rate = 0.07),3)
+fup_censure2=round(rexp(2*n, rate = 0.07),3)
 
 
 mu1 <- 2; sigma1 <- 1.2
@@ -1225,8 +1225,9 @@ for (t in t_censure){
   
 
 
-fup_censure1=round(rexp(2*n, rate = 0.15),3)
-fup_censure2=round(rexp(2*n, rate = 0.15),3)
+fup_censure1=round(rexp(2*n, rate = 0.06),3)
+summary(fup_censure1)
+fup_censure2=round(rexp(2*n, rate = 0.07),3)
 
 
 mu1 <- 2; sigma1 <- 1.2
@@ -1496,11 +1497,11 @@ ggplot(values_long, aes(x = value, fill = method)) +
         x = "Valeur", y = "Densité") +
    scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
    scale_fill_manual(values = c("orange",  "purple", "cyan")) +
-  annotate("text", x = 4.5, y = 1.6, label = paste("Étendue GPC : ", étendue_GPC), color = "orange", hjust = 1) +
-  annotate("text", x = 4.5, y = 2.35, label = paste("Étendue WR : ", étendue_WR), color = "cyan", hjust = 1) +
-  annotate("text", x = 4.5, y = 3.1, label = paste("Étendue WO : ", étendue_WO), color = "purple", hjust = 1) 
+  annotate("text", x = 5.5, y = 1.6, label = paste("Étendue GPC : ", étendue_GPC), color = "orange", hjust = 1) +
+  annotate("text", x = 5.5, y = 2.35, label = paste("Étendue WR : ", étendue_WR), color = "cyan", hjust = 1) +
+  annotate("text", x = 5.5, y = 3.1, label = paste("Étendue WO : ", étendue_WO), color = "purple", hjust = 1) 
 
-#ggsave("AFT_t9.pdf", device = "pdf", path = "C:/Users/MASTERS TEMA Arthur/Documents/Comparaison-par-paire/plots" )
+ggsave("AFT_t9.pdf", device = "pdf", path = "C:/Users/MASTERS TEMA Arthur/Documents/Comparaison-par-paire/plots" )
 
 ```
 
@@ -1621,11 +1622,11 @@ ggplot(values_long, aes(x = value, fill = method)) +
         x = "Valeur", y = "Densité") +
    scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
    scale_fill_manual(values = c("orange",  "purple", "cyan")) +
-  annotate("text", x = 4.5, y = 1.6, label = paste("Étendue GPC : ", étendue_GPC), color = "orange", hjust = 1) +
-  annotate("text", x = 4.5, y = 2.35, label = paste("Étendue WR : ", étendue_WR), color = "cyan", hjust = 1) +
-  annotate("text", x = 4.5, y = 3.1, label = paste("Étendue WO : ", étendue_WO), color = "purple", hjust = 1)
+  annotate("text", x = 5.5, y = 1.6, label = paste("Étendue GPC : ", étendue_GPC), color = "orange", hjust = 1) +
+  annotate("text", x = 5.5, y = 2.35, label = paste("Étendue WR : ", étendue_WR), color = "cyan", hjust = 1) +
+  annotate("text", x = 5.5, y = 3.1, label = paste("Étendue WO : ", étendue_WO), color = "purple", hjust = 1)
 
-#ggsave("AFT_t14.pdf", device = "pdf", path = "C:/Users/MASTERS TEMA Arthur/Documents/Comparaison-par-paire/plots" )
+ggsave("AFT_t14.pdf", device = "pdf", path = "C:/Users/MASTERS TEMA Arthur/Documents/Comparaison-par-paire/plots" )
 
 ```
 
@@ -1745,11 +1746,11 @@ ggplot(values_long, aes(x = value, fill = method)) +
         x = "Valeur", y = "Densité") +
    scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
    scale_fill_manual(values = c("orange",  "purple", "cyan")) +
-  annotate("text", x = 4.5, y = 1.6, label = paste("Étendue GPC : ", étendue_GPC), color = "orange", hjust = 1) +
-  annotate("text", x = 4.5, y = 2.35, label = paste("Étendue WR : ", étendue_WR), color = "cyan", hjust = 1) +
-  annotate("text", x = 4.5, y = 3.1, label = paste("Étendue WO : ", étendue_WO), color = "purple", hjust = 1)
+  annotate("text", x = 5.5, y = 1.6, label = paste("Étendue GPC : ", étendue_GPC), color = "orange", hjust = 1) +
+  annotate("text", x = 5.5, y = 2.35, label = paste("Étendue WR : ", étendue_WR), color = "cyan", hjust = 1) +
+  annotate("text", x = 5.5, y = 3.1, label = paste("Étendue WO : ", étendue_WO), color = "purple", hjust = 1)
 
-#ggsave("AFT_t19.pdf", device = "pdf", path = "C:/Users/MASTERS TEMA Arthur/Documents/Comparaison-par-paire/plots" )
+ggsave("AFT_t19.pdf", device = "pdf", path = "C:/Users/MASTERS TEMA Arthur/Documents/Comparaison-par-paire/plots" )
 
 ```
 
@@ -1826,31 +1827,26 @@ stat_t.plot(data = data, Ctime = 1:20, arm.name = c("T", "C"), priority = c(1,2)
 ## AFT
 
 ```{r}
+n=200
 id=1:(2*n) 
 arm=rep(c("T","C"), each=200)
-
+Z = ifelse(arm == "T", 1, 0)
+beta = 1
 U1 = runif(2*n) 
 U2 = runif(2*n) 
 
-lambda1 = 0.1; k1 = 1.1
-lambda2 = 0.09; k2 = 1.05
-
-fup_censure1=round(rexp(2*n, rate = 0.03),3)
-summary(fup_censure1)
-fup_censure2=round(rexp(2*n, rate = 0.03),3)
-
-Z = ifelse(arm == "T", 1, 0)
-beta = 1
-
-Time1 = round((((1/(1-U1)-1)*(1/lambda1))^(1/k1)*exp(Z*beta)), 3)
+fup_censure1=round(rexp(2*n, rate = 0.08),3)
+fup_censure2=round(rexp(2*n, rate = 0.08),3)
 
 
+mu1 <- 2; sigma1 <- 1.2
+mu2 <- 2.8; sigma2 <- 0.8
 
+Time1 = round(exp(mu1 + sigma1 * qnorm(U1)) * exp(Z * beta), 3)
 Time_1 = pmin(Time1,  fup_censure1)
 delta1 = as.numeric(Time_1==Time1)
 
-
-Time2 = round((((1/(1-U2)-1)*(1/lambda1))^(1/k2)*exp(Z*beta)), 3)
+Time2 = round(exp(mu2 + sigma2 * qnorm(U2)) * exp(Z * beta), 3)
 Time_2 = pmin(Time2,  fup_censure2)
 delta2 = as.numeric(Time_2==Time2)
 
@@ -1876,11 +1872,11 @@ partition_t.plot(data = data, Ctime = 1:20, arm.name = c("T", "C"), priority = c
 
 stat_t.plot(data = data, Ctime = 1:20, arm.name = c("T", "C"), priority = c(1,2),tau = c(0,0), statistic = "WR", stratum.weight = "equal", plot_CI = TRUE, plotTimeUnit = "months")
 
-#ggsave("stat_plot_AFT_WR.pdf", device = "pdf", path = "C:/Users/MASTERS TEMA Arthur/Documents/Comparaison-par-paire/plots" )
+ggsave("stat_plot_AFT_WR.pdf", device = "pdf", path = "C:/Users/MASTERS TEMA Arthur/Documents/Comparaison-par-paire/plots" )
 
 
 stat_t.plot(data = data, Ctime = 1:20, arm.name = c("T", "C"), priority = c(1,2),tau = c(0,0), statistic = "WO", stratum.weight = "equal", plot_CI = TRUE, plotTimeUnit = "months")
-#ggsave("stat_plot_AFT_WO.pdf", device = "pdf", path = "C:/Users/MASTERS TEMA Arthur/Documents/Comparaison-par-paire/plots" )
+ggsave("stat_plot_AFT_WO.pdf", device = "pdf", path = "C:/Users/MASTERS TEMA Arthur/Documents/Comparaison-par-paire/plots" )
 stat_t.plot(data = data, Ctime = 1:20, arm.name = c("T", "C"), priority = c(1,2),tau = c(0,0), statistic = "NB", stratum.weight = "equal", plot_CI = TRUE, plotTimeUnit = "months")
-#ggsave("stat_plot_AFT_NB.pdf", device = "pdf", path = "C:/Users/MASTERS TEMA Arthur/Documents/Comparaison-par-paire/plots" )
+ggsave("stat_plot_AFT_NB.pdf", device = "pdf", path = "C:/Users/MASTERS TEMA Arthur/Documents/Comparaison-par-paire/plots" )
 ```
