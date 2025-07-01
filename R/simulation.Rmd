@@ -1,0 +1,941 @@
+---
+title: "simulations"
+output: pdf_document
+date: "2025-03-10"
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+setwd("~/comparaison-par-paire/R")
+knitr::opts_chunk$set(echo = FALSE)
+set.seed(123)
+library(dplyr)
+library(purrr)
+library(ggplot2)
+library(tidyr)
+library(npsm)
+library(survival)
+library(coin)
+library(WINS)
+
+library(gridExtra)
+library(grid)
+
+library(doParallel)
+library(parallel)
+library(foreach)
+source("fonctions.R")
+```
+
+# Générer les données 
+
+## Différents scénario
+Je prend comme généralités que :
+
+ * pour les binomiales, 1 corresponds à l'évènement d'intérêt et qu'il est meilleur d'avoir 0 que 1
+ * pour les tte, une valeur plus grande est préférable, mais cela dépends aussi de la censure
+ * pour les continues, il n'y a que des valeurs positives et une valeur plus grande est préférable
+ 
+ Les notations des vecteurs T et C sont les suivantes : T_scénario_cas de figure (resp C_scénario_cas de figure)
+ où le scénario varie entre 1 et 3 et les cas de figure entre 1 et 6 comme suit : (1) tte/tte ; (2) tte/continue ; (3) tte/binaire ; (4)  continue/continue ; (5)  continue/binaire ; (6) binaire/binaire. 
+  
+
+### Scénario 1 : T uniformément meilleur que C
+
+```{r, scénario 1 traitement}
+
+# tte/tte
+T_1_1=cbind(gener_tte(1.1, 0.5),gener_tte(0.75,0.33))
+C_1_1=cbind(gener_tte(0.8, 2.5),gener_tte(0.33,2.5))
+
+# tte/continue
+T_1_2=cbind(gener_tte(0.75, 0.75),gener_continue(2,1))
+C_1_2=cbind(gener_tte(0.75,1.5),gener_continue(0,1))
+
+# tte/binaire
+T_1_3=cbind(gener_tte(0.75,0.5),gener_binom(0.75))
+C_1_3=cbind(gener_tte(0.33,2.3),gener_binom(0.45))
+
+# continue/continue
+T_1_4=cbind(gener_continue(3,1),gener_continue(3,2))
+C_1_4=cbind(gener_continue(2,1),gener_continue(1,1))
+
+# continue/binaire
+T_1_5=cbind(gener_continue(2.5,1),gener_binom(0.65))
+C_1_5=cbind(gener_continue(0,2),gener_binom(0.35))
+
+# binaire/binaire
+T_1_6=cbind(gener_binom(0.75), gener_binom(0.65))
+C_1_6=cbind(gener_binom(0.45), gener_binom(0.5))
+
+```
+
+La visulaisation sert à vérifier si les valeurs correspondent bien au scénario choisis
+
+```{r, visualisation, fig.height=3, fig.width=3}
+#### continue/continue
+
+data41=as.data.frame(cbind(T_1_4[,1], C_1_4[,1]))
+
+data_long41 = data41 %>%
+  mutate(Groupe_T = "T", Groupe_C = "C") %>%
+  tidyr::pivot_longer(cols = c(V1, V2), names_to = "Variable", values_to = "Valeur") %>%
+  mutate(Groupe = ifelse(Variable == "V1", "T", "C")) 
+
+ggplot(data_long41, aes(x = Valeur, fill = Groupe)) +
+  geom_histogram(bins = 20, alpha = 0.5, color = "black", position = "identity") +
+  scale_fill_manual(values = c("T" = "darkblue", "C" = "darkred"), name = "Groupe") +
+  theme_classic()
+
+data42=as.data.frame(cbind(T_1_4[,2], C_1_4[,2]))
+
+data_long42 = data42 %>%
+  mutate(Groupe_T = "T", Groupe_C = "C") %>%
+  tidyr::pivot_longer(cols = c(V1, V2), names_to = "Variable", values_to = "Valeur") %>%
+  mutate(Groupe = ifelse(Variable == "V1", "T", "C")) 
+
+ggplot(data_long42, aes(x = Valeur, fill = Groupe)) +
+  geom_histogram(bins = 20, alpha = 0.5, color = "black", position = "identity") +
+  scale_fill_manual(values = c("T" = "darkblue", "C" = "darkred"), name = "Groupe") +
+  theme_classic() +labs(title = "continue/continue 2")
+
+#### continue/binaire
+
+data5=as.data.frame(cbind(T_1_5[,1],C_1_5[,1]))
+data_long5 = data5 %>%
+  mutate(Groupe_T = "T", Groupe_C = "C") %>%
+  tidyr::pivot_longer(cols = c(V1, V2), names_to = "Variable", values_to = "Valeur") %>%
+  mutate(Groupe = ifelse(Variable == "V1", "T", "C")) 
+
+ggplot(data_long5, aes(x = Valeur, fill = Groupe)) +
+  geom_histogram(bins = 20, alpha = 0.5, color = "black", position = "identity") +
+  scale_fill_manual(values = c("T" = "darkblue", "C" = "darkred"), name = "Groupe") +
+  theme_classic()+labs(title = "continue/binaire")
+
+#### binaire/binaire
+
+data6=as.data.frame(cbind(T_1_6[,1],C_1_6[,1]))
+data_long6 = data6 %>%
+  mutate(Groupe_T = "T", Groupe_C = "C") %>%
+  tidyr::pivot_longer(cols = c(V1, V2), names_to = "Variable", values_to = "Valeur") %>%
+  mutate(Groupe = ifelse(Variable == "V1", "T", "C")) 
+
+
+ggplot(data_long6, aes(x = Valeur, fill = Groupe)) +
+  geom_histogram(bins = 20, alpha = 0.5, color = "black", position = "identity") +
+  scale_fill_manual(values = c("T" = "darkblue", "C" = "darkred"), name = "Groupe") +
+  theme_classic() +labs(title = "binaire/binaire")
+```
+
+### Scénario 2 : C uniformément meilleur que T
+
+```{r, scénario 2 contrôle}
+# tte/tte
+T_2_1=cbind(gener_tte(0.8, 2.5),gener_tte(0.33,2.5))
+C_2_1=cbind(gener_tte(1.1, 0.5),gener_tte(0.75,0.33))
+
+# tte/continue
+T_2_2=cbind(gener_continue(0,1),gener_tte(0.75,1.5))
+C_2_2=cbind(gener_continue(2,1),gener_tte(0.75, 0.75))
+
+# tte/binaire
+T_2_3=cbind(gener_tte(0.33,2.3),gener_binom(0.45))
+C_2_3=cbind(gener_tte(0.75,0.5),gener_binom(0.75))
+
+# continue/continue
+T_2_4=cbind(gener_continue(2,1),gener_continue(1,1))
+C_2_4=cbind(gener_continue(3,1),gener_continue(3,2))
+
+# continue/binaire
+T_2_5=cbind(gener_continue(0,2),gener_binom(0.35))
+C_2_5=cbind(gener_continue(2.5,1),gener_binom(0.65))
+
+# binaire/binaire
+T_2_6=cbind(gener_binom(0.45), gener_binom(0.5))
+C_2_6=cbind(gener_binom(0.75), gener_binom(0.65))
+```
+
+
+### Scénario 3 : T similaire à C
+
+```{r, scénario 3 égal}
+# tte/tte
+T_3_1=cbind(gener_tte(0.8,1.2),gener_tte(0.35,1.3))
+C_3_1=cbind(gener_tte(0.66,1.25),gener_tte(0.5,1))
+
+# tte/continue
+T_3_2=cbind(gener_tte(0.75,1.5),gener_continue(3,2))
+C_3_2=cbind(gener_tte(0.5,1.5),gener_continue(2.5,2))
+
+# tte/binaire
+T_3_3=cbind(gener_tte(0.5,1),gener_binom(0.45))
+C_3_3=cbind(gener_tte(0.7,1.3),gener_binom(0.5))
+
+# continue/continue
+T_3_4=cbind(gener_continue(4,2),gener_continue(3,2))
+C_3_4=cbind(gener_continue(3,2),gener_continue(2,4))
+
+# continue/binaire
+T_3_5=cbind(gener_continue(3,1),gener_binom(0.45))
+C_3_5=cbind(gener_continue(2.5,2),gener_binom(0.55))
+
+# binaire/binaire
+T_3_6=cbind(gener_binom(0.45), gener_binom(0.55))
+C_3_6=cbind(gener_binom(0.4), gener_binom(0.6))
+
+```
+
+```{r, normale}
+
+mu1 = 2.5
+sigma1 = 1.5
+mu2 = 2.5
+sigma2 = 1.5
+
+x = seq(mu1 - 4*sigma1, mu1 + 4*sigma1, length.out = 100)
+
+y1 = dnorm(x, mean = mu1, sd = sigma1)
+y2 = dnorm(x, mean = mu2, sd = sigma2)
+
+plot(x, y1, type = "l", lwd = 2, col = "blue", 
+     main = "Densités des lois normales",
+     xlab = "x", ylab = "Densité")
+
+lines(x, y2, lwd = 2, col = "red")  
+legend('topright', legend=c("T","C"), col=c("blue", "red"), lwd=c(2,2))
+
+```
+
+```{r, weibull}
+
+shape = 1
+scale = 3
+
+x = seq(0,100, length.out = 1000)
+
+y1 = dweibull(x, shape = shape, scale = scale)
+
+plot(x, y1, type = "l", lwd = 2, col = "blue", 
+     main = "Densités des lois normales",
+     xlab = "x", ylab = "Densité")
+
+#lines(x, y2, lwd = 2, col = "red")  
+legend('topright', legend=c("T","C"), col=c("blue", "red"), lwd=c(2,2))
+
+```
+
+
+```{r, poisson}
+
+lambda1 = 1
+lambda2 = 4
+lambda3 = 5
+lambda4= 0.5
+
+x = 0:20
+
+y1 = dpois(x, lambda = lambda1)
+y2 = dpois(x, lambda = lambda2)
+y3 = dpois(x, lambda= lambda3)
+y4 = dpois(x, lambda= lambda4)
+
+
+plot(x, y1, type = "h", lwd = 2, col = "blue", 
+     main = "Fonctions de masse des lois de Poisson",
+     xlab = "x (valeurs entières)", ylab = "Probabilité", ylim = c(0, max(y3)))
+
+points(x, y1, col = "blue", pch = 16)
+lines(x, y2, type = "h", lwd = 2, col = "darkblue")
+points(x, y2, col = "darkblue", pch = 16)
+lines(x, y3, type = "h", lwd = 2, col = "green")
+points(x, y3, col = "green", pch = 16)
+lines(x, y4, type = "h", lwd = 2, col = "darkgreen")
+points(x, y4, col = "darkgreen", pch = 16)
+
+legend("topright", 
+       legend = c("lambda = 1", "lambda = 3", "lambda = 5", "lambda = 0.5"), 
+       col = c("blue", "darkblue", "green", "darkgreen"), 
+       lwd = 2, pch = 16)
+
+```
+
+## Simulations
+
+```{r, parallelisation du code}
+n_sim = 2000
+n=200
+
+mean_T = 3
+sd_T = 1
+
+mean_C = 2
+sd_C = 1
+
+mu_T = 1
+lambda_T = 0.3
+mu_T/(mu_T+lambda_T)
+
+mu_C = 1
+lambda_C = 1
+mu_C/(mu_C+lambda_C)
+
+prob_T = 0.5
+prob_C =0.5
+
+nb_core = parallel::detectCores() - 2
+cl = makeCluster(nb_core)
+registerDoParallel(cl)
+count = 0
+start_time = Sys.time()
+
+results = foreach(s = 1:n_sim, .combine = rbind, .packages = c("dplyr", "survival", "parallel", "foreach", "doParallel", "WINS"), .export = c("win.stat")) %dopar% {
+  set.seed(s)
+  
+  id=1:(2*n) 
+  arm=rep(c("T","C"), each=200)
+  #Y_1_T=gener_continue(mean = mean_T, sd = sd_T)
+  Y_1_T=gener_tte(mu = mu_T, lambda = lambda_T)
+  #Y_2_T=gener_continue(mean = mean_T, sd = sd_T)
+  Y_2_T=as.numeric(gener_binom(prob = prob_T)[,1] )
+  
+  Y_1_C=gener_tte(mu = mu_C, lambda = lambda_C)
+  #Y_1_C=gener_continue(mean = mean_C+0.5, sd = sd_C)
+  #Y_2_C=gener_continue(mean = mean_C, sd = sd_C)
+  Y_2_C=as.numeric(gener_binom(prob = prob_C)[,1])-1
+  
+  stratum=sample(rep(c(1,3,5,8), each = 50))
+  dataT=data.frame(Y_1 = Y_1_T, Y_2 = Y_2_T, stratum = stratum)
+ # head(dataT)
+  dataC=data.frame(Y_1 = Y_1_C, Y_2 = Y_2_C, stratum = stratum)
+ # head(dataC)
+  data1=rbind(dataT,dataC)
+  
+  data=data.frame(id=id, arm = arm, Y_1= data1[,1], Y_2 = data1[,2], stratum = data1[,3] )
+  
+  names(data)[names(data) == "X"] = "Y_1"
+  names(data)[names(data) == "X.1"] = "Y_2"
+  # names(data)[names(data) == "Y_1.time"] = "Y_1"
+  # names(data)[names(data) == "Y_1.status"] = "Delta_1"
+  #sum_censure = sum(data$Delta_1 == 0)
+
+
+result =
+  win.stat(
+    data = data,
+    ep_type = c("tte", "binary"),
+    stratum.weight = "equal",
+    tau = 0.5,
+    arm.name = c("T", "C"),
+    alpha = 0.05,
+    digit = 3,
+    pvalue = "two-sided",
+    priority = c(2, 1),
+    summary.print = FALSE
+  )
+win_edp1=sum(result$summary_ep$Trt_Endpoint1[,2])
+loose_edp1=sum(result$summary_ep$Con_Endpoint1[,2])
+tie_edp1=4*2500-sum(win_edp1+loose_edp1)
+win_edp2=sum(result$summary_ep$Trt_Endpoint2[,2])
+loose_edp2=sum(result$summary_ep$Con_Endpoint2[,2])
+tie_edp2=tie_edp1-(loose_edp2+win_edp2)
+
+
+  count = count + 1
+  write.table(c(count), file="../output.txt", append = T, col.names = F)
+  
+   val_GPC = result$Win_statistic$Net_Benefit[1]
+   val_WR  = result$Win_statistic$Win_Ratio[1]
+   val_WO  = result$Win_statistic$Win_Odds[1]
+  
+  p_val_GPC = result$p_value[2]
+  p_val_WR  = result$p_value[1]
+  p_val_WO  = result$p_value[3]
+  
+  #return(unname(c(val_GPC,val_WR,val_WO,p_val_GPC, p_val_WR, p_val_WO,sum_censure,win_edp1,loose_edp1,tie_edp1,win_edp2,loose_edp2,tie_edp2))))
+  return(unname(c(val_GPC,val_WR,val_WO,p_val_GPC, p_val_WR, p_val_WO,win_edp1,loose_edp1,tie_edp1,win_edp2,loose_edp2,tie_edp2)))
+}
+
+stopCluster(cl)
+end_time = Sys.time()
+execution_time = end_time - start_time
+print(execution_time)
+
+results_df = as.data.frame(results)
+
+
+#colnames(results_df) = c("val_GPC", "val_WR","val_WO" ,"p_val_GPC", "p_val_WR", "p_val_WO", "sum_censure","Win_Edp1","Loose_Edp1","Tie_Edp1","Win_Edp2","Loose_Edp2","Tie_Edp2")
+colnames(results_df) = c("val_GPC", "val_WR","val_WO" ,"p_val_GPC", "p_val_WR", "p_val_WO","Win_Edp1","Loose_Edp1","Tie_Edp1","Win_Edp2","Loose_Edp2","Tie_Edp2")
+Win   = round(c(mean(as.numeric(results_df$Win_Edp1)), mean(as.numeric(results_df$Win_Edp2)), mean(as.numeric(results_df$Win_Edp1)) + mean(as.numeric(results_df$Win_Edp2)) ))
+Loose = round(c(mean(as.numeric(results_df$Loose_Edp1)), mean(as.numeric(results_df$Loose_Edp2)), mean(as.numeric(results_df$Loose_Edp1))+mean(as.numeric(results_df$Loose_Edp2)) ))
+Tie   = round(c(mean(as.numeric(results_df$Tie_Edp1)), mean(as.numeric(results_df$Tie_Edp2)), mean(as.numeric(results_df$Tie_Edp2)) ))
+
+df1 = data.frame(
+  row.names = c("endpoint1", "endpoint2", "overall"),
+  Win   = Win,
+  Loose = Loose,
+  Tie   = Tie,
+  WR = round(Win/Loose,5),
+  WO = round((Win+0.5*Tie)/(Loose+0.5*Tie),5),
+  GPC = round((Win-Loose)/(Win+Loose+Tie),5),
+  GPC_trans = round(((Win-Loose)/(Win+Loose+Tie)+1)/(1-(Win-Loose)/(Win+Loose+Tie)),5)
+)
+View(df1)
+ 
+ values_long = results_df %>%
+   select(starts_with("val_")) %>%
+   pivot_longer(cols = everything(), names_to = "method", values_to = "value") %>%
+   mutate(method = recode(method,
+                          "val_GPC" = "GPC",
+                          "val_WR"  = "WR",
+                          "val_WO"  = "WO"))
+ values_long$value = unlist(values_long$value)
+
+pvals_long = results_df %>%
+  select(starts_with("p_val_")) %>%
+  pivot_longer(cols = everything(), names_to = "method", values_to = "p_value") %>%
+  mutate(method = recode(method,
+                         "p_val_GPC" = "GPC",
+                         "p_val_WR"  = "WR",
+                         "p_val_WO"  = "WO"))
+pvals_long$p_value = unlist(pvals_long$p_value)
+
+ vlines = data.frame(
+   method = c("GPC", "WR", "WO"),
+   intercept = c(0, 1, 1),
+   linetype_label = "Hypothèse H0"
+ )
+ 
+ # Graphiques
+ 
+
+ggplot(pvals_long, aes(x = method, y = p_value, fill = method)) +
+  geom_boxplot(alpha = 0.7) +
+  theme_minimal() +
+  labs(title = "Distribution des p-valeurs ",
+       x = "Test", y = "p-valeur") +
+  geom_hline(aes(yintercept = 0.05, linetype = "Seuil de significativité"), color = "red") +
+  scale_linetype_manual(name = "", values = c("Seuil de significativité" = "dashed")) +
+  scale_fill_manual(values = c("orange", "purple", "cyan"))
+
+
+ggplot(pvals_long, aes(x = method, y = p_value, fill = method)) +
+  geom_violin(trim = FALSE, alpha = 0.6) +
+  geom_jitter(width = 0.15, size = 1.5, color = "black", alpha = 0.8)+
+  geom_hline(aes(yintercept = 0.05, linetype = "Seuil de significativité"), color = "red") +
+  scale_linetype_manual(name = "", values = c("Seuil de significativité" = "dashed")) +
+  theme_minimal() +
+  labs(title = "Distribution des p-valeurs",
+       x = "Test", y = "p-valeur") +
+  scale_fill_manual(values = c("orange", "purple", "cyan"))
+
+#hist(as.numeric(results_df$sum_censure))
+ggplot(values_long, aes(x = value, fill = method)) +
+   geom_density(alpha = 0.6) +
+   geom_vline(data = vlines, aes(xintercept = intercept, linetype = linetype_label), 
+              color = "black", lwd = 1) +
+   facet_wrap(~method, scales = "free") +
+   theme_minimal() +
+   labs(title = "Distribution des statistiques de test",
+        x = "Valeur", y = "Densité") +
+   scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
+   scale_fill_manual(values = c("orange", "purple", "cyan"))
+
+
+ # x = seq(mean_T - 4*sd_T, mean_T + 4*sd_T, length.out = 100)
+ # y1 = dnorm(x, mean = mean_T, sd = sd_T)
+ # y2 = dnorm(x, mean = mean_C, sd = sd_C)
+ # 
+ # df = data.frame(
+ #   x = rep(x, 2),
+ #   y = c(y1, y2),
+ #   groupe = rep(c("T", "C"), each = length(x))
+ # )
+ # ggplot(df, aes(x = x, y = y, color = groupe)) +
+ #   geom_line(linewidth  = 1.2) +
+ #   labs(title = "Densités des lois normales",
+ #        x = "x", y = "Densité") +
+ #   scale_color_manual(values = c("T" = "darkblue", "C" = "darkred")) +
+ #   theme_minimal()
+
+p_val_GPC=subset(pvals_long, method=="GPC")
+p_val_WO=subset(pvals_long, method=="WO")
+p_val_WR=subset(pvals_long, method=="WR")
+
+cat("Pourcentage de p-valeur rejettant H0 à 5% pour la GPC : ",100*sum(p_val_GPC$p_value < 0.05)/nrow(p_val_GPC),"% \n")
+cat("Pourcentage de p-valeur rejettant H0 à 5% pour les WR : ",100*sum(p_val_WR$p_value < 0.05)/nrow(p_val_WR),"% \n")
+cat("Pourcentage de p-valeur rejettant H0 à 5% pour les WO : ",100*sum(p_val_WO$p_value < 0.05)/nrow(p_val_WO),"% \n")
+
+
+```
+
+
+```{r, AFT}
+n_sim = 2000
+n=200
+
+nb_core = parallel::detectCores() - 2
+cl = makeCluster(nb_core)
+registerDoParallel(cl)
+count = 0
+start_time = Sys.time()
+
+results = foreach(s = 1:n_sim, .combine = rbind, .packages = c("dplyr", "survival", "parallel", "foreach", "doParallel", "WINS"), .export = c("win.stat")) %dopar% {
+  set.seed(s)
+  
+U = runif(n) 
+U_2= runif(n)
+U2 = runif(n)
+U2_2 = runif(n) 
+
+lambdaT = 0.5
+lambdaT_2 = 0.5
+lambdaC = 0.5
+lambdaC_2 = 0.5
+
+kT = 0.5
+kT_2 = 0.5
+kC = 0.5
+kC_2 = 0.5
+
+Z = rbinom(n, size = 1, prob = 0.5)
+beta = 0.5
+
+prob_T = 0.6
+prob_C = 0.5
+
+mean_T = 2.5
+mean_C = 2
+
+sd_T = 1
+sd_C = 1
+
+id=1:(2*n) 
+arm=rep(c("T","C"), each=200)
+  
+Time_1 = round((((1/(1-U)-1)*(1/lambdaT))^(1/kT)*exp(Z*beta)), 3)
+Time_1_2 = round((((1/(1-U_2)-1)*(1/lambdaT_2))^(1/kT_2)*exp(Z*beta)), 3)
+Time_2 = round((((1/(1-U2)-1)*(1/lambdaC))^(1/kC)*exp(Z*beta)), 3)
+Time_2_2 = round((((1/(1-U2_2)-1)*(1/lambdaC_2))^(1/kC_2)*exp(Z*beta)), 3)
+
+fup_censureT = round(rweibull(n, shape = 1, scale =1.5),3)
+fup_censureT_2 = round(rweibull(n, shape = 1, scale =1),3)
+fup_censureC = round(rweibull(n, shape = 1, scale =1),3)
+fup_censureC_2 = round(rweibull(n, shape = 1, scale =1),3)
+
+Time_T = pmin(Time_1, fup_censureT)
+Time_T_2 = pmin(Time_1_2, fup_censureT_2)
+Time_C = pmin(Time_2, fup_censureC)
+Time_C_2 = pmin(Time_2_2, fup_censureC_2)
+
+deltaT=as.numeric(fup_censureT==Time_T)
+deltaT_2=as.numeric(fup_censureT_2==Time_T_2)
+deltaC=as.numeric(fup_censureC==Time_C)
+deltaC_2=as.numeric(fup_censureC_2==Time_C_2)
+
+Y_2_T=as.numeric(gener_binom(prob = prob_T)[,1] )-1
+Y_2_C=as.numeric(gener_binom(prob = prob_C)[,1] )-1
+
+Y_3_T= gener_continue(mean = mean_T, sd = sd_T)
+Y_3_C= gener_continue(mean = mean_C, sd = sd_C)
+
+stratum=sample(rep(c(1,3,5,8), each = 50))
+
+dataT=data.frame(Y_1 = Time_T, Delta_1 = deltaT, Y_2 = Y_2_T, Y_3 = Y_3_T,stratum = stratum)
+dataC=data.frame(Y_1 = Time_C, Delta_1 = deltaC, Y_2 = Y_2_C, Y_3 = Y_3_C, stratum = stratum)
+ 
+data1=rbind(dataT,dataC)
+data=data.frame(id=id, arm = arm, Y_1= data1[,1],Delta_1=data1[,2], Y_2 = data1[,3], Y_3 = data1[,4], stratum = data1[,5] )
+
+ # dataT=data.frame(Y_1 = Time_T, Delta_1 = deltaT, Y_2 = Time_T_2, Delta_2 = deltaT_2, stratum = stratum)
+ # dataC=data.frame(Y_1 = Time_C, Delta_1 = deltaC, Y_2 = Time_C_2, Delta_2 = deltaC_2, stratum = stratum)
+ # 
+ # data1=rbind(dataT,dataC)
+ # data=data.frame(id=id, arm = arm, Y_1= data1[,1],Delta_1=data1[,2], Y_2 = data1[,3],Delta_2=data1[,4], stratum = data1[,5] )
+ # 
+
+result =
+  win.stat(
+    data = data,
+    ep_type = c("tte", "binary", "continuous"),
+    stratum.weight = "equal",
+    tau = c(1.5,0,0.5),
+    arm.name = c("T", "C"),
+    alpha = 0.05,
+    digit = 3,
+    pvalue = "two-sided",
+    priority = c(1, 2, 3),
+    summary.print = FALSE
+  )
+
+win_edp1=sum(result$summary_ep$Trt_Endpoint1[,2])
+loose_edp1=sum(result$summary_ep$Con_Endpoint1[,2])
+tie_edp1=4*2500-sum(win_edp1+loose_edp1)
+win_edp2=sum(result$summary_ep$Trt_Endpoint2[,2])
+loose_edp2=sum(result$summary_ep$Con_Endpoint2[,2])
+tie_edp2=tie_edp1-(loose_edp2+win_edp2)
+win_edp3 = sum(result$summary_ep$Trt_Endpoint3[,2])
+loose_edp3 = sum(result$summary_ep$Con_Endpoint3[,2])
+tie_edp3 = tie_edp2-(win_edp3+loose_edp3)
+
+
+  count = count + 1
+  write.table(c(count), file="../output.txt", append = T, col.names = F)
+  
+  val_GPC = result$Win_statistic$Net_Benefit[1]
+  val_WR  = result$Win_statistic$Win_Ratio[1]
+  val_WO  = result$Win_statistic$Win_Odds[1]
+  
+  p_val_GPC = result$p_value[2]
+  p_val_WR  = result$p_value[1]
+  p_val_WO  = result$p_value[3]
+  
+  #return(unname(c(val_GPC,val_WR,val_WO,p_val_GPC, p_val_WR, p_val_WO,sum_censure,win_edp1,loose_edp1,tie_edp1,win_edp2,loose_edp2,tie_edp2))))
+  return(unname(c(val_GPC,val_WR,val_WO,p_val_GPC, p_val_WR, p_val_WO,win_edp1,loose_edp1,tie_edp1,win_edp2,loose_edp2,tie_edp2,win_edp3,loose_edp3,tie_edp3)))
+}
+
+stopCluster(cl)
+end_time = Sys.time()
+execution_time = end_time - start_time
+print(execution_time)
+
+results_df = as.data.frame(results)
+
+GPC=as.numeric(results_df[,1])
+WR= as.numeric(results_df[,2])
+WO= as.numeric(results_df[,3])
+
+GPC_trans = (GPC+1)/(1-GPC)
+
+quantileGPC_lwr=quantile(GPC, 0.025)
+quantileGPC_upr=quantile(GPC, 0.975)
+c(quantileGPC_lwr, quantileGPC_upr, quantileGPC_upr - quantileGPC_lwr )
+
+quantileWR_lwr=quantile(WR, 0.025)
+quantileWR_upr=quantile(WR, 0.975)
+c(quantileWR_lwr, quantileWR_upr, quantileWR_upr - quantileWR_lwr )
+
+quantileWO_lwr=quantile(WO, 0.025)
+quantileWO_upr=quantile(WO, 0.975)
+c(quantileWO_lwr, quantileWO_upr, quantileWO_upr - quantileWO_lwr )
+
+quantileGPC2_lwr=quantile(GPC_trans, 0.025)
+quantileGPC2_upr=quantile(GPC_trans, 0.975)
+c(quantileGPC2_lwr, quantileGPC2_upr, quantileGPC2_upr - quantileGPC2_lwr )
+
+
+#colnames(results_df) = c("val_GPC", "val_WR","val_WO" ,"p_val_GPC", "p_val_WR", "p_val_WO", "sum_censure","Win_Edp1","Loose_Edp1","Tie_Edp1","Win_Edp2","Loose_Edp2","Tie_Edp2")
+colnames(results_df) = c("val_GPC", "val_WR","val_WO" ,"p_val_GPC", "p_val_WR", "p_val_WO","Win_Edp1","Loose_Edp1","Tie_Edp1","Win_Edp2","Loose_Edp2","Tie_Edp2","Win_Edp3","Loose_Edp3","Tie_Edp3")
+Win   = round(c(mean(as.numeric(results_df$Win_Edp1)), mean(as.numeric(results_df$Win_Edp2)), mean(as.numeric(results_df$Win_Edp3)), mean(as.numeric(results_df$Win_Edp1)) + mean(as.numeric(results_df$Win_Edp2)) +mean(as.numeric(results_df$Win_Edp3)) ))
+Loose = round(c(mean(as.numeric(results_df$Loose_Edp1)), mean(as.numeric(results_df$Loose_Edp2)),mean(as.numeric(results_df$Loose_Edp3)), mean(as.numeric(results_df$Loose_Edp1))+mean(as.numeric(results_df$Loose_Edp2)) +mean(as.numeric(results_df$Loose_Edp3)) ))
+Tie   = round(c(mean(as.numeric(results_df$Tie_Edp1)), mean(as.numeric(results_df$Tie_Edp2)), mean(as.numeric(results_df$Tie_Edp3)), mean(as.numeric(results_df$Tie_Edp3)) ))
+
+df2 = data.frame(
+  row.names = c("endpoint1", "endpoint2",  "endpoint3","overall"),
+  Win   = Win,
+  Loose = Loose,
+  Tie   = Tie,
+  WR = round(Win/Loose,5),
+  WO = round((Win+0.5*Tie)/(Loose+0.5*Tie),5),
+  GPC = round((Win-Loose)/(Win+Loose+Tie),5),
+  GPC_trans = round(((Win-Loose)/(Win+Loose+Tie)+1)/(1-(Win-Loose)/(Win+Loose+Tie)),5)
+)
+View(df2)
+
+ values_long = results_df %>%
+   select(starts_with("val_")) %>%
+   pivot_longer(cols = everything(), names_to = "method", values_to = "value") %>%
+   mutate(method = recode(method,
+                          "val_GPC" = "GPC",
+                          "val_WR"  = "WR",
+                          "val_WO"  = "WO"))
+ values_long$value = unlist(values_long$value)
+
+pvals_long = results_df %>%
+  select(starts_with("p_val_")) %>%
+  pivot_longer(cols = everything(), names_to = "method", values_to = "p_value") %>%
+  mutate(method = recode(method,
+                         "p_val_GPC" = "GPC",
+                         "p_val_WR"  = "WR",
+                         "p_val_WO"  = "WO"))
+pvals_long$p_value = unlist(pvals_long$p_value)
+
+  vlines = data.frame(
+    method = c("GPC", "WR", "WO"),
+    intercept = c(0, 1, 1),
+    linetype_label = "Hypothèse H0"
+  )
+#  
+# 
+# ggplot(pvals_long, aes(x = method, y = p_value, fill = method)) +
+#   geom_boxplot(alpha = 0.7) +
+#   theme_minimal() +
+#   labs(title = "Distribution des p-valeurs ",
+#        x = "Test", y = "p-valeur") +
+#   geom_hline(aes(yintercept = 0.05, linetype = "Seuil de significativité"), color = "red") +
+#   scale_linetype_manual(name = "", values = c("Seuil de significativité" = "dashed")) +
+#   scale_fill_manual(values = c("orange", "purple", "cyan"))
+# 
+# 
+# ggplot(pvals_long, aes(x = method, y = p_value, fill = method)) +
+#   geom_violin(trim = FALSE, alpha = 0.6) +
+#   geom_jitter(width = 0.15, size = 1.5, color = "black", alpha = 0.8)+
+#   geom_hline(aes(yintercept = 0.05, linetype = "Seuil de significativité"), color = "red") +
+#   scale_linetype_manual(name = "", values = c("Seuil de significativité" = "dashed")) +
+#   theme_minimal() +
+#   labs(title = "Distribution des p-valeurs",
+#        x = "Test", y = "p-valeur") +
+#   scale_fill_manual(values = c("orange", "purple", "cyan"))
+
+#hist(as.numeric(results_df$sum_censure))
+ggplot(values_long, aes(x = value, fill = method)) +
+   geom_density(alpha = 0.6) +
+   geom_vline(data = vlines, aes(xintercept = intercept, linetype = linetype_label), 
+              color = "black", lwd = 1) +
+#  facet_wrap(~method, scales = "free") +
+   theme_minimal() +
+   labs(title = "Distribution des statistiques de test",
+        x = "Valeur", y = "Densité") +
+   scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
+   scale_fill_manual(values = c("orange", "purple", "cyan"))
+
+ggsave("Rplot2", device = "pdf")
+
+
+ # x = seq(mean_T - 4*sd_T, mean_T + 4*sd_T, length.out = 100)
+ # y1 = dnorm(x, mean = mean_T, sd = sd_T)
+ # y2 = dnorm(x, mean = mean_C, sd = sd_C)
+ # 
+ # df = data.frame(
+ #   x = rep(x, 2),
+ #   y = c(y1, y2),
+ #   groupe = rep(c("T", "C"), each = length(x))
+ # )
+ # ggplot(df, aes(x = x, y = y, color = groupe)) +
+ #   geom_line(linewidth  = 1.2) +
+ #   labs(title = "Densités des lois normales",
+ #        x = "x", y = "Densité") +
+ #   scale_color_manual(values = c("T" = "darkblue", "C" = "darkred")) +
+ #   theme_minimal()
+
+p_val_GPC=subset(pvals_long, method=="GPC")
+p_val_WO=subset(pvals_long, method=="WO")
+p_val_WR=subset(pvals_long, method=="WR")
+
+cat("Pourcentage de p-valeur rejettant H0 à 5% pour la GPC : ",100*sum(p_val_GPC$p_value < 0.05)/nrow(p_val_GPC),"% \n")
+cat("Pourcentage de p-valeur rejettant H0 à 5% pour les WR : ",100*sum(p_val_WR$p_value < 0.05)/nrow(p_val_WR),"% \n")
+cat("Pourcentage de p-valeur rejettant H0 à 5% pour les WO : ",100*sum(p_val_WO$p_value < 0.05)/nrow(p_val_WO),"% \n")
+
+
+```
+
+
+```{r, HR cst}
+
+n_sim = 2000
+n=200
+
+
+nb_core = parallel::detectCores() - 2
+cl = makeCluster(nb_core)
+registerDoParallel(cl)
+count = 0
+start_time = Sys.time()
+
+lambda = c(0.5,0.1,0.05)
+k = c(0.5, 0.1, 0.05)
+beta = c(0.5, 0.4, 0.3, 0.7)
+
+
+results = foreach(s = 1:n_sim, .combine = rbind, .packages = c("dplyr", "survival", "parallel", "foreach", "doParallel", "WINS"), .export = c("win.stat")) %dopar% {
+  set.seed(s)
+  
+id=1:(2*n) 
+arm=rep(c("T","C"), each=200)
+  
+U = runif(2*n) 
+
+lambdaT = 0.1
+kT = 0.1
+
+
+Z = ifelse(arm == "T", 1, 0)
+beta = 3
+
+prob_T = 0.65
+prob_C = 0.35
+
+mean_T = 3
+mean_C = 2
+sd_T = 2
+sd_C = 2
+
+  
+Time_1 = round((-log(1 - U)) / (lambdaT * exp(beta * Z)^(1 / kT)),3)
+fup_censureT = round(rweibull(n, shape = 1, scale =1),3)
+
+Time_T = pmin(Time_1, fup_censureT)
+deltaT=as.numeric(fup_censureT==Time_T)
+
+Y_2_T=as.numeric(gener_binom(prob = prob_T)[,1] )-1
+Y_2_C=as.numeric(gener_binom(prob = prob_C)[,1] )-1
+
+Y_3_T= gener_continue(mean = mean_T, sd = sd_T)
+Y_3_C= gener_continue(mean = mean_C, sd = sd_C)
+
+stratum=sample(rep(c(1,3,5,8), each = 50))
+dataT=data.frame(Y_1 = Time_T[Z==1], Delta_1 = deltaT[Z==1], Y_2 = Y_2_T, Y_3 = Y_3_T, stratum = stratum)
+dataC=data.frame(Y_1 = Time_T[Z==0], Delta_1 = deltaT[Z==0], Y_2 = Y_2_C, Y_3 = Y_3_C, stratum = stratum)
+
+ 
+data1=rbind(dataT,dataC)
+data=data.frame(id=id, arm = arm, Y_1= data1[,1],Delta_1=data1[,2], Y_2 = data1[,3], Y_3 = data1[,4], stratum = data1[,5] )
+
+result =
+  win.stat(
+    data = data,
+    ep_type = c("tte", "binary", "continuous"),
+    stratum.weight = "equal",
+    tau = c(2,0,2),
+    arm.name = c("T", "C"),
+    alpha = 0.05,
+    digit = 3,
+    pvalue = "two-sided",
+    priority = c(3,1,2),
+    summary.print = FALSE
+  )
+
+win_edp1=sum(result$summary_ep$Trt_Endpoint1[,2])
+loose_edp1=sum(result$summary_ep$Con_Endpoint1[,2])
+tie_edp1=4*2500-sum(win_edp1+loose_edp1)
+
+win_edp2=sum(result$summary_ep$Trt_Endpoint2[,2])
+loose_edp2=sum(result$summary_ep$Con_Endpoint2[,2])
+tie_edp2=tie_edp1-(loose_edp2+win_edp2)
+
+win_edp3 = sum(result$summary_ep$Trt_Endpoint3[,2])
+loose_edp3 = sum(result$summary_ep$Con_Endpoint3[,2])
+tie_edp3 = tie_edp2-(win_edp3+loose_edp3)
+
+
+  count = count + 1
+  write.table(c(count), file="../output.txt", append = T, col.names = F)
+  
+  val_GPC = result$Win_statistic$Net_Benefit[1]
+  val_WR  = result$Win_statistic$Win_Ratio[1]
+  val_WO  = result$Win_statistic$Win_Odds[1]
+  
+  p_val_GPC = result$p_value[2]
+  p_val_WR  = result$p_value[1]
+  p_val_WO  = result$p_value[3]
+  
+  return(unname(c(val_GPC,val_WR,val_WO,p_val_GPC, p_val_WR, p_val_WO,win_edp1,loose_edp1,tie_edp1,win_edp2,loose_edp2,tie_edp2,win_edp3,loose_edp3,tie_edp3)))
+}
+
+stopCluster(cl)
+end_time = Sys.time()
+execution_time = end_time - start_time
+print(execution_time)
+
+results_df = as.data.frame(results)
+
+
+GPC=as.numeric(results_df[,1])
+WR= as.numeric(results_df[,2])
+WO= as.numeric(results_df[,3])
+
+
+GPC_trans = (GPC+1)/(1-GPC)
+
+quantileGPC_lwr=quantile(GPC, 0.025)
+quantileGPC_upr=quantile(GPC, 0.975)
+étendue_GPC= round(quantileGPC_upr - quantileGPC_lwr,4)
+c(quantileGPC_lwr, quantileGPC_upr, quantileGPC_upr - quantileGPC_lwr )
+
+quantileWR_lwr=quantile(WR, 0.025)
+quantileWR_upr=quantile(WR, 0.975)
+étendue_WR= round(quantileWR_upr - quantileWR_lwr,4)
+c(quantileWR_lwr, quantileWR_upr, quantileWR_upr - quantileWR_lwr )
+
+quantileWO_lwr=quantile(WO, 0.025)
+quantileWO_upr=quantile(WO, 0.975)
+étendue_WO= round(quantileWO_upr - quantileWO_lwr,4)
+c(quantileWO_lwr, quantileWO_upr, quantileWO_upr - quantileWO_lwr )
+
+quantileGPC2_lwr=quantile(GPC_trans, 0.025)
+quantileGPC2_upr=quantile(GPC_trans, 0.975)
+c(quantileGPC2_lwr, quantileGPC2_upr, quantileGPC2_upr - quantileGPC2_lwr )
+
+colnames(results_df) = c("val_GPC", "val_WR","val_WO" ,"p_val_GPC", "p_val_WR", "p_val_WO","Win_Edp1","Loose_Edp1","Tie_Edp1","Win_Edp2","Loose_Edp2","Tie_Edp2","Win_Edp3","Loose_Edp3","Tie_Edp3")
+
+Win   = round(c(mean(as.numeric(results_df$Win_Edp1)), mean(as.numeric(results_df$Win_Edp2)), mean(as.numeric(results_df$Win_Edp3)), mean(as.numeric(results_df$Win_Edp1)) + mean(as.numeric(results_df$Win_Edp2)) +mean(as.numeric(results_df$Win_Edp3)) ))
+
+Loose = round(c(mean(as.numeric(results_df$Loose_Edp1)), mean(as.numeric(results_df$Loose_Edp2)),mean(as.numeric(results_df$Loose_Edp3)), mean(as.numeric(results_df$Loose_Edp1))+mean(as.numeric(results_df$Loose_Edp2)) +mean(as.numeric(results_df$Loose_Edp3)) ))
+
+Tie   = round(c(mean(as.numeric(results_df$Tie_Edp1)), mean(as.numeric(results_df$Tie_Edp2)), mean(as.numeric(results_df$Tie_Edp3)), mean(as.numeric(results_df$Tie_Edp3)) ))
+
+dftau0_pb = data.frame(
+  row.names = c("endpoint1", "endpoint2",  "endpoint3","overall"),
+  Win   = Win,
+  Loose = Loose,
+  Tie   = Tie,
+  WR = round(Win/Loose,5),
+  WO = round((Win+0.5*Tie)/(Loose+0.5*Tie),5),
+  GPC = round((Win-Loose)/(Win+Loose+Tie),5),
+  GPC_trans = round(((Win-Loose)/(Win+Loose+Tie)+1)/(1-(Win-Loose)/(Win+Loose+Tie)),5)
+)
+View(dftau0_pb)
+#write.csv(dftau0_pb, file = "dftau0_pb.csv")
+
+pvals_long = results_df %>%
+  select(starts_with("p_val_")) %>%
+  pivot_longer(cols = everything(), names_to = "method", values_to = "p_value") %>%
+  mutate(method = recode(method,
+                         "p_val_GPC" = "GPC",
+                         "p_val_WR"  = "WR",
+                         "p_val_WO"  = "WO"))
+pvals_long$p_value = unlist(pvals_long$p_value)
+
+
+vlines = data.frame(
+    method = c("GPC", "WR", "WO"),
+    intercept = c(0, 1, 1),
+    linetype_label = "Hypothèse H0")
+
+ values_long = results_df %>%
+   select(starts_with("val_")) %>%
+   pivot_longer(cols = everything(), names_to = "method", values_to = "value") %>%
+   mutate(method = recode(method,
+                          "val_GPC" = "GPC",
+                          "val_WR"  = "WR",
+                          "val_WO"  = "WO"))
+ values_long$value = unlist(values_long$value)
+ values_long <- values_long %>% filter(!is.infinite(value))
+
+
+ggplot(values_long, aes(x = value, fill = method)) +
+   geom_density(alpha = 0.6, color = "black") +
+   geom_vline(data = vlines, aes(xintercept = intercept, linetype = linetype_label), 
+              color = "black", lwd = 1) +
+   theme_minimal() +
+   labs(title = "Distribution des statistiques de test",
+        x = "Valeur", y = "Densité") +
+   scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
+   scale_fill_manual(values = c("orange", "purple", "cyan"))+ coord_cartesian(xlim = c(-1, 5))+
+  annotate("text", x = 4.5, y = 1.1, label = paste("Étendue GPC : ", étendue_GPC), color = "orange", hjust = 1) +
+  annotate("text", x = 4.5, y = 1.5, label = paste("Étendue WR : ", étendue_WR), color = "purple", hjust = 1) +
+  annotate("text", x = 4.5, y = 2.1, label = paste("Étendue WO : ", étendue_WO), color = "cyan", hjust = 1)
+
+#ggsave("Rplot_tau0_pb.pdf", device = "pdf", path = "../plots")
+
+
+
+p_val_GPC=subset(pvals_long, method=="GPC")
+p_val_WO=subset(pvals_long, method=="WO")
+p_val_WR=subset(pvals_long, method=="WR")
+
+cat("Pourcentage de p-valeur rejettant H0 à 5% pour la GPC : ",100*sum(p_val_GPC$p_value < 0.05)/nrow(p_val_GPC),"% \n")
+cat("Pourcentage de p-valeur rejettant H0 à 5% pour les WR : ",100*sum(p_val_WR$p_value < 0.05)/nrow(p_val_WR),"% \n")
+cat("Pourcentage de p-valeur rejettant H0 à 5% pour les WO : ",100*sum(p_val_WO$p_value < 0.05)/nrow(p_val_WO),"% \n")
+```
+
