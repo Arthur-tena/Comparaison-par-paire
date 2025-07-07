@@ -1153,9 +1153,9 @@ $\tau$ = c(0,0)
 
 
 ```{r}
-n=200
+n=200000
 id=1:(2*n) 
-arm=rep(c("T","C"), each=200)
+arm=rep(c("T","C"), each=n)
 Z = ifelse(arm == "T", 1, 0)
 beta = 1.5
 U1 = runif(2*n) 
@@ -1190,13 +1190,13 @@ km_fit_2 <- survfit(surv_object_2 ~ arm)
 
 plot(km_fit_1, col = c("blue", "red"), lwd = 2, 
      xlab = "Temps", ylab = "Probabilité de survie", main = "Courbe de survie Kaplan-Meier - Time1")
-legend("bottomleft", legend = c("C", "T"), col = c("blue", "red"), lwd = 2)
+legend("topright", legend = c("C", "T"), col = c("blue", "red"), lwd = 2)
 
 
 plot(km_fit_2, col = c("blue", "red"), lwd = 2,
      xlab = "Temps", ylab = "Probabilité de survie", main = "Courbe de survie Kaplan-Meier - Time2")
 
-legend("bottomleft", legend = c("C", "T"), col = c("blue", "red"), lwd = 2)
+legend("topright", legend = c("C", "T"), col = c("blue", "red"), lwd = 2)
 
 ```
 
@@ -1221,11 +1221,10 @@ arm=rep(c("T","C"), each=200)
 
 U1 = runif(2*n) 
 U2 = runif(2*n) 
-
+Z = ifelse(arm == "T", 1, 0)
 t_censure = c(9,14,19)
 resultats=list()
 for (t in t_censure){
-  
 
 
 fup_censure1=round(rexp(2*n, rate = 0.03),3)
@@ -1245,31 +1244,10 @@ Time2 = round(exp(mu2 + sigma2 * qnorm(U2)) * exp(Z * beta), 3)
 Time_2 = pmin(Time2,  fup_censure2)
 delta2 = as.numeric(Time_2==Time2)
 
-# surv_object_1 <- Surv(time = Time_1, event = delta1)
-# 
-# 
-# surv_object_2 <- Surv(time = Time_2, event = delta2)
-# 
-# km_fit_1 <- survfit(surv_object_1 ~ arm)
-# 
-# km_fit_2 <- survfit(surv_object_2 ~ arm)
-# 
-# plot(km_fit_1, col = c("blue", "red"), lwd = 2, 
-#      xlab = "Temps", ylab = "Probabilité de survie", main = "Courbe de survie Kaplan-Meier - Time1")
-# legend("bottomleft", legend = c("C", "T"), col = c("blue", "red"), lwd = 2)
-# #ggsave("KM_survie1.pdf", device = "pdf")
-# 
-# plot(km_fit_2, col = c("blue", "red"), lwd = 2,
-#      xlab = "Temps", ylab = "Probabilité de survie", main = "Courbe de survie Kaplan-Meier - Time2")
-# #ggsave("KM_survie2.pdf")
-# legend("bottomleft", legend = c("C", "T"), col = c("blue", "red"), lwd = 2)
 
  Time_12 = pmin(Time_1, t)
  delta12 = ifelse(Time_1 == Time_12, delta1,
                    ifelse(Time_12 == t, 0, 1))
-
-
-
 
 
  Time_22 = pmin(Time_2, t)
@@ -1281,9 +1259,9 @@ delta2 = as.numeric(Time_2==Time2)
 
 
 
-stratum=sample(rep(c(1,3,5,8), each = 1))
-dataT=data.frame(Y_1 = Time_12[Z==1], Delta_1 = delta12[Z==1], Y_2 = Time_22[Z==1], Delta_2  = delta22[Z==1], stratum = stratum)
-dataC=data.frame(Y_1 = Time_12[Z==0], Delta_1 = delta12[Z==0], Y_2 = Time_22[Z==0], Delta_2 = delta22[Z==0], stratum = stratum)
+
+dataT=data.frame(Y_1 = Time_12[Z==1], Delta_1 = delta12[Z==1], Y_2 = Time_22[Z==1], Delta_2  = delta22[Z==1])
+dataC=data.frame(Y_1 = Time_12[Z==0], Delta_1 = delta12[Z==0], Y_2 = Time_22[Z==0], Delta_2 = delta22[Z==0])
 
  
 data1=rbind(dataT,dataC)
@@ -1317,21 +1295,20 @@ censure_rateC1=sum(dataC$Delta_1==0)/n
 censure_rateT2=sum(dataT$Delta_2==0)/n 
 censure_rateC2=sum(dataC$Delta_2==0)/n 
 
-data=data.frame(id=id, arm = arm, Y_1= data1[,1],Delta_1=data1[,2], Y_2 = data1[,3], Y_3 = data1[,4], stratum = data1[,5] )
+data=data.frame(id=id, arm = arm, Y_1= data1[,1],Delta_1=data1[,2], Y_2 = data1[,3], Y_3 = data1[,4] )
 
 result =
   win.stat(
     data = data,
     ep_type = c("tte", "tte"),
-    stratum.weight = "equal",
+    stratum.weight = "unstratified",
     tau = c(0,0),
     arm.name = c("T", "C"),
     alpha = 0.05,
     digit = 3,
     pvalue = "two-sided",
     priority = c(1,2),
-    summary.print = FALSE,
-    method = "ipcw"
+    summary.print = FALSE
   )
 
 win_edp1=sum(result$summary_ep$Trt_Endpoint1[,2])
@@ -1500,10 +1477,7 @@ ggplot(values_long, aes(x = value, fill = method)) +
    labs(title = "Distribution des statistiques",
         x = "Valeur", y = "Densité") +
    scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
-   scale_fill_manual(values = c("orange",  "purple", "cyan")) +
-  annotate("text", x = 8.5, y = 3.1, label = paste("Étendue GPC : ", étendue_GPC), color = "orange", hjust = 1) +
-  annotate("text", x = 8.5, y = 4, label = paste("Étendue WR : ", étendue_WR), color = "cyan", hjust = 1) +
-  annotate("text", x = 8.5, y = 4.9, label = paste("Étendue WO : ", étendue_WO), color = "purple", hjust = 1) 
+   scale_fill_manual(values = c("orange",  "purple", "cyan"))
 
 ggsave("AFT_t9.pdf", device = "pdf", path = "C:/Users/MASTERS TEMA Arthur/Documents/Comparaison-par-paire/plots" )
 
@@ -1606,31 +1580,27 @@ val=as.data.frame(unname(cbind(val1,val2,val3)))
 colnames(val)=c("val_GPC","val_WR","val_WO")
 summary(val)
 
-#  values_long = val %>%
-#    select(starts_with("val_")) %>%
-#    pivot_longer(cols = everything(), names_to = "method", values_to = "value") %>%
-#    mutate(method = recode(method,
-#                           "val_GPC" = "GPC",
-#                           "val_WR"  = "WR",
-#                           "val_WO"  = "WO"))
-#  values_long$value = unlist(values_long$value)
-#  values_long <- values_long %>% filter(!is.infinite(value))
-# 
-# 
-# ggplot(values_long, aes(x = value, fill = method)) +
-#    geom_density(alpha = 0.6, color = "black") +
-#    geom_vline(data = vlines, aes(xintercept = intercept, linetype = linetype_label),
-#               color = "black", lwd = 1) +
-#    theme_minimal() +
-#    labs(title = "Distribution des statistiques",
-#         x = "Valeur", y = "Densité") +
-#    scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
-#    scale_fill_manual(values = c("orange",  "purple", "cyan")) +
-#   annotate("text", x = 8.5, y = 1.6, label = paste("Étendue GPC : ", étendue_GPC), color = "orange", hjust = 1) +
-#   annotate("text", x = 8.5, y = 2.35, label = paste("Étendue WR : ", étendue_WR), color = "cyan", hjust = 1) +
-#   annotate("text", x = 8.5, y = 3.1, label = paste("Étendue WO : ", étendue_WO), color = "purple", hjust = 1)
-# 
-# ggsave("AFT_t14.pdf", device = "pdf", path = "C:/Users/MASTERS TEMA Arthur/Documents/Comparaison-par-paire/plots" )
+ values_long = val %>%
+   select(starts_with("val_")) %>%
+   pivot_longer(cols = everything(), names_to = "method", values_to = "value") %>%
+   mutate(method = recode(method,
+                          "val_GPC" = "GPC",
+                          "val_WR"  = "WR",
+                          "val_WO"  = "WO"))
+ values_long$value = unlist(values_long$value)
+ values_long <- values_long %>% filter(!is.infinite(value))
+
+
+ggplot(values_long, aes(x = value, fill = method)) +
+   geom_density(alpha = 0.6, color = "black") +
+   geom_vline(data = vlines, aes(xintercept = intercept, linetype = linetype_label),
+              color = "black", lwd = 1) +
+   theme_minimal() +
+   labs(title = "Distribution des statistiques",
+        x = "Valeur", y = "Densité") +
+   scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
+   scale_fill_manual(values = c("orange",  "purple", "cyan")) 
+ggsave("AFT_t14_diapo.pdf", device = "pdf", path = "C:/Users/MASTERS TEMA Arthur/Documents/Comparaison-par-paire/plots" )
 
 ```
 
@@ -1729,32 +1699,28 @@ val3=unlist(results_df3[,3])
 val=as.data.frame(unname(cbind(val1,val2,val3)))
 colnames(val)=c("val_GPC","val_WR","val_WO")
 summary(val)
-# 
-#  values_long = val %>%
-#    select(starts_with("val_")) %>%
-#    pivot_longer(cols = everything(), names_to = "method", values_to = "value") %>%
-#    mutate(method = recode(method,
-#                           "val_GPC" = "GPC",
-#                           "val_WR"  = "WR",
-#                           "val_WO"  = "WO"))
-#  values_long$value = unlist(values_long$value)
-#  values_long <- values_long %>% filter(!is.infinite(value))
-# 
-# 
-# ggplot(values_long, aes(x = value, fill = method)) +
-#    geom_density(alpha = 0.6, color = "black") +
-#    geom_vline(data = vlines, aes(xintercept = intercept, linetype = linetype_label),
-#               color = "black", lwd = 1) +
-#    theme_minimal() +
-#    labs(title = "Distribution des statistiques",
-#         x = "Valeur", y = "Densité") +
-#    scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
-#    scale_fill_manual(values = c("orange",  "purple", "cyan")) +
-#   annotate("text", x = 5.5, y = 1.6, label = paste("Étendue GPC : ", étendue_GPC), color = "orange", hjust = 1) +
-#   annotate("text", x = 5.5, y = 2.35, label = paste("Étendue WR : ", étendue_WR), color = "cyan", hjust = 1) +
-#   annotate("text", x = 5.5, y = 3.1, label = paste("Étendue WO : ", étendue_WO), color = "purple", hjust = 1)
-# 
-# ggsave("AFT_t19.pdf", device = "pdf", path = "C:/Users/MASTERS TEMA Arthur/Documents/Comparaison-par-paire/plots" )
+
+ values_long = val %>%
+   select(starts_with("val_")) %>%
+   pivot_longer(cols = everything(), names_to = "method", values_to = "value") %>%
+   mutate(method = recode(method,
+                          "val_GPC" = "GPC",
+                          "val_WR"  = "WR",
+                          "val_WO"  = "WO"))
+ values_long$value = unlist(values_long$value)
+ values_long <- values_long %>% filter(!is.infinite(value))
+
+
+ggplot(values_long, aes(x = value, fill = method)) +
+   geom_density(alpha = 0.6, color = "black") +
+   geom_vline(data = vlines, aes(xintercept = intercept, linetype = linetype_label),
+              color = "black", lwd = 1) +
+   theme_minimal() +
+   labs(title = "Distribution des statistiques",
+        x = "Valeur", y = "Densité") +
+   scale_linetype_manual(name = "", values = c("Hypothèse H0" = "dashed")) +
+   scale_fill_manual(values = c("orange",  "purple", "cyan")) 
+ggsave("AFT_t19_diapo.pdf", device = "pdf", path = "C:/Users/MASTERS TEMA Arthur/Documents/Comparaison-par-paire/plots" )
 
 ```
 
@@ -1833,7 +1799,7 @@ stat_t.plot(data = data, Ctime = 1:20, arm.name = c("T", "C"), priority = c(1,2)
 ```{r}
 n=200
 id=1:(2*n) 
-arm=rep(c("T","C"), each=200)
+arm=rep(c("T","C"), each=n)
 Z = ifelse(arm == "T", 1, 0)
 beta = 1.5
 U1 = runif(2*n) 
@@ -1841,7 +1807,6 @@ U2 = runif(2*n)
 
 fup_censure1=round(rexp(2*n, rate = 0.08),3)
 fup_censure2=round(rexp(2*n, rate = 0.08),3)
-summary(fup_censure2)
 
 
 mu1 <- 2; sigma1 <- 1.2
@@ -1857,31 +1822,23 @@ delta2 = as.numeric(Time_2==Time2)
 
 
 
-stratum=sample(rep(c(1,3,5,8), each = 1))
-dataT=data.frame(Y_1 = Time_1[Z==1], Delta_1 = delta1[Z==1], Y_2 = Time_2[Z==1], Delta_2  = delta2[Z==1], stratum = stratum)
-dataC=data.frame(Y_1 = Time_1[Z==0], Delta_1 = delta1[Z==0], Y_2 = Time_2[Z==0], Delta_2 = delta2[Z==0], stratum = stratum)
+dataT=data.frame(Y_1 = Time_1[Z==1], Delta_1 = delta1[Z==1], Y_2 = Time_2[Z==1], Delta_2  = delta2[Z==1])
+dataC=data.frame(Y_1 = Time_1[Z==0], Delta_1 = delta1[Z==0], Y_2 = Time_2[Z==0], Delta_2 = delta2[Z==0])
 
  
 data1=rbind(dataT,dataC)
 
+data=data.frame(id=id, arm = arm, Y_1= data1[,1],Delta_1=data1[,2], Y_2 = data1[,3], Delta_2 = data1[,4])
 
-censure_rateT1=sum(dataT$Delta_1==0)/n 
-censure_rateC1=sum(dataC$Delta_1==0)/n 
+# partition_t.plot(data = data, Ctime = 1:20, arm.name = c("T", "C"), priority = c(1,2),tau = c(0,0))
 
-censure_rateT2=sum(dataT$Delta_2==0)/n 
-censure_rateC2=sum(dataC$Delta_2==0)/n 
-
-data=data.frame(id=id, arm = arm, Y_1= data1[,1],Delta_1=data1[,2], Y_2 = data1[,3], Delta_2 = data1[,4], stratum = data1[,5] )
-
-partition_t.plot(data = data, Ctime = 1:20, arm.name = c("T", "C"), priority = c(1,2),tau = c(0,0))
-
-stat_t.plot(data = data, Ctime = 1:20, arm.name = c("T", "C"), priority = c(1,2),tau = c(0,0), statistic = "WR", stratum.weight = "equal", plot_CI = TRUE, plotTimeUnit = "months") + coord_cartesian(ylim = c(0, 7))
+stat_t.plot(data = data, Ctime = 1:20, arm.name = c("T", "C"), priority = c(1,2),tau = c(0,0), statistic = "WR", stratum.weight = "unstratified", plot_CI = TRUE, plotTimeUnit = "months")
 
 #ggsave("stat_plot_AFT_WR.pdf", device = "pdf", path = "C:/Users/MASTERS TEMA Arthur/Documents/Comparaison-par-paire/plots" )
 
 
-stat_t.plot(data = data, Ctime = 1:20, arm.name = c("T", "C"), priority = c(1,2),tau = c(0,0), statistic = "WO", stratum.weight = "equal", plot_CI = TRUE, plotTimeUnit = "months") + coord_cartesian(ylim = c(0, 7))
+stat_t.plot(data = data, Ctime = 1:20, arm.name = c("T", "C"), priority = c(1,2),tau = c(0,0), statistic = "WO", stratum.weight = "unstratified", plot_CI = TRUE, plotTimeUnit = "months") 
 # ggsave("stat_plot_AFT_WO.pdf", device = "pdf", path = "C:/Users/MASTERS TEMA Arthur/Documents/Comparaison-par-paire/plots" )
-# stat_t.plot(data = data, Ctime = 1:20, arm.name = c("T", "C"), priority = c(1,2),tau = c(0,0), statistic = "NB", stratum.weight = "equal", plot_CI = TRUE, plotTimeUnit = "months")
+ stat_t.plot(data = data, Ctime = 1:20, arm.name = c("T", "C"), priority = c(1,2),tau = c(0,0), statistic = "NB", stratum.weight = "unstratified", plot_CI = TRUE, plotTimeUnit = "months")
 # ggsave("stat_plot_AFT_NB.pdf", device = "pdf", path = "C:/Users/MASTERS TEMA Arthur/Documents/Comparaison-par-paire/plots" )
 ```
